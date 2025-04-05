@@ -47,7 +47,7 @@ class ConstructionIO(Atoms):
     input_shape3: Atom
     input_shape4: Atom
 
-    input_brick_nos: Atom
+    brick_nos: Atom
 
     target_shape1: Atom
     target_shape2: Atom

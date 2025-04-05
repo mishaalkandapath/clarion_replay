@@ -4,7 +4,7 @@ from pyClarion import (Agent, Input, Choice, ChunkStore, FixedRules,
 from typing import *
 import math
 
-def init_participant_response_rules(participant: Participant) -> None:
+def init_participant_response_rules(participant) -> None:
     d = participant.response_space
     io = d.io
     bricks = d.bricks
@@ -126,14 +126,14 @@ def init_participant_response_rules(participant: Participant) -> None:
         + io.target_shape1_col1 ** grid_cols[f"c{col}"]
         + io.target_shape1_col2 ** grid_cols[f"c{col+1}"]
         + io.target_shape1_col3 ** grid_cols[f"c{col}"]
-        + io.target_shape3_row1 ** grid_rows[f"r{row+i}"]
-        + io.target_shape3_row2 ** grid_rows[f"r{row+i+1}"]
-        + io.target_shape3_row3 ** grid_rows[f"r{row+i+2}"]
-        + io.target_shape3_col1 ** grid_cols[f"c{col+2}"]
-        + io.target_shape3_col2 ** grid_cols[f"c{col+2}"]
-        + io.target_shape3_col3 ** grid_cols[f"c{col+2}"]
+        + io.target_shape3_row1 ** grid_rows[f"r{row+1-i}"]
+        + io.target_shape3_row2 ** grid_rows[f"r{row+2-i}"]
+        + io.target_shape3_row3 ** grid_rows[f"r{row+3-i}"]
+        + io.target_shape3_col1 ** grid_cols[f"c{col+2- (i == 0)}"]
+        + io.target_shape3_col2 ** grid_cols[f"c{col+2 - (i == 0)}"]
+        + io.target_shape3_col3 ** grid_cols[f"c{col+2 - (i == 0)}"]
         >>
-        + io.output ** response.yes) for switcharoo in (True, False) for i in range(4) for row in range(1+(i if i > 1 else 0), 4 + (math.ceil(i/2))) for col in range(1, 6-(i > 0))
+        + io.output ** response.yes) for switcharoo in (True, False) for i in range(4) for row in range(1+(i-1 if i > 1 else 0), 4 + (math.ceil(i/2))) for col in range(1, 6-(i > 0))
     ]
 
     half_T_right_vertical = [
@@ -405,7 +405,7 @@ def init_participant_response_rules(participant: Participant) -> None:
         + io.target_shape4_col2 ** grid_cols[f"c{col-1+i}"]
         + io.target_shape4_col3 ** grid_cols[f"c{col+i}"]
         >>
-        + io.output ** response.yes) for switcharoo in (True, False) for i in range (3) for row in range(2, 6) for col in range(3-i, 7-i)
+        + io.output ** response.yes) for switcharoo in (True, False) for i in range (3) for row in range(2, 6) for col in range(3-(i != 0), 7-i)
     ]
     """
     2 2 2
@@ -467,7 +467,7 @@ def init_participant_response_rules(participant: Participant) -> None:
         + io.target_shape3_col2 ** grid_cols[f"c{col-2 + (i == 3)}"]
         + io.target_shape3_col3 ** grid_cols[f"c{col-2 + (i == 3)}"]
         >>
-        + io.output ** response.yes) for switcharoo in (True, False) for i in range(4) for row in range(1+min(0, i-1), min(4+i, 6)) for col in range(3 - (i == 3), 7)
+        + io.output ** response.yes) for switcharoo in (True, False) for i in range(4) for row in range(1+max(0, i-1), min(4+i, 6)) for col in range(3 - (i == 3), 7)
     ]
 
     """
@@ -646,7 +646,7 @@ def init_participant_response_rules(participant: Participant) -> None:
         + io.target_shape4_row3 ** grid_rows[f"r{row+3}"]
         + io.target_shape4_col1 ** grid_cols[f"c{col+i}"]
         + io.target_shape4_col2 ** grid_cols[f"c{col+i}"]
-        + io.target_shape4_col3 ** grid_cols[f"c{col+1+i}"]
+        + io.target_shape4_col3 ** grid_cols[f"c{col+i}"]
         >>
         + io.output ** response.yes) for switcharoo in (True, False) for i in range(3) for row in range(1, 4) for col in range(1, 5)
     ]
@@ -733,7 +733,7 @@ def init_participant_response_rules(participant: Participant) -> None:
                                       horizontal_above_vertical +
                                       horizontal_below_vertical + no_response_rule))
     
-def init_participant_construction_rules(participant: Participant) -> None:
+def init_participant_construction_rules(participant) -> None:
     
     d = participant.construction_space
     io = d.io
@@ -988,12 +988,12 @@ def init_participant_construction_rules(participant: Participant) -> None:
             + io.input_shape1_col1 ** grid_cols[f"c{col}"]
             + io.input_shape1_col2 ** grid_cols[f"c{col+1}"]
             + io.input_shape1_col3 ** grid_cols[f"c{col}"]
-            + io.input_shape3_row1 ** grid_rows[f"r{row+i}"]
-            + io.input_shape3_row2 ** grid_rows[f"r{row+i+1}"]
-            + io.input_shape3_row3 ** grid_rows[f"r{row+i+2}"]
-            + io.input_shape3_col1 ** grid_cols[f"c{col+2}"]
-            + io.input_shape3_col2 ** grid_cols[f"c{col+2}"]
-            + io.input_shape3_col3 ** grid_cols[f"c{col+2}"]
+            + io.input_shape3_row1 ** grid_rows[f"r{row+1-i}"]
+            + io.input_shape3_row2 ** grid_rows[f"r{row+2-i}"]
+            + io.input_shape3_row3 ** grid_rows[f"r{row+3-i}"]
+            + io.input_shape3_col1 ** grid_cols[f"c{col+2- (i == 0)}"]
+            + io.input_shape3_col2 ** grid_cols[f"c{col+2- (i == 0)}"]
+            + io.input_shape3_col3 ** grid_cols[f"c{col+2- (i == 0)}"]
             >>
             + io.target_shape1 ** bricks.half_T
             + io.target_shape3 ** bricks.vertical
@@ -1003,14 +1003,14 @@ def init_participant_construction_rules(participant: Participant) -> None:
             + io.target_shape1_col1 ** grid_cols[f"c{col}"]
             + io.target_shape1_col2 ** grid_cols[f"c{col+1}"]
             + io.target_shape1_col3 ** grid_cols[f"c{col}"]
-            + io.target_shape3_row1 ** grid_rows[f"r{row+i}"]
-            + io.target_shape3_row2 ** grid_rows[f"r{row+i+1}"]
-            + io.target_shape3_row3 ** grid_rows[f"r{row+i+2}"]
-            + io.target_shape3_col1 ** grid_cols[f"c{col+2}"]
-            + io.target_shape3_col2 ** grid_cols[f"c{col+2}"]
-            + io.target_shape3_col3 ** grid_cols[f"c{col+2}"]
+            + io.target_shape3_row1 ** grid_rows[f"r{row+1-i}"]
+            + io.target_shape3_row2 ** grid_rows[f"r{row+2-i}"]
+            + io.target_shape3_row3 ** grid_rows[f"r{row+3-i}"]
+            + io.target_shape3_col1 ** grid_cols[f"c{col+2- (i == 0)}"]
+            + io.target_shape3_col2 ** grid_cols[f"c{col+2 - (i == 0)}"]
+            + io.target_shape3_col3 ** grid_cols[f"c{col+2 - (i == 0)}"]
             )
-            for i in range(4) for row in range(1+(i if i > 1 else 0), 4 + (math.ceil(i/2))) for col in range(1, 6-(i > 0))
+            for i in range(4) for row in range(1+(i-1 if i > 1 else 0), 4 + (math.ceil(i/2))) for col in range(1, 6-(i > 0))
     ]
     
     half_T_right_vertical_placement_rule = [
@@ -1395,7 +1395,7 @@ def init_participant_construction_rules(participant: Participant) -> None:
             + io.target_shape4_col2 ** grid_cols[f"c{col-1+i}"]
             + io.target_shape4_col3 ** grid_cols[f"c{col+i}"]
             ) 
-            for i in range (3) for row in range(2, 6) for col in range(3-i, 7-i)
+            for i in range (3) for row in range(2, 6) for col in range(3-(i!=0), 7-i)
     ]
 
     mirror_L_left_vertical_placement_rule  = [
@@ -1465,7 +1465,7 @@ def init_participant_construction_rules(participant: Participant) -> None:
             + io.target_shape3_col2 ** grid_cols[f"c{col-2 + (i == 3)}"]
             + io.target_shape3_col3 ** grid_cols[f"c{col-2 + (i == 3)}"]
             )
-            for i in range(4) for row in range(1+min(0, i-1), min(4+i, 6)) for col in range(3 - (i == 3), 7)
+            for i in range(4) for row in range(1+max(0, i-1), min(4+i, 6)) for col in range(3 - (i == 3), 7)
     ]
 
     mirror_L_above_vertical_placement_rule = [
@@ -1623,7 +1623,7 @@ def init_participant_construction_rules(participant: Participant) -> None:
             + io.input_shape4_row3 ** grid_rows[f"r{row+3}"]
             + io.input_shape4_col1 ** grid_cols[f"c{col+i}"]
             + io.input_shape4_col2 ** grid_cols[f"c{col+i}"]
-            + io.input_shape4_col3 ** grid_cols[f"c{col+1+i}"]
+            + io.input_shape4_col3 ** grid_cols[f"c{col+i}"]
             >>
             + io.target_shape3 ** bricks.horizontal
             + io.target_shape4 ** bricks.vertical
@@ -1638,7 +1638,7 @@ def init_participant_construction_rules(participant: Participant) -> None:
             + io.target_shape4_row3 ** grid_rows[f"r{row+3}"]
             + io.target_shape4_col1 ** grid_cols[f"c{col+i}"]
             + io.target_shape4_col2 ** grid_cols[f"c{col+i}"]
-            + io.target_shape4_col3 ** grid_cols[f"c{col+1+i}"]
+            + io.target_shape4_col3 ** grid_cols[f"c{col+i}"]
         ) 
         for i in range(3) for row in range(1, 4) for col in range(1, 5)
     ]
@@ -1731,29 +1731,29 @@ def init_participant_construction_rules(participant: Participant) -> None:
         if shape_no1 != shape_no2 and shape_no1 != shape_no3 and shape_no2 != shape_no3
     ]
     
-    participant.search_space_rules.rules.compile(
-        *(
-            stop_construction_rule_all_four + stop_construction_input_blocks_used_one + stop_construction_input_blocks_used_two + stop_construction_input_blocks_used_three
-            + half_T_first_placement_rule + mirror_L_first_placement_rule + horizontal_first_placement_rule + vertical_first_placement_rule
-            + half_T_left_of_horizontal_placement_rule + half_T_right_of_horizontal_placement_rule + half_T_above_horizontal_placement_rule + half_T_below_horizontal_placement_rule
-            + half_T_left_vertical_placement_rule + half_T_right_vertical_placement_rule + half_T_above_vertical_placement_rule + half_T_below_vertical_placement_rule
-            + half_T_left_mirror_L_placement_rule + half_T_right_mirror_L_placement_rule + half_T_above_mirror_L_placement_rule + half_T_below_mirror_L_placement_rule
-            + mirror_L_left_horizontal_placement_rule + mirror_L_right_horizontal_placement_rule + mirror_L_above_horizontal_placement_rule + mirror_L_below_horizontal_placement_rule
-            + mirror_L_left_vertical_placement_rule + mirror_L_right_vertical_placement_rule + mirror_L_above_vertical_placement_rule + mirror_L_below_vertical_placement_rule
-            + horizontal_left_vertical_placement_rule + horizontal_right_vertical_placement_rule + horizontal_above_vertical_placement_rule + horizontal_below_vertical_placement_rule 
-        )
-    )
+    # participant.search_space_rules.rules.compile(
+    #     *(
+    #         stop_construction_rule_all_four + stop_construction_input_blocks_used_one + stop_construction_input_blocks_used_two + stop_construction_input_blocks_used_three
+    #         + half_T_first_placement_rule + mirror_L_first_placement_rule + horizontal_first_placement_rule + vertical_first_placement_rule
+    #         + half_T_left_of_horizontal_placement_rule + half_T_right_of_horizontal_placement_rule + half_T_above_horizontal_placement_rule + half_T_below_horizontal_placement_rule
+    #         + half_T_left_vertical_placement_rule + half_T_right_vertical_placement_rule + half_T_above_vertical_placement_rule + half_T_below_vertical_placement_rule
+    #         + half_T_left_mirror_L_placement_rule + half_T_right_mirror_L_placement_rule + half_T_above_mirror_L_placement_rule + half_T_below_mirror_L_placement_rule
+    #         + mirror_L_left_horizontal_placement_rule + mirror_L_right_horizontal_placement_rule + mirror_L_above_horizontal_placement_rule + mirror_L_below_horizontal_placement_rule
+    #         + mirror_L_left_vertical_placement_rule + mirror_L_right_vertical_placement_rule + mirror_L_above_vertical_placement_rule + mirror_L_below_vertical_placement_rule
+    #         + horizontal_left_vertical_placement_rule + horizontal_right_vertical_placement_rule + horizontal_above_vertical_placement_rule + horizontal_below_vertical_placement_rule 
+    #     )
+    # )
 
     # temporary: to evaluate the functioning of response rules
-    # dummy_stop_construction_rule = [(
-    #     #TODO: empty condition?
-    #     + io[f"input_shape{shape_no}"] ** bricks[brick_name]
-    #     >>
-    #     io.construction_signal ** con_signal.stop_construction 
-    # )
-    #  for (shape_no, brick_name) in zip(range(1, 5), ["half_T", "mirror_L", "vertical", "horizontal"])
-    # ]
+    dummy_stop_construction_rule = [(
+        #TODO: empty condition?
+        + io[f"input_shape{shape_no}"] ** bricks[brick_name]
+        >>
+        io.construction_signal ** con_signal.stop_construction 
+    )
+     for (shape_no, brick_name) in zip(range(1, 5), ["half_T", "mirror_L", "vertical", "horizontal"])
+    ]
 
-    # participant.search_space_rules.rules.compile(
-    #     *dummy_stop_construction_rule
-    # )
+    participant.search_space_rules.rules.compile(
+        *dummy_stop_construction_rule
+    )
