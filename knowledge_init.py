@@ -28,109 +28,109 @@ class SignalTokens(Atoms):
     continue_construction: Atom
 
 class ConstructionIO(Atoms):
-    input_shape1: Atom
-    input_shape2: Atom
-    input_shape3: Atom
-    input_shape4: Atom
+    input_half_T: Atom
+    input_mirror_L: Atom
+    input_vertical: Atom
+    input_horizontal: Atom
 
     brick_nos: Atom
 
-    target_shape1: Atom
-    target_shape2: Atom
-    target_shape3: Atom
-    target_shape4: Atom
+    target_half_T: Atom
+    target_mirror_L: Atom
+    target_vertical: Atom
+    target_horizontal: Atom
 
-    input_shape1_row1: Atom
-    input_shape1_row2: Atom
-    input_shape1_row3: Atom
-    input_shape1_col1: Atom
-    input_shape1_col2: Atom
-    input_shape1_col3: Atom
+    input_half_T_row1: Atom
+    input_half_T_row2: Atom
+    input_half_T_row3: Atom
+    input_half_T_col1: Atom
+    input_half_T_col2: Atom
+    input_half_T_col3: Atom
     
-    input_shape2_row1: Atom
-    input_shape2_row2: Atom
-    input_shape2_row3: Atom
-    input_shape2_col1: Atom
-    input_shape2_col2: Atom
-    input_shape2_col3: Atom
+    input_mirror_L_row1: Atom
+    input_mirror_L_row2: Atom
+    input_mirror_L_row3: Atom
+    input_mirror_L_col1: Atom
+    input_mirror_L_col2: Atom
+    input_mirror_L_col3: Atom
     
-    input_shape3_row1: Atom
-    input_shape3_row2: Atom
-    input_shape3_row3: Atom
-    input_shape3_col1: Atom
-    input_shape3_col2: Atom
-    input_shape3_col3: Atom
+    input_vertical_row1: Atom
+    input_vertical_row2: Atom
+    input_vertical_row3: Atom
+    input_vertical_col1: Atom
+    input_vertical_col2: Atom
+    input_vertical_col3: Atom
     
-    input_shape4_row1: Atom
-    input_shape4_row2: Atom
-    input_shape4_row3: Atom
-    input_shape4_col1: Atom
-    input_shape4_col2: Atom
-    input_shape4_col3: Atom
+    input_horizontal_row1: Atom
+    input_horizontal_row2: Atom
+    input_horizontal_row3: Atom
+    input_horizontal_col1: Atom
+    input_horizontal_col2: Atom
+    input_horizontal_col3: Atom
     
-    target_shape1_row1: Atom
-    target_shape1_row2: Atom
-    target_shape1_row3: Atom
-    target_shape1_col1: Atom
-    target_shape1_col2: Atom
-    target_shape1_col3: Atom
+    target_half_T_row1: Atom
+    target_half_T_row2: Atom
+    target_half_T_row3: Atom
+    target_half_T_col1: Atom
+    target_half_T_col2: Atom
+    target_half_T_col3: Atom
 
-    target_shape2_row1: Atom
-    target_shape2_row2: Atom
-    target_shape2_row3: Atom
-    target_shape2_col1: Atom
-    target_shape2_col2: Atom
-    target_shape2_col3: Atom
+    target_mirror_L_row1: Atom
+    target_mirror_L_row2: Atom
+    target_mirror_L_row3: Atom
+    target_mirror_L_col1: Atom
+    target_mirror_L_col2: Atom
+    target_mirror_L_col3: Atom
 
-    target_shape3_row1: Atom
-    target_shape3_row2: Atom
-    target_shape3_row3: Atom
-    target_shape3_col1: Atom
-    target_shape3_col2: Atom
-    target_shape3_col3: Atom
+    target_vertical_row1: Atom
+    target_vertical_row2: Atom
+    target_vertical_row3: Atom
+    target_vertical_col1: Atom
+    target_vertical_col2: Atom
+    target_vertical_col3: Atom
     
-    target_shape4_row1: Atom
-    target_shape4_row2: Atom
-    target_shape4_row3: Atom
-    target_shape4_col1: Atom
-    target_shape4_col2: Atom
-    target_shape4_col3: Atom
+    target_horizontal_row1: Atom
+    target_horizontal_row2: Atom
+    target_horizontal_row3: Atom
+    target_horizontal_col1: Atom
+    target_horizontal_col2: Atom
+    target_horizontal_col3: Atom
 
     construction_signal: Atom
 
 class ResponseIO(Atoms):
-    target_shape1: Atom
-    target_shape2: Atom
-    target_shape3: Atom
-    target_shape4: Atom
+    target_half_T: Atom
+    target_mirror_L: Atom
+    target_vertical: Atom
+    target_horizontal: Atom
     
-    target_shape1_row1: Atom
-    target_shape1_row2: Atom
-    target_shape1_row3: Atom
-    target_shape1_col1: Atom
-    target_shape1_col2: Atom
-    target_shape1_col3: Atom
+    target_half_T_row1: Atom
+    target_half_T_row2: Atom
+    target_half_T_row3: Atom
+    target_half_T_col1: Atom
+    target_half_T_col2: Atom
+    target_half_T_col3: Atom
     
-    target_shape2_row1: Atom
-    target_shape2_row2: Atom
-    target_shape2_row3: Atom
-    target_shape2_col1: Atom
-    target_shape2_col2: Atom
-    target_shape2_col3: Atom
+    target_mirror_L_row1: Atom
+    target_mirror_L_row2: Atom
+    target_mirror_L_row3: Atom
+    target_mirror_L_col1: Atom
+    target_mirror_L_col2: Atom
+    target_mirror_L_col3: Atom
     
-    target_shape3_row1: Atom
-    target_shape3_row2: Atom
-    target_shape3_row3: Atom
-    target_shape3_col1: Atom
-    target_shape3_col2: Atom
-    target_shape3_col3: Atom
+    target_vertical_row1: Atom
+    target_vertical_row2: Atom
+    target_vertical_row3: Atom
+    target_vertical_col1: Atom
+    target_vertical_col2: Atom
+    target_vertical_col3: Atom
     
-    target_shape4_row1: Atom
-    target_shape4_row2: Atom
-    target_shape4_row3: Atom
-    target_shape4_col1: Atom
-    target_shape4_col2: Atom
-    target_shape4_col3: Atom
+    target_horizontal_row1: Atom
+    target_horizontal_row2: Atom
+    target_horizontal_row3: Atom
+    target_horizontal_col1: Atom
+    target_horizontal_col2: Atom
+    target_horizontal_col3: Atom
     
     query_block: Atom
     query_block_reference: Atom
@@ -141,55 +141,141 @@ class Response(Atoms):
     yes: Atom
     no: Atom
 
+class ConstructionResponse(Atoms):
+    yes: Atom
+    no: Atom
+    latest: Atom
+
 class MLPConstructionIO(Atoms):
     # strictly speaking, only need the input shape rows and target shape rows and cols
-    input_shape1_row1: Atom
-    input_shape1_row2: Atom
-    input_shape1_row3: Atom
-    input_shape1_col1: Atom
-    input_shape1_col2: Atom
-    input_shape1_col3: Atom
-    input_shape2_row1: Atom
-    input_shape2_row2: Atom
-    input_shape2_row3: Atom
-    input_shape2_col1: Atom
-    input_shape2_col2: Atom
-    input_shape2_col3: Atom
-    input_shape3_row1: Atom
-    input_shape3_row2: Atom
-    input_shape3_row3: Atom
-    input_shape3_col1: Atom
-    input_shape3_col2: Atom
-    input_shape3_col3: Atom
-    input_shape4_row1: Atom
-    input_shape4_row2: Atom
-    input_shape4_row3: Atom
-    input_shape4_col1: Atom
-    input_shape4_col2: Atom
-    input_shape4_col3: Atom
+    input_half_T_row1: Atom
+    input_half_T_row2: Atom
+    input_half_T_row3: Atom
+    input_half_T_col1: Atom
+    input_half_T_col2: Atom
+    input_half_T_col3: Atom
+    input_mirror_L_row1: Atom
+    input_mirror_L_row2: Atom
+    input_mirror_L_row3: Atom
+    input_mirror_L_col1: Atom
+    input_mirror_L_col2: Atom
+    input_mirror_L_col3: Atom
+    input_vertical_row1: Atom
+    input_vertical_row2: Atom
+    input_vertical_row3: Atom
+    input_vertical_col1: Atom
+    input_vertical_col2: Atom
+    input_vertical_col3: Atom
+    input_horizontal_row1: Atom
+    input_horizontal_row2: Atom
+    input_horizontal_row3: Atom
+    input_horizontal_col1: Atom
+    input_horizontal_col2: Atom
+    input_horizontal_col3: Atom
     
-    target_shape1_row1: Atom
-    target_shape1_row2: Atom
-    target_shape1_row3: Atom
-    target_shape1_col1: Atom
-    target_shape1_col2: Atom
-    target_shape1_col3: Atom
-    target_shape2_row1: Atom
-    target_shape2_row2: Atom
-    target_shape2_row3: Atom
-    target_shape2_col1: Atom
-    target_shape2_col2: Atom
-    target_shape2_col3: Atom
-    target_shape3_row1: Atom
-    target_shape3_row2: Atom
-    target_shape3_row3: Atom
-    target_shape3_col1: Atom
-    target_shape3_col2: Atom
-    target_shape3_col3: Atom
-    target_shape4_row1: Atom
-    target_shape4_row2: Atom
-    target_shape4_row3: Atom
-    target_shape4_col1: Atom
-    target_shape4_col2: Atom
-    target_shape4_col3: Atom
+    target_half_T_row1: Atom
+    target_half_T_row2: Atom
+    target_half_T_row3: Atom
+    target_half_T_col1: Atom
+    target_half_T_col2: Atom
+    target_half_T_col3: Atom
+    target_mirror_L_row1: Atom
+    target_mirror_L_row2: Atom
+    target_mirror_L_row3: Atom
+    target_mirror_L_col1: Atom
+    target_mirror_L_col2: Atom
+    target_mirror_L_col3: Atom
+    target_vertical_row1: Atom
+    target_vertical_row2: Atom
+    target_vertical_row3: Atom
+    target_vertical_col1: Atom
+    target_vertical_col2: Atom
+    target_vertical_col3: Atom
+    target_horizontal_row1: Atom
+    target_horizontal_row2: Atom
+    target_horizontal_row3: Atom
+    target_horizontal_col1: Atom
+    target_horizontal_col2: Atom
+    target_horizontal_col3: Atom
 
+
+class HighLevelConstructionConditions(Atoms):
+    input_half_T_row1: Atom
+    input_half_T_row2: Atom
+    input_half_T_row3: Atom
+    input_half_T_col1: Atom
+    input_half_T_col2: Atom
+    input_half_T_col3: Atom
+    
+    input_mirror_L_row1: Atom
+    input_mirror_L_row2: Atom
+    input_mirror_L_row3: Atom
+    input_mirror_L_col1: Atom
+    input_mirror_L_col2: Atom
+    input_mirror_L_col3: Atom
+    
+    input_vertical_row1: Atom
+    input_vertical_row2: Atom
+    input_vertical_row3: Atom
+    input_vertical_col1: Atom
+    input_vertical_col2: Atom
+    input_vertical_col3: Atom
+    
+    input_horizontal_row1: Atom
+    input_horizontal_row2: Atom
+    input_horizontal_row3: Atom
+    input_horizontal_col1: Atom
+    input_horizontal_col2: Atom
+    input_horizontal_col3: Atom
+    
+    target_half_T_row1: Atom
+    target_half_T_row2: Atom
+    target_half_T_row3: Atom
+    target_half_T_col1: Atom
+    target_half_T_col2: Atom
+    target_half_T_col3: Atom
+
+    target_mirror_L_row1: Atom
+    target_mirror_L_row2: Atom
+    target_mirror_L_row3: Atom
+    target_mirror_L_col1: Atom
+    target_mirror_L_col2: Atom
+    target_mirror_L_col3: Atom
+
+    target_vertical_row1: Atom
+    target_vertical_row2: Atom
+    target_vertical_row3: Atom
+    target_vertical_col1: Atom
+    target_vertical_col2: Atom
+    target_vertical_col3: Atom
+    
+    target_horizontal_row1: Atom
+    target_horizontal_row2: Atom
+    target_horizontal_row3: Atom
+    target_horizontal_col1: Atom
+    target_horizontal_col2: Atom
+    target_horizontal_col3: Atom
+
+    input_half_T: Atom
+    input_mirror_L: Atom
+    input_vertical: Atom
+    input_horizontal: Atom
+
+    target_half_T: Atom
+    target_mirror_L: Atom
+    target_vertical: Atom
+    target_horizontal: Atom
+
+class HighLevelConstructionActions(Atoms):
+
+    target_half_T: Atom
+    target_mirror_L: Atom
+    target_vertical: Atom
+    target_horizontal: Atom
+
+    stop: Atom
+    start: Atom
+    left: Atom
+    right: Atom
+    above: Atom
+    below: Atom
