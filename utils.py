@@ -1,5 +1,5 @@
 from pyClarion import FixedRules, Choice
-from pyClarion import Site, RuleStore, Choice, KeyForm, Family, Sort, Atom, Chunk, Key, Var, Term, System
+from pyClarion import Site, RuleStore, Choice, KeyForm, Family, Sort, Atom, Chunk
 
 from typing import *
 
@@ -29,19 +29,22 @@ class RuleWBLA(FixedRules):
         self.choice.input = self.bla_main
 
 def numpify_grid(grid: Chunk):
-    data = grid.__dyads__
+    data = grid._d
     data_dict = {}
-    array_grid = np.zeros((9, 9))
+    array_grid = np.zeros((6, 6))
 
     #row specifications are of the form input_shapeA_rowB, where A is the shape number and B is the row number
     #extract shape number and row number using regex
-    shape_and_rowidx_extractor = re.compile(r".*input_shape(\d+)_row(\d+)")
-    shape_and_colidx_extractor = re.compile(r".*input_shape(\d+)_col(\d+)")
+    shape_and_rowidx_extractor = re.compile(r".*target_shape(\d+)_row(\d+)")
+    shape_and_colidx_extractor = re.compile(r".*target_shape(\d+)_col(\d+)")
 
     row_extractor = re.compile(r".*r(\d+)")
     col_extractor = re.compile(r".*c(\d+)")
 
-    for a, b in data:
+    for k in data:
+        k = str(k).split(":")[-1]
+        a, b = k.split(",")
+        a, b = a[1:], b[:-1]
         if re.match(shape_and_rowidx_extractor, a):
             shape_num = int(shape_and_rowidx_extractor.match(a).group(1))
             row_idx = int(shape_and_rowidx_extractor.match(a).group(2))
@@ -81,7 +84,7 @@ def numpify_grid(grid: Chunk):
     for shape in data_dict:
         for i in range(1, 4):
             array_grid[data_dict[shape][f"r{i}"]-1, data_dict[shape][f"c{i}"]-1] = shape
-            
+
     return array_grid
         
 

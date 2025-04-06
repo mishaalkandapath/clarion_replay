@@ -1731,29 +1731,29 @@ def init_participant_construction_rules(participant) -> None:
         if shape_no1 != shape_no2 and shape_no1 != shape_no3 and shape_no2 != shape_no3
     ]
     
-    # participant.search_space_rules.rules.compile(
-    #     *(
-    #         stop_construction_rule_all_four + stop_construction_input_blocks_used_one + stop_construction_input_blocks_used_two + stop_construction_input_blocks_used_three
-    #         + half_T_first_placement_rule + mirror_L_first_placement_rule + horizontal_first_placement_rule + vertical_first_placement_rule
-    #         + half_T_left_of_horizontal_placement_rule + half_T_right_of_horizontal_placement_rule + half_T_above_horizontal_placement_rule + half_T_below_horizontal_placement_rule
-    #         + half_T_left_vertical_placement_rule + half_T_right_vertical_placement_rule + half_T_above_vertical_placement_rule + half_T_below_vertical_placement_rule
-    #         + half_T_left_mirror_L_placement_rule + half_T_right_mirror_L_placement_rule + half_T_above_mirror_L_placement_rule + half_T_below_mirror_L_placement_rule
-    #         + mirror_L_left_horizontal_placement_rule + mirror_L_right_horizontal_placement_rule + mirror_L_above_horizontal_placement_rule + mirror_L_below_horizontal_placement_rule
-    #         + mirror_L_left_vertical_placement_rule + mirror_L_right_vertical_placement_rule + mirror_L_above_vertical_placement_rule + mirror_L_below_vertical_placement_rule
-    #         + horizontal_left_vertical_placement_rule + horizontal_right_vertical_placement_rule + horizontal_above_vertical_placement_rule + horizontal_below_vertical_placement_rule 
-    #     )
-    # )
+    participant.search_space_rules.rules.compile(
+        *(
+            stop_construction_rule_all_four + stop_construction_input_blocks_used_one + stop_construction_input_blocks_used_two + stop_construction_input_blocks_used_three
+            + half_T_first_placement_rule + mirror_L_first_placement_rule + horizontal_first_placement_rule + vertical_first_placement_rule
+            + half_T_left_of_horizontal_placement_rule + half_T_right_of_horizontal_placement_rule + half_T_above_horizontal_placement_rule + half_T_below_horizontal_placement_rule
+            + half_T_left_vertical_placement_rule + half_T_right_vertical_placement_rule + half_T_above_vertical_placement_rule + half_T_below_vertical_placement_rule
+            + half_T_left_mirror_L_placement_rule + half_T_right_mirror_L_placement_rule + half_T_above_mirror_L_placement_rule + half_T_below_mirror_L_placement_rule
+            + mirror_L_left_horizontal_placement_rule + mirror_L_right_horizontal_placement_rule + mirror_L_above_horizontal_placement_rule + mirror_L_below_horizontal_placement_rule
+            + mirror_L_left_vertical_placement_rule + mirror_L_right_vertical_placement_rule + mirror_L_above_vertical_placement_rule + mirror_L_below_vertical_placement_rule
+            + horizontal_left_vertical_placement_rule + horizontal_right_vertical_placement_rule + horizontal_above_vertical_placement_rule + horizontal_below_vertical_placement_rule 
+        )
+    )
 
     # temporary: to evaluate the functioning of response rules
-    dummy_stop_construction_rule = [(
-        #TODO: empty condition?
-        + io[f"input_shape{shape_no}"] ** bricks[brick_name]
-        >>
-        io.construction_signal ** con_signal.stop_construction 
-    )
-     for (shape_no, brick_name) in zip(range(1, 5), ["half_T", "mirror_L", "vertical", "horizontal"])
-    ]
+    # dummy_stop_construction_rule = [(
+    #     #TODO: empty condition?
+    #     + io[f"input_shape{shape_no}"] ** bricks[brick_name]
+    #     >>
+    #     io.construction_signal ** con_signal.stop_construction 
+    # )
+    #  for (shape_no, brick_name) in zip(range(1, 5), ["half_T", "mirror_L", "vertical", "horizontal"])
+    # ]
 
-    participant.search_space_rules.rules.compile(
-        *dummy_stop_construction_rule
-    )
+    # participant.search_space_rules.rules.compile(
+    #     *dummy_stop_construction_rule
+    # )
