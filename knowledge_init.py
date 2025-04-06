@@ -9,33 +9,19 @@ class Brick(Atoms):
     mirror_L: Atom
     half_T: Atom
 
-class NumBricksInput(Atoms):
+class Numbers(Atoms):
     n1: Atom
     n2: Atom
     n3: Atom
     n4: Atom
+    n5: Atom
+    n6: Atom
 
-class GridRows(Atoms):
-    r1: Atom
-    r2: Atom
-    r3: Atom
-    r4: Atom
-    r5: Atom
-    r6: Atom
-
-class GridCols(Atoms):
-    c1: Atom
-    c2: Atom
-    c3: Atom
-    c4: Atom
-    c5: Atom
-    c6: Atom
-
-class QueryRel(Atoms):
+class Rel(Atoms):
     left: Atom
     above: Atom
     right: Atom
-    below: Atom
+    below: Atom 
 
 class SignalTokens(Atoms):
     stop_construction: Atom
@@ -154,3 +140,56 @@ class ResponseIO(Atoms):
 class Response(Atoms):
     yes: Atom
     no: Atom
+
+class MLPConstructionIO(Atoms):
+    # strictly speaking, only need the input shape rows and target shape rows and cols
+    input_shape1_row1: Atom
+    input_shape1_row2: Atom
+    input_shape1_row3: Atom
+    input_shape1_col1: Atom
+    input_shape1_col2: Atom
+    input_shape1_col3: Atom
+    input_shape2_row1: Atom
+    input_shape2_row2: Atom
+    input_shape2_row3: Atom
+    input_shape2_col1: Atom
+    input_shape2_col2: Atom
+    input_shape2_col3: Atom
+    input_shape3_row1: Atom
+    input_shape3_row2: Atom
+    input_shape3_row3: Atom
+    input_shape3_col1: Atom
+    input_shape3_col2: Atom
+    input_shape3_col3: Atom
+    input_shape4_row1: Atom
+    input_shape4_row2: Atom
+    input_shape4_row3: Atom
+    input_shape4_col1: Atom
+    input_shape4_col2: Atom
+    input_shape4_col3: Atom
+    
+    target_shape1_row1: Atom
+    target_shape1_row2: Atom
+    target_shape1_row3: Atom
+    target_shape1_col1: Atom
+    target_shape1_col2: Atom
+    target_shape1_col3: Atom
+    target_shape2_row1: Atom
+    target_shape2_row2: Atom
+    target_shape2_row3: Atom
+    target_shape2_col1: Atom
+    target_shape2_col2: Atom
+    target_shape2_col3: Atom
+    target_shape3_row1: Atom
+    target_shape3_row2: Atom
+    target_shape3_row3: Atom
+    target_shape3_col1: Atom
+    target_shape3_col2: Atom
+    target_shape3_col3: Atom
+    target_shape4_row1: Atom
+    target_shape4_row2: Atom
+    target_shape4_row3: Atom
+    target_shape4_col1: Atom
+    target_shape4_col2: Atom
+    target_shape4_col3: Atom
+
