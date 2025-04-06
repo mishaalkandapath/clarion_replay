@@ -1,4 +1,4 @@
-from pyClarion import FixedRules, Choice
+from pyClarion import FixedRules, Choice, NumDict, numdict, Index
 from pyClarion import Site, RuleStore, Choice, KeyForm, Family, Sort, Atom, Chunk
 
 from typing import *
@@ -28,7 +28,7 @@ class RuleWBLA(FixedRules):
         self.bla_main = Site(self.rules.main.index, {}, 0.0)
         self.choice.input = self.bla_main
 
-def numpify_grid(grid: Chunk):
+def numpify_grid(grid: NumDict) -> np.ndarray:
     data = grid._d
     data_dict = {}
     array_grid = np.zeros((6, 6))
@@ -88,4 +88,28 @@ def numpify_grid(grid: Chunk):
     return array_grid
         
 
-        
+def mlpify(cur_working_space: NumDict, index: Index) -> NumDict:
+    """
+    Convert keys of the form (construction_space,construction_space):(io,bricks):(input_shape2_row_2, n2)
+    to the form (mlp_space_1, mlp_space_2): (input_shape2_row_2, n2)
+
+    ignore other keys
+    """
+
+    data = cur_working_space._d
+    data_dict = {}
+    for k_ in data:
+        k = str(k_).split(":")[-1]
+        a, b = k.split(",")
+        a, b = a[1:], b[:-1]
+        if re.match(r".*input_shape\d+_row\d+", a):
+            shape_num = int(re.match(r".*input_shape(\d+)_row\d+", a).group(1))
+            row_num = int(re.match(r".*row(\d+)", a).group(1))
+            data_dict[f"(mlp_space_1, mlp_space_2):(input_shape{shape_num}_row{row_num})"] = data[k_]
+        elif re.match(r".*input_shape\d+_col\d+", a):
+            shape_num = int(re.match(r".*input_shape(\d+)_col\d+", a).group(1))
+            col_num = int(re.match(r".*col(\d+)", a).group(1))
+            data_dict[f"(mlp_space_1, mlp_space_2):(input_shape{shape_num}_col{col_num})"] = data[k_]
+    
+
+    return numdict(index ,data_dict, c=0.0)
