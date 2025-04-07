@@ -2640,7 +2640,7 @@ def init_participant_construction_rule_w_abstract(participant):
             + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_col2"] ** (numbers[f"n{col+1}"] if switcharoo else numbers[f"n{col+3}"])
             + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_col3"] ** (numbers[f"n{col+2}"] if switcharoo else numbers[f"n{col+3}"])
             ) 
-            for i in range(3) for row in range(3-i, 7-i) for col in range(1, 4)
+            for switcharoo in (True, False) for i in range(3) for row in range(3-i, 7-i) for col in range(1, 4)
     ]
 
     horizontal_right_vertical_placement_rule_wabstract = [
@@ -2752,7 +2752,7 @@ def init_participant_construction_rule_w_abstract(participant):
     
     participant.search_space_rules.rules.compile(
         *(
-            + half_T_first_placement_rul_wabstracte + mirror_L_first_placement_rule_wabstract + horizontal_first_placement_rule_wabstract + vertical_first_placement_rule_wabstract
+            + half_T_first_placement_rule_wabstract + mirror_L_first_placement_rule_wabstract + horizontal_first_placement_rule_wabstract + vertical_first_placement_rule_wabstract
             + half_T_left_of_horizontal_placement_rule_wabstract + half_T_right_of_horizontal_placement_rule_wabstract + half_T_above_horizontal_placement_rule_wabstract + half_T_below_horizontal_placement_rule_wabstract
             + half_T_left_vertical_placement_rule_wabstract + half_T_right_vertical_placement_rule_wabstract + half_T_above_vertical_placement_rule_wabstract + half_T_below_vertical_placement_rule_wabstract
             + half_T_left_mirror_L_placement_rule_wabstract + half_T_right_mirror_L_placement_rule_wabstract + half_T_above_mirror_L_placement_rule_wabstract + half_T_below_mirror_L_placement_rule_wabstract

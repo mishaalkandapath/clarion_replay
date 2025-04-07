@@ -290,3 +290,29 @@ class AbstractParticipantLowLevelConstructionIO(Atoms):
     right: Atom
     above: Atom
     below: Atom
+
+class BrickConstructionTask(Family):
+    numbers: Numbers
+    signal_tokens: SignalTokens
+    io: ConstructionIO
+    response: Response
+
+class BrickConstructionTaskAbstractParticipant(Family):
+    numbers: Numbers
+    io: ConstructionIO
+    response: HighLevelResponse
+
+class BrickResponseTask(Family):
+    bricks: Brick
+    numbers: Numbers
+    query_rel: Rel
+    io: ResponseIO
+    response: Response
+
+class MLPConstructionSubTask(Family):
+    io: MLPConstructionIO
+    numbers: Numbers
+
+class HighLevelConstruction(Family):
+    io: HighLevelConstructionConditions
+    response: HighLevelResponse
