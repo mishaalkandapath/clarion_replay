@@ -1782,7 +1782,6 @@ def init_participant_construction_rule_w_abstract(participant):
     global SHAPES
     d = participant.construction_space
     io = d.io
-    con_signal = d.signal_tokens
     numbers = d.numbers
     response = d.response
 
@@ -2750,78 +2749,9 @@ def init_participant_construction_rule_w_abstract(participant):
             )
             for switcharoo in (True, False) for i in range(3) for row in range(4, 7) for col in range(1, 5)
     ]
-
-    # END_CONSTRUCTION RULE
-    # if all four blocks have been used, then stop construction
-    #TODO: is it possible for a dimension to not be bound with anything? that is the empty state yes? -- 0.0 activation value yea?
-    stop_construction_rule_all_four = [(
-        + io.stop ** response.yes
-        + io.target_half_T ** response.yes
-        + io.target_mirror_L ** response.yes
-        + io.target_vertical ** response.yes
-        + io.target_horizontal ** response.yes
-        >>
-        + io.construction_signal ** con_signal.stop_construction)
-    ]
-
-    stop_construction_input_blocks_used_one = [(
-        + io.stop ** response.yes
-         + io1[f"input_{shape}"] ** response.yes
-            + io1[f"input_{(SHAPES[:i] + SHAPES[i+1:])[0]}"] ** response.no
-            + io1[f"input_{(SHAPES[:i] + SHAPES[i+1:])[1]}"] ** response.no
-            + io1[f"input_{(SHAPES[:i] + SHAPES[i+1:])[2]}"] ** response.no
-
-            + io1[f"target_{shape}"] ** response.yes
-            + io1[f"target_{(SHAPES[:i] + SHAPES[i+1:])[0]}"] ** response.no
-            + io1[f"target_{(SHAPES[:i] + SHAPES[i+1:])[1]}"] ** response.no
-            + io1[f"target_{(SHAPES[:i] + SHAPES[i+1:])[2]}"] ** response.no
-
-            >>
-            + io.construction_signal ** con_signal.stop_construction
-        )
-        for i, shape in enumerate(SHAPES)
-    ]
-
-    stop_construction_input_blocks_used_two = [
-        (
-            + io.stop ** response.yes
-            + io1[f"input_{shape}"] ** response.yes
-            + io1[f"input_{other_shape}"] ** response.yes
-            + io1[f"input_{[s for s in SHAPES if s not in (shape, other_shape)][0]}"] ** response.no
-            + io1[f"input_{[s for s in SHAPES if s not in (shape, other_shape)][1]}"] ** response.no
-
-            + io1[f"target_{shape}"] ** response.yes
-            + io1[f"target_{other_shape}"] ** response.yes
-            + io1[f"target_{[s for s in SHAPES if s not in (shape, other_shape)][0]}"] ** response.no
-            + io1[f"target_{[s for s in SHAPES if s not in (shape, other_shape)][1]}"] ** response.no
-            >>
-            io.construction_signal ** con_signal.stop_construction
-        )
-        for (shape, other_shape) in itertools.combinations(SHAPES, 2)
-    ]
-
-    stop_construction_input_blocks_used_three = [
-        (
-            + io.stop ** response.yes
-            + io1[f"input_{shape}"] ** response.yes
-            + io1[f"input_{other_shape}"] ** response.yes
-            + io1[f"input_{other_other_shape}"] ** response.yes
-            + io1[f"input_{[s for s in SHAPES if s not in (shape, other_shape, other_other_shape)][0]}"] ** response.no
-
-            + io1[f"target_{shape}"] ** response.yes
-            + io1[f"target_{other_shape}"] ** response.yes
-            + io1[f"target_{other_other_shape}"] ** response.yes
-            + io1[f"target_{[s for s in SHAPES if s not in (shape, other_shape, other_other_shape)][0]}"] ** response.no
-
-            >>
-            io.construction_signal ** con_signal.stop_construction
-        )
-        for (shape, other_shape, other_other_shape) in itertools.combinations(SHAPES, 3)
-    ]
     
     participant.search_space_rules.rules.compile(
         *(
-            stop_construction_rule_all_four_wabstract + stop_construction_input_blocks_used_one_wabstract + stop_construction_input_blocks_used_two_wabstract + stop_construction_input_blocks_used_three_wabstract
             + half_T_first_placement_rul_wabstracte + mirror_L_first_placement_rule_wabstract + horizontal_first_placement_rule_wabstract + vertical_first_placement_rule_wabstract
             + half_T_left_of_horizontal_placement_rule_wabstract + half_T_right_of_horizontal_placement_rule_wabstract + half_T_above_horizontal_placement_rule_wabstract + half_T_below_horizontal_placement_rule_wabstract
             + half_T_left_vertical_placement_rule_wabstract + half_T_right_vertical_placement_rule_wabstract + half_T_above_vertical_placement_rule_wabstract + half_T_below_vertical_placement_rule_wabstract
@@ -2835,12 +2765,10 @@ def init_participant_construction_rule_w_abstract(participant):
 def init_abstract_participant_construction_rules(participant):
     global SHAPES
 
-    d1 = participant.high_level_construction_inputs
-    d2 = participant.low_level_construction_outputs
+    d1 = participant.abstract_space
     io1 = d1.io
-    io2 = d2.io
-    response = d2.response
-    numbers = d1.numbers
+    io2 = d1.io
+    response = d1.response
 
     #FIRST PLACEMENT RULES
     """

@@ -141,7 +141,7 @@ class Response(Atoms):
     yes: Atom
     no: Atom
 
-class ConstructionResponse(Atoms):
+class HighLevelResponse(Atoms):
     yes: Atom
     no: Atom
     latest: Atom
@@ -200,6 +200,34 @@ class MLPConstructionIO(Atoms):
 
 
 class HighLevelConstructionConditions(Atoms):
+    input_half_T: Atom
+    input_mirror_L: Atom
+    input_vertical: Atom
+    input_horizontal: Atom
+
+    target_half_T: Atom
+    target_mirror_L: Atom
+    target_vertical: Atom
+    target_horizontal: Atom
+
+    stop: Atom
+    start: Atom
+    left: Atom
+    right: Atom
+    above: Atom
+    below: Atom
+
+class AbstractParticipantLowLevelConstructionIO(Atoms):
+    input_half_T: Atom
+    input_mirror_L: Atom
+    input_vertical: Atom
+    input_horizontal: Atom
+
+    target_half_T: Atom
+    target_mirror_L: Atom
+    target_vertical: Atom
+    target_horizontal: Atom
+
     input_half_T_row1: Atom
     input_half_T_row2: Atom
     input_half_T_row3: Atom
@@ -255,23 +283,6 @@ class HighLevelConstructionConditions(Atoms):
     target_horizontal_col1: Atom
     target_horizontal_col2: Atom
     target_horizontal_col3: Atom
-
-    input_half_T: Atom
-    input_mirror_L: Atom
-    input_vertical: Atom
-    input_horizontal: Atom
-
-    target_half_T: Atom
-    target_mirror_L: Atom
-    target_vertical: Atom
-    target_horizontal: Atom
-
-class HighLevelConstructionActions(Atoms):
-
-    target_half_T: Atom
-    target_mirror_L: Atom
-    target_vertical: Atom
-    target_horizontal: Atom
 
     stop: Atom
     start: Atom

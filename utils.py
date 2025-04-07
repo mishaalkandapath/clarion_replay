@@ -113,3 +113,6 @@ def mlpify(cur_working_space: NumDict, index: Index) -> NumDict:
     
 
     return numdict(index ,data_dict, c=0.0)
+
+def make_low_level(cur_working_space: NumDict, index: Index) -> NumDict:
+    pass
