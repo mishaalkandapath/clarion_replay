@@ -24,8 +24,9 @@ class Rel(Atoms):
     below: Atom 
 
 class SignalTokens(Atoms):
-    stop_construction: Atom
     continue_construction: Atom
+    stop_construction: Atom
+    backtrack_construction: Atom
 
 class ConstructionIO(Atoms):
     input_half_T: Atom

@@ -52,16 +52,11 @@ class BaseParticipant(Agent):
         self.construction_space = construction_space
 
         with self:
-            self.construction_input = Input("construction_input", (construction_space, construction_space))
+            self.construction_input = Input("construction_input", (construction_space, construction_space), reset=False)
             self.response_input = Input("response_input",  (response_space, response_space), reset=False)
 
             self.response_rules = RuleWBLA("response_rules", p=p, r=r_response, c=c_response, d=response_space, v=response_space, sd=1e-4)
             self.search_space_rules = RuleWBLA("search_space_rules", p=p, r=r_construction, c=c_construction, d=construction_space, v=construction_space, sd=1e-4)
-            
-            self.response_blas = BaseLevel("blas", p, e, self.response_rules.rules.rules)
-            self.search_space_blas = BaseLevel("search_space_blas", p, e, self.search_space_rules.rules.rules)
-            self.response_blas.ignore.add(~self.response_rules.rules.rules.nil) 
-            self.search_space_blas.ignore.add(~self.search_space_rules.rules.rules.nil)
 
             #TODO: this good?
             self.search_space_matchstats = MatchStats("search_space_matchstats", p, self.search_space_rules.rules.rules, th_cond=0.9, th_crit=0.9) # 0.9 because i want to compare against 1.
@@ -69,11 +64,8 @@ class BaseParticipant(Agent):
             self.response_pool = Pool("pool", p, self.response_rules.rules.rules, func=NumDict.sum) # to pool together the blas and condition activations
             self.search_space_pool = Pool("search_space_pool", p, self.search_space_rules.rules.rules, func=NumDict.sum) # similar function
 
-            self.response_choice = Choice("choice", p, (response_space, response_space))
-            self.search_space_choice = Choice("search_space_choice", p, (construction_space, construction_space))
-        
-        self.response_blas.input = self.response_rules.choice.main
-        self.search_space_blas.input = self.search_space_rules.choice.main
+            self.response_choice = Choice("choice", p, (response_space, response_space), sd=1e-2)
+            self.search_space_choice = Choice("search_space_choice", p, (construction_space, construction_space), sd=1e-2)
 
         self.response_rules.rules.lhs.bu.input = self.response_input.main 
         self.search_space_rules.rules.lhs.bu.input = self.construction_input.main
@@ -84,13 +76,6 @@ class BaseParticipant(Agent):
         self.response_pool["response_rules.rules"] = (
             self.response_rules.rules.main,
             lambda d: d.shift(x=1).scale(x=0.5).logit())
-        
-        self.response_pool["blas"] = (
-            self.response_blas.main, 
-            lambda d: d.bound_min(x=1e-8).log().with_default(c=0.0))
-        self.search_space_pool["blas"] = (
-            self.search_space_blas.main,
-            lambda d: d.bound_min(x=1e-8).log().with_default(c=0.0))
         
         self.search_space_pool["search_space_matchstats"] = (
             self.search_space_matchstats.main, 
@@ -104,13 +89,8 @@ class BaseParticipant(Agent):
 
         self.response_choice.input = self.response_rules.rules.rhs.td.main # bu choice
         self.search_space_choice.input = self.search_space_rules.rules.rhs.td.main
-
-        with self.response_pool.params[0].mutable():
-            self.response_pool.params[0][~self.response_pool.p["blas"]] = 2e-1
-        with self.search_space_pool.params[0].mutable():
-            self.search_space_pool.params[0][~self.search_space_pool.p["blas"]] = 2e-1
         
-        #backtracking queues: #TODO: better way to do this is probably with Sites, adn their inbuilt deque
+        #backtracking queues: #TODO: use BLA queue
         self.past_constructions = []
         self.past_chosen_rules = []
         self.all_rule_history = []
@@ -130,7 +110,6 @@ class BaseParticipant(Agent):
         # -- SEARCH PROCESSING --
         elif event.source == self.search_space_rules.rules.update:
             if not self.past_constructions: self.past_constructions = [self.construction_input.main[0]]
-            self.search_space_blas.update()
             self.search_space_matchstats.update() # update the match stats
         
         elif event.source == self.search_space_pool.update and all(e.source not in self.search_space_trigger_wait for e in self.system.queue):
@@ -211,64 +190,18 @@ class BaseParticipant(Agent):
 class LowLevelParticipant(BaseParticipant):  
 
     def __init__(self, name: str) -> None:
-
-        #RL components
-        h = Family() # hidden layer information
-        mlp_space_1 = MLPConstructionIO() # input space for the MLP
-        mlp_space_2 = Numbers() # output space for the MLP
-
-        super().__init__(name=name, h=h, mlp_space_1=mlp_space_1, mlp_space_2=mlp_space_2)
-
-        self.mlp_space_1 = mlp_space_1
-        self.mlp_space_2 = mlp_space_2
-
-        with self:
-            self.mlp_construction_input = Input("mlp_construction_input", (mlp_space_1, mlp_space_2), reset=False)
-
-            # RL Construction
-            with self.search_space_rules.choice:
-                self.construction_net = self.mlp_construction_input >> IDN("construction_net", 
-                                                                    p=self.p, 
-                                                                    h=h,
-                                                                    r=self.search_space_rules.rules.rules, # reward specification on rule choice
-                                                                    s1=(mlp_space_1, mlp_space_2), #input construction space has goal state and current state
-                                                                    s2=self.search_space_rules.rules.rules,
-                                                                    layers=(),#(512, 256, 512),
-                                                                    train=Train.WEIGHTS,
-                                                                    gamma=.3,
-                                                                    lr=1e-2
-                                                                    )
-        
-        self.search_space_pool["search_space_netscores"] = (
-            self.construction_net.olayer.main,
-            lambda d: d.bound_min(x=1e-8).log().with_default(c=0.0)) # TODO: verify this scaling..
-
-        #RL stats
-        self.construction_reward_vals = []
-        self.construction_qvals = []
-        self.construction_net_training_results = []
+        super().__init__(name=name)
 
         self.search_space_trigger_wait = [self.search_space_pool.update]
 
-    def resolve(self, event: Event) -> None:
-
-        super().resolve(event)
-        if event.source == self.construction_net.error.update:
-            self.construction_net_training_results.append(self.construction_net.error.main[0].pow(x=2.0))
-
     def resolve_lowlevel_search_choice(self, event):
         #check if indeed we need to stop construction, if triggered the STOP rule
-        cur_sample = self.search_space_rules.choice.sample
+        cur_rule_sample = self.search_space_rules.choice.sample
         cur_rule_choice = self.search_space_rules.choice.poll()
-        
-        temp_sample = cur_sample.new(cur_sample[0]._d).with_default(c=-math.inf)
-        temp_sample = temp_sample.exp().div(temp_sample.exp().sum())
-        cur_sample.data.pop()
-        cur_sample.data.append(temp_sample) # simple copy for softmaxing activation
 
         cur_choice = self.search_space_choice.poll()
 
-        if cur_sample[0][list(cur_rule_choice.values())[0]] < 0.2: #backtrack # TODO: guaranteed to be list of size 1 yea?
+        if cur_choice[~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens] == ~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens.backtrack_construction: #backtrack
             new_rule_mask = self.search_space_matchstats.cond.new({list(cur_rule_choice.values())[0]: 1.0}).with_default(c=0.0)
             new_crit_score = self.search_space_matchstats.crit.new({}).with_default(c=0.0)#we want to increment the negativity count
             
@@ -281,65 +214,16 @@ class LowLevelParticipant(BaseParticipant):
             self.search_space_matchstats.increment() # TODO: apt timedelta?
             last_construction = self.past_constructions.pop()
             self.construction_input.send(last_construction) # pop the last construction
-            self.mlp_construction_input.send(mlpify(last_construction, self.mlp_construction_input.main.index))
 
-            # also give -1 reward to the rule that was chosen 
-            self.construction_net.error.send({list(cur_rule_choice.values())[0]: -1.0}) # TODO: check this
-            self.construction_reward_vals.append(-1.0)
-            self.construction_qvals.append(self.search_space_pool["search_space_netscores"][0].max().c)
-
-        elif cur_choice[~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens] == ~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens.stop_construction: # TODO: check this
+        elif cur_choice[~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens] == ~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens.stop_construction:
             self.end_construction()
             self.response_input.send(self.search_space_choice.main[0]) # send the choice to the response input -- to make a decision out of 
+
         else: #continue construction
             self.past_constructions.append(self.search_space_choice.main[0])
-            self.past_chosen_rules.append(cur_sample[0][list(cur_rule_choice.values())[0]])
-            self.all_rule_history.append(cur_sample[0][list(cur_rule_choice.values())[0]])
+            self.past_chosen_rules.append(cur_rule_sample[0][list(cur_rule_choice.values())[0]])
+            self.all_rule_history.append(cur_rule_sample[0][list(cur_rule_choice.values())[0]])
             self.construction_input.send(self.search_space_choice.main[0]) # loop it back in --for more selections
-            self.mlp_construction_input.send(mlpify(self.search_space_choice.main[0], self.mlp_construction_input.main.index)) # TODO: check this
-    
-    @override
-    def start_construct_trial(self, 
-        dt: timedelta, 
-        priority: Priority = Priority.PROPAGATION
-    ) -> None:
-        # the previous construction trial has ended, so clear TD trackers
-        self.construction_net.error.reward.data.clear() # TODO: anyway to schedule such changes than doing it here?
-        self.construction_net.error.qvals.data.clear()
-        self.construction_net.error.action.data.clear()
-
-        #add new 0-default entries
-        self.construction_net.error.reward.data.append(self.construction_net.error.reward.new({}).with_default(c=0.0))
-        self.construction_net.error.qvals.data.append(self.construction_net.error.qvals.new({}).with_default(c=0.0))
-        self.construction_net.error.action.data.append(self.construction_net.error.action.new({}).with_default(c=0.0))
-        
-
-        self.system.schedule(self.start_construct_trial, dt=dt, priority=priority)
-
-    @override
-    def propagate_feedback(self, 
-                           dt: timedelta = timedelta(seconds=0),
-        priority: Priority = Priority.PROPAGATION,
-                           correct:float = 0) -> None:
-        
-        for rule in self.past_chosen_rules:
-            new_rule_mask = self.search_space_matchstats.cond.new({rule: 1.0}).with_default(c=0.0)
-            new_crit_score = self.search_space_matchstats.crit.new({}).with_default(c=correct)
-
-            self.search_space_matchstats.cond.data.pop()
-            self.search_space_matchstats.crit.data.pop()
-
-            self.search_space_matchstats.cond.data.append(new_rule_mask) # update the condition to only change scores for this rule
-            self.search_space_matchstats.crit.data.append(new_crit_score)
-            
-            self.search_space_matchstats.increment() # TODO: apt timedelta?
-            self.search_space_matchstats.discount()
-            self.schedule(self.propagate_feedback, dt=dt, priority=priority)
-
-            #update similarly the construction net
-            self.construction_net.error.send({rule: correct})
-            self.construction_reward_vals.append(correct)
-            self.construction_qvals.append(self.search_space_pool["search_space_netscores"][0].max().c)
 
 class AbstractParticipant(BaseParticipant):  
     """
