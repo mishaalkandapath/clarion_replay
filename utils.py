@@ -68,49 +68,50 @@ def numpify_grid(grid: NumDict) -> np.ndarray:
     data_dict = {}
     array_grid = np.zeros((6, 6))
 
+    shape_map = {"mirror_L": 2, "half_T": 1, "vertical": 3, "horizontal": 4}
+
     #row specifications are of the form input_shapeA_rowB, where A is the shape number and B is the row number
     #extract shape number and row number using regex
-    shape_and_rowidx_extractor = re.compile(r".*target_shape(\d+)_row(\d+)")
-    shape_and_colidx_extractor = re.compile(r".*target_shape(\d+)_col(\d+)")
+    shape_and_rowidx_extractor = re.compile(r".*target_(mirror_L|half_T|horizontal|vertical)_row(\d+)")
+    shape_and_colidx_extractor = re.compile(r".*target_(mirror_L|half_T|horizontal|vertical)_col(\d+)")
 
-    row_extractor = re.compile(r".*r(\d+)")
-    col_extractor = re.compile(r".*c(\d+)")
+    row_col_extractor = re.compile(r".*n(\d+)")
 
     for k in data:
         k = str(k).split(":")[-1]
         a, b = k.split(",")
         a, b = a[1:], b[:-1]
         if re.match(shape_and_rowidx_extractor, a):
-            shape_num = int(shape_and_rowidx_extractor.match(a).group(1))
+            shape_num = shape_map[(shape_and_rowidx_extractor.match(a).group(1))]
             row_idx = int(shape_and_rowidx_extractor.match(a).group(2))
-            row_num = int(row_extractor.match(b).group(1))
+            row_num = int(row_col_extractor.match(b).group(1))
 
             if shape_num not in data_dict:
                 data_dict[shape_num] = {}
             data_dict[shape_num][f"r{row_idx}"] = row_num
         
         if re.match(shape_and_colidx_extractor, a):
-            shape_num = int(shape_and_colidx_extractor.match(a).group(1))
+            shape_num = shape_map[shape_and_colidx_extractor.match(a).group(1)]
             col_idx = int(shape_and_colidx_extractor.match(a).group(2))
-            col_num = int(col_extractor.match(b).group(1))
+            col_num = int(row_col_extractor.match(b).group(1))
 
             if shape_num not in data_dict:
                 data_dict[shape_num] = {}
             data_dict[shape_num][f"c{col_idx}"] = col_num
         
         if re.match(shape_and_rowidx_extractor, b):
-            shape_num = int(shape_and_rowidx_extractor.match(b).group(1))
+            shape_num = shape_map[shape_and_rowidx_extractor.match(b).group(1)]
             row_idx = int(shape_and_rowidx_extractor.match(b).group(2))
-            row_num = int(row_extractor.match(a).group(1))
+            row_num = int(row_col_extractor.match(a).group(1))
 
             if shape_num not in data_dict:
                 data_dict[shape_num] = {}
             data_dict[shape_num][f"r{row_idx}"] = row_num
         
         if re.match(shape_and_colidx_extractor, b):
-            shape_num = int(shape_and_colidx_extractor.match(b).group(1))
+            shape_num = shape_map[shape_and_colidx_extractor.match(b).group(1)]
             col_idx = int(shape_and_colidx_extractor.match(b).group(2))
-            col_num = int(col_extractor.match(a).group(1))
+            col_num = int(row_col_extractor.match(a).group(1))
 
             if shape_num not in data_dict:
                 data_dict[shape_num] = {}
@@ -174,3 +175,15 @@ def conflicting_keys(ref: str) -> re.Pattern:
     matcher = re.compile('^' + pattern + '$')
 
     return matcher
+
+def make_response_input(cur_working_space: NumDict, response_index: Index) -> NumDict:
+    response_data = {}
+
+    for k_ in cur_working_space.d:
+        k = str(k_)
+        k = k.replace("construction_space", "response_space")
+        if "input" in k or "construction_signal" in k:
+            # this has something to do with an input, not a consideration for repsonses:
+            continue
+        response_data[Key(k)] = cur_working_space[k_]
+    return numdict(response_index, response_data, c=0.0)

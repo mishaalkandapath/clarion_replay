@@ -140,7 +140,7 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
         elif event.source == participant.end_construction_feedback:
             participant.start_response_trial(timedelta())
         elif event.source == participant.start_response_trial:
-            participant.response_input.send(test_query)
+            participant.response_input.send(test_query, flip=True) # dont reset, just add
         elif event.source == participant.response_rules.rules.rhs.td.update:
             participant.response_choice.select()
         elif event.source == participant.response_choice.select:

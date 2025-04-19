@@ -7,3 +7,4 @@ forms.txt
 paired_associates.ipynb
 rl_demo.ipynb
 .vscode/
+__pycache__/

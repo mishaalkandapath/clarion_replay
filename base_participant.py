@@ -53,7 +53,7 @@ class BaseParticipant(Agent):
 
         with self:
             self.construction_input = FlippableInput("construction_input", (construction_space, construction_space), reset=False)
-            self.response_input = Input("response_input",  (response_space, response_space), reset=False)
+            self.response_input = FlippableInput("response_input",  (response_space, response_space), reset=True)
 
             self.response_rules = RuleWBLA("response_rules", p=p, r=r_response, c=c_response, d=response_space, v=response_space, sd=1e-4)
             self.search_space_rules = RuleWBLA("search_space_rules", p=p, r=r_construction, c=c_construction, d=construction_space, v=construction_space, sd=1e-4)
@@ -97,24 +97,33 @@ class BaseParticipant(Agent):
 
         #wait events for low level pool update;
         self.search_space_trigger_wait = []
+        self.response_trigger_wait = []
+        self.trigger_response = False
 
     def resolve(self, event: Event) -> None:
         # -- RESPONSE PROCESSING --
         # if event.source == self.response_rules.rules.update: # after the rules have updated 
         #     self.response_blas.update() # timestep update
-        if event.source == self.response_pool.update: # TODO: is this right?
+        if event.source == self.response_pool.update and \
+            self.trigger_response \
+            and all(e.source not in self.response_trigger_wait for e in self.system.queue):
             self.response_rules.trigger()
         elif event.source == self.response_rules.rules.rhs.td.update:
             self.response_choice.trigger() #poll outside the loop in experimental loop
+        elif event.source == self.start_response_trial:
+            self.trigger_response = True
         
         # -- SEARCH PROCESSING --
+        elif event.source == self.start_construct_trial:
+            self.trigger_response = False
         elif event.source == self.construction_input.send:
             self.past_constructions.append(self.construction_input.main[0]) # add the current construction to the past constructions    
         
         elif event.source == self.search_space_rules.rules.update:
             self.search_space_matchstats.update() # update the match stats
         
-        elif event.source == self.search_space_pool.update and all(e.source not in self.search_space_trigger_wait for e in self.system.queue):
+        elif event.source == self.search_space_pool.update \
+            and all(e.source not in self.search_space_trigger_wait for e in self.system.queue):
             self.search_space_rules.trigger()
         
         elif event.source == self.search_space_rules.rules.rhs.td.update:
@@ -162,6 +171,7 @@ class BaseParticipant(Agent):
         dt: timedelta, 
         priority: Priority = Priority.PROPAGATION
     ) -> None:
+        self.response_input.send(make_response_input(self.construction_input.main[0], self.response_input.main[0].i).d) # send the construction input to the response input
         self.system.schedule(self.start_response_trial, dt=dt, priority=priority)
     
     def finish_response_trial(self,
@@ -187,7 +197,8 @@ class BaseParticipant(Agent):
             
             self.search_space_matchstats.increment() # TODO: apt timedelta?
             self.search_space_matchstats.discount()
-            self.system.schedule(self.propagate_feedback, dt=dt, priority=priority)
+            
+        self.system.schedule(self.propagate_feedback, dt=dt, priority=priority)
 
 class LowLevelParticipant(BaseParticipant):  
 
@@ -195,6 +206,7 @@ class LowLevelParticipant(BaseParticipant):
         super().__init__(name=name)
 
         self.search_space_trigger_wait = [self.search_space_pool.update]
+        self.response_trigger_wait = [self.response_rules.rules.update]
 
     def resolve_lowlevel_search_choice(self, event):
         #check if indeed we need to stop construction, if triggered the STOP rule
@@ -220,8 +232,7 @@ class LowLevelParticipant(BaseParticipant):
             self.construction_input.send(last_construction, flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
 
         elif cur_choice[~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens] == ~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens.stop_construction:
-            self.response_input.send(self.construction_input.main) # send the final construction to the response input -- to make a decision out of 
-            self.end_construction()
+            self.end_construction() # TODO: consider adding stop construction rules to rule history for matchstats
         else: #continue construction
             self.past_chosen_rules.append(list(cur_rule_choice.values())[0])
             self.all_rule_history.append(list(cur_rule_choice.values())[0])
