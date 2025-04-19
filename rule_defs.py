@@ -1377,12 +1377,12 @@ def init_participant_construction_rules(participant) -> None:
             + io1[f"{'input' if switcharoo else 'target'}_horizontal_col2"] ** numbers[f"n{col-2+i}"]
             + io1[f"{'input' if switcharoo else 'target'}_horizontal_col3"] ** numbers[f"n{col-1+i}"]
 
-            + io1[f"target_{'mirror_L' if switcharoo else 'horizontal'}"] ** response.no # mirror_L isnt already there
-            + io1[f"target_{'horizontal' if switcharoo else 'mirror_L'}"] ** response.yes # but horizontal is
+            + io1[f"target_{'mirror_L' if switcharoo else 'horizontal'}"] ** response.yes # mirror_L isnt already there
+            + io1[f"target_{'horizontal' if switcharoo else 'mirror_L'}"] ** response.no # but horizontal is
 
             >>
             + io.construction_signal ** con_signal.continue_construction
-            + io[f"target_{'mirror_L' if switcharoo else 'horizontal'}"] ** response.yes
+            + io[f"target_{'mirror_L' if not switcharoo else 'horizontal'}"] ** response.yes
 
             + io[f"target_{'mirror_L' if switcharoo else 'horizontal'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+2}"])
             + io[f"target_{'mirror_L' if switcharoo else 'horizontal'}_row2"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+2}"])
@@ -1834,6 +1834,8 @@ def init_participant_construction_rules(participant) -> None:
             +bad_brick_backtracking_rule
         )
     )
+
+    #1 4 6 4 25 25 24 24 50 40 88 88 110 112 20 40 64 78 24 54 40 50 112 88 88 118 40 20 72 72 72 76
 
     # BIG_LIST = (
     #         stop_construction_rule_all_four + stop_construction_input_blocks_used_one + stop_construction_input_blocks_used_two + stop_construction_input_blocks_used_three
