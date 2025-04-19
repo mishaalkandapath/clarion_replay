@@ -1,7 +1,8 @@
-from pyClarion import FixedRules, Choice, NumDict, numdict, Index
-from pyClarion import Site, RuleStore, Choice, KeyForm, Family, Sort, Atom, Chunk
+from pyClarion import FixedRules, Choice, NumDict, numdict, Index, Chunk, Priority
+from pyClarion import Site, RuleStore, Choice, KeyForm, Family, Sort, Atom, Input
 
 from typing import *
+from datetime import timedelta
 
 import numpy as np
 import re
@@ -27,6 +28,21 @@ class RuleWBLA(FixedRules):
         super().__init__(name, p=p, r=r, c=c, d=d, v=v, sd=sd)
         self.bla_main = Site(self.rules.main.index, {}, 0.0)
         self.choice.input = self.bla_main
+
+class DynamicInput(Input):
+
+    @override
+    def send(self,
+            d: dict | Chunk,
+            dt: timedelta = timedelta(),
+            priority: int = Priority.PROPAGATION,
+            flip: bool = False):
+        reset = self.reset if not flip else not self.reset
+        data = self._parse_input(d)
+        method = Site.push if reset else Site.write_inplace
+        self.system.schedule(self.send, 
+                             self.main.update(data, method),
+                             dt=dt, priority=priority)
 
 def numpify_grid(grid: NumDict) -> np.ndarray:
     data = grid._d
@@ -113,6 +129,3 @@ def mlpify(cur_working_space: NumDict, index: Index) -> NumDict:
     
 
     return numdict(index ,data_dict, c=0.0)
-
-def make_low_level(cur_working_space: NumDict, index: Index) -> NumDict:
-    pass

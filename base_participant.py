@@ -52,7 +52,7 @@ class BaseParticipant(Agent):
         self.construction_space = construction_space
 
         with self:
-            self.construction_input = Input("construction_input", (construction_space, construction_space), reset=False)
+            self.construction_input = DynamicInput("construction_input", (construction_space, construction_space), reset=False)
             self.response_input = Input("response_input",  (response_space, response_space), reset=False)
 
             self.response_rules = RuleWBLA("response_rules", p=p, r=r_response, c=c_response, d=response_space, v=response_space, sd=1e-4)
@@ -213,7 +213,7 @@ class LowLevelParticipant(BaseParticipant):
 
             self.search_space_matchstats.increment() # TODO: apt timedelta?
             last_construction = self.past_constructions.pop()
-            self.construction_input.send(last_construction) # pop the last construction
+            self.construction_input.send(last_construction, flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
 
         elif cur_choice[~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens] == ~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens.stop_construction:
             self.end_construction()
