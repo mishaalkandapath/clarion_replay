@@ -52,7 +52,7 @@ class BaseParticipant(Agent):
         self.construction_space = construction_space
 
         with self:
-            self.construction_input = DynamicInput("construction_input", (construction_space, construction_space), reset=False)
+            self.construction_input = FlippableInput("construction_input", (construction_space, construction_space), reset=False)
             self.response_input = Input("response_input",  (response_space, response_space), reset=False)
 
             self.response_rules = RuleWBLA("response_rules", p=p, r=r_response, c=c_response, d=response_space, v=response_space, sd=1e-4)
@@ -108,8 +108,10 @@ class BaseParticipant(Agent):
             self.response_choice.trigger() #poll outside the loop in experimental loop
         
         # -- SEARCH PROCESSING --
+        elif event.source == self.construction_input.send:
+            self.past_constructions.append(self.construction_input.main[0]) # add the current construction to the past constructions    
+        
         elif event.source == self.search_space_rules.rules.update:
-            if not self.past_constructions: self.past_constructions = [self.construction_input.main[0]]
             self.search_space_matchstats.update() # update the match stats
         
         elif event.source == self.search_space_pool.update and all(e.source not in self.search_space_trigger_wait for e in self.system.queue):
@@ -198,6 +200,7 @@ class LowLevelParticipant(BaseParticipant):
         #check if indeed we need to stop construction, if triggered the STOP rule
         cur_rule_sample = self.search_space_rules.choice.sample
         cur_rule_choice = self.search_space_rules.choice.poll()
+        cur_rule_number = list(cur_rule_choice.values())[0][-1:][0][0]
 
         cur_choice = self.search_space_choice.poll()
 
@@ -213,17 +216,16 @@ class LowLevelParticipant(BaseParticipant):
 
             self.search_space_matchstats.increment() # TODO: apt timedelta?
             last_construction = self.past_constructions.pop()
+            self.past_chosen_rules.pop()
             self.construction_input.send(last_construction, flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
 
         elif cur_choice[~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens] == ~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens.stop_construction:
+            self.response_input.send(self.construction_input.main) # send the final construction to the response input -- to make a decision out of 
             self.end_construction()
-            self.response_input.send(self.search_space_choice.main[0]) # send the choice to the response input -- to make a decision out of 
-
         else: #continue construction
-            self.past_constructions.append(self.search_space_choice.main[0])
-            self.past_chosen_rules.append(cur_rule_sample[0][list(cur_rule_choice.values())[0]])
-            self.all_rule_history.append(cur_rule_sample[0][list(cur_rule_choice.values())[0]])
-            self.construction_input.send(self.search_space_choice.main[0]) # loop it back in --for more selections
+            self.past_chosen_rules.append(list(cur_rule_choice.values())[0])
+            self.all_rule_history.append(list(cur_rule_choice.values())[0])
+            self.construction_input.send(filter_keys_by_rule_chunk(self.search_space_rules.rules.rhs.chunks._members_[Key(f"{cur_rule_number}")], self.search_space_choice.main[0].d)) # loop it back in --for more selections
 
 class AbstractParticipant(BaseParticipant):  
     """

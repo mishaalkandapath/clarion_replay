@@ -1,5 +1,5 @@
 from pyClarion import FixedRules, Choice, NumDict, numdict, Index, Chunk, Priority
-from pyClarion import Site, RuleStore, Choice, KeyForm, Family, Sort, Atom, Input
+from pyClarion import Site, RuleStore, Choice, KeyForm, Family, Sort, Atom, Input, Key
 
 from typing import *
 from datetime import timedelta
@@ -29,7 +29,7 @@ class RuleWBLA(FixedRules):
         self.bla_main = Site(self.rules.main.index, {}, 0.0)
         self.choice.input = self.bla_main
 
-class DynamicInput(Input):
+class FlippableInput(Input):
 
     @override
     def send(self,
@@ -129,3 +129,15 @@ def mlpify(cur_working_space: NumDict, index: Index) -> NumDict:
     
 
     return numdict(index ,data_dict, c=0.0)
+
+def filter_keys_by_rule_chunk(rule_rhs_chunk: Chunk, choice_main: dict) -> dict:
+    key_filter = []
+    for (d, v), _ in rule_rhs_chunk._dyads_.items():
+        k1, k2 = ~d, ~v
+        p1, p2 = [label for label, _ in k1[-2:]], [label for label, _ in k2[-2:]]
+        key_filter.append(Key(f"(construction_space,construction_space):({p1[0]+","+p2[0]}):({p1[1]+","+p2[1]})"))
+    new_choice_main = {}
+    for k in choice_main:
+        if k in key_filter:
+            new_choice_main[k] = choice_main[k]
+    return new_choice_main
