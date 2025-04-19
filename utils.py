@@ -39,10 +39,29 @@ class FlippableInput(Input):
             flip: bool = False):
         reset = self.reset if not flip else not self.reset
         data = self._parse_input(d)
-        method = Site.push if reset else Site.write_inplace
+        method = Site.push if reset else FlippableInput.write_inplace_consistent
         self.system.schedule(self.send, 
                              self.main.update(data, method),
                              dt=dt, priority=priority)
+    
+    def write_inplace_consistent(site: Site,
+                                data:NumDict,
+                                index: int = 0,
+                                grad: bool = False) -> None:
+        d = site.grad if grad else site.data
+        with d[index].mutable():
+            new_keys = data.d.keys()
+            to_del = []
+            #consistency checking
+            for k in d[index].d:
+                if any(conflicting_keys(str(k)).match(str(k_)) for k_ in new_keys) and k not in new_keys:
+                    to_del.append(k)
+            with data.mutable():
+                for k in to_del:
+                    data.update({k: 0.0})      
+            #update
+            d[index].update(data.d)
+
 
 def numpify_grid(grid: NumDict) -> np.ndarray:
     data = grid._d
@@ -141,3 +160,17 @@ def filter_keys_by_rule_chunk(rule_rhs_chunk: Chunk, choice_main: dict) -> dict:
         if k in key_filter:
             new_choice_main[k] = choice_main[k]
     return new_choice_main
+
+def conflicting_keys(ref: str) -> re.Pattern:
+    ref_pairs = re.findall(r'\(([^,]+),([^)]+)\)', ref)
+    pattern = ""
+
+    for first, second in ref_pairs[:-1]:
+        pattern += r'\(' + re.escape(first) + r',' + re.escape(second) + r'\):'
+    
+    last_first = ref_pairs[-1][0]
+    pattern += r'\(' + re.escape(last_first) + r',[^)]+\)'
+
+    matcher = re.compile('^' + pattern + '$')
+
+    return matcher

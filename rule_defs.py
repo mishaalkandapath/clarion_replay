@@ -1778,40 +1778,40 @@ def init_participant_construction_rules(participant) -> None:
         for shape in SHAPES
     ]
 
-    bad_placement_backtracking_rule_two_bricks = [
-        (
-            + io1[f"input_{shape}"] ** response.yes
-            + io1[f"input_{other_shape}"] ** response.yes
-            + io1[f"input_{[s for s in SHAPES if s not in (shape, other_shape)][0]}"] ** response.no
-            + io1[f"input_{[s for s in SHAPES if s not in (shape, other_shape)][1]}"] ** response.no
+    # bad_placement_backtracking_rule_two_bricks = [
+    #     (
+    #         + io1[f"input_{shape}"] ** response.yes
+    #         + io1[f"input_{other_shape}"] ** response.yes
+    #         + io1[f"input_{[s for s in SHAPES if s not in (shape, other_shape)][0]}"] ** response.no
+    #         + io1[f"input_{[s for s in SHAPES if s not in (shape, other_shape)][1]}"] ** response.no
 
-            + io1[f"target_{shape}"] ** (response.yes if i else response.no)
-            + io1[f"target_{other_shape}"] ** (response.yes if not i else response.yes)
-            + io1[f"target_{[s for s in SHAPES if s not in (shape, other_shape)][0]}"] ** response.no
-            + io1[f"target_{[s for s in SHAPES if s not in (shape, other_shape)][1]}"] ** response.no
-            >>
-            io.construction_signal ** con_signal.backtrack_construction
-        )
-        for (shape, other_shape) in itertools.combinations(SHAPES, 2) for i in range(2)
-    ] #atleast one brick must be leftover to construct 
+    #         + io1[f"target_{shape}"] ** (response.yes if i else response.no)
+    #         + io1[f"target_{other_shape}"] ** (response.yes if not i else response.yes)
+    #         + io1[f"target_{[s for s in SHAPES if s not in (shape, other_shape)][0]}"] ** response.no
+    #         + io1[f"target_{[s for s in SHAPES if s not in (shape, other_shape)][1]}"] ** response.no
+    #         >>
+    #         io.construction_signal ** con_signal.backtrack_construction
+    #     )
+    #     for (shape, other_shape) in itertools.combinations(SHAPES, 2) for i in range(2)
+    # ] #atleast one brick must be leftover to construct 
 
-    bad_placement_backtracking_rule_three_bricks = [
-        (
-            + io1[f"input_{shape}"] ** response.yes
-            + io1[f"input_{other_shape}"] ** response.yes
-            + io1[f"input_{other_other_shape}"] ** response.yes
-            + io1[f"input_{[s for s in SHAPES if s not in (shape, other_shape, other_other_shape)][0]}"] ** response.no
+    # bad_placement_backtracking_rule_three_bricks = [
+    #     (
+    #         + io1[f"input_{shape}"] ** response.yes
+    #         + io1[f"input_{other_shape}"] ** response.yes
+    #         + io1[f"input_{other_other_shape}"] ** response.yes
+    #         + io1[f"input_{[s for s in SHAPES if s not in (shape, other_shape, other_other_shape)][0]}"] ** response.no
 
-            + io1[f"target_{shape}"] ** (response.yes if i else response.no)
-            + io1[f"target_{other_shape}"] ** (response.yes if i != 1 else response.no)
-            + io1[f"target_{other_other_shape}"] ** (response.yes if i < 2 else response.no)
-            + io1[f"target_{[s for s in SHAPES if s not in (shape, other_shape, other_other_shape)][0]}"] ** response.no
+    #         + io1[f"target_{shape}"] ** (response.yes if i else response.no)
+    #         + io1[f"target_{other_shape}"] ** (response.yes if i != 1 else response.no)
+    #         + io1[f"target_{other_other_shape}"] ** (response.yes if i < 2 else response.no)
+    #         + io1[f"target_{[s for s in SHAPES if s not in (shape, other_shape, other_other_shape)][0]}"] ** response.no
 
-            >>
-            io.construction_signal ** con_signal.backtrack_construction
-        )
-        for (shape, other_shape, other_other_shape) in itertools.combinations(SHAPES, 3) for i in range(3)
-    ]
+    #         >>
+    #         io.construction_signal ** con_signal.backtrack_construction
+    #     )
+    #     for (shape, other_shape, other_other_shape) in itertools.combinations(SHAPES, 3) for i in range(3)
+    # ]
     
     participant.search_space_rules.rules.compile(
         *(
@@ -1823,7 +1823,7 @@ def init_participant_construction_rules(participant) -> None:
             + mirror_L_left_horizontal_placement_rule + mirror_L_right_horizontal_placement_rule + mirror_L_above_horizontal_placement_rule + mirror_L_below_horizontal_placement_rule
             + mirror_L_left_vertical_placement_rule + mirror_L_right_vertical_placement_rule + mirror_L_above_vertical_placement_rule + mirror_L_below_vertical_placement_rule
             + horizontal_left_vertical_placement_rule + horizontal_right_vertical_placement_rule + horizontal_above_vertical_placement_rule + horizontal_below_vertical_placement_rule 
-            +bad_brick_backtracking_rule + bad_placement_backtracking_rule_two_bricks + bad_placement_backtracking_rule_three_bricks
+            +bad_brick_backtracking_rule
         )
     )
 

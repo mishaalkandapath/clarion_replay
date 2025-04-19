@@ -100,9 +100,9 @@ class BaseParticipant(Agent):
 
     def resolve(self, event: Event) -> None:
         # -- RESPONSE PROCESSING --
-        if event.source == self.response_rules.rules.update: # after the rules have updated 
-            self.response_blas.update() # timestep update
-        elif event.source == self.response_pool.update: # TODO: is this right?
+        # if event.source == self.response_rules.rules.update: # after the rules have updated 
+        #     self.response_blas.update() # timestep update
+        if event.source == self.response_pool.update: # TODO: is this right?
             self.response_rules.trigger()
         elif event.source == self.response_rules.rules.rhs.td.update:
             self.response_choice.trigger() #poll outside the loop in experimental loop
@@ -187,7 +187,7 @@ class BaseParticipant(Agent):
             
             self.search_space_matchstats.increment() # TODO: apt timedelta?
             self.search_space_matchstats.discount()
-            self.schedule(self.propagate_feedback, dt=dt, priority=priority)
+            self.system.schedule(self.propagate_feedback, dt=dt, priority=priority)
 
 class LowLevelParticipant(BaseParticipant):  
 
@@ -452,7 +452,7 @@ class AbstractParticipant(BaseParticipant):
             
             self.search_space_matchstats.increment() # TODO: apt timedelta?
             self.search_space_matchstats.discount()
-            self.schedule(self.propagate_feedback, dt=dt, priority=priority)
+            self.system.schedule(self.propagate_feedback, dt=dt, priority=priority)
 
             #update similarly the construction net
             self.construction_net.error.send({rule: correct})

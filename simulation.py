@@ -58,6 +58,11 @@ def present_stimulus(d:BrickConstructionTask, stim_grid: np.ndarray):
                             + d.io[brick_col_map[brick][1]] ** d.numbers[f"n{col_indices[0]}"]
                             + d.io[brick_col_map[brick][2]] ** d.numbers[f"n{col_indices[1]}"]
                             + d.io[brick_col_map[brick][3]] ** d.numbers[f"n{col_indices[2]}"])
+    in_send_val = (in_send_val
+                   + d.io.target_half_T ** d.response.no
+                   + d.io.target_mirror_L ** d.response.no
+                   + d.io.target_vertical ** d.response.no
+                   + d.io.target_horizontal ** d.response.no)
             
     # get the shapes that were not used and set their response to no
     for i in range(1, 5):
