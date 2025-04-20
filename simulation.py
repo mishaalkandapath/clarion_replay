@@ -136,7 +136,8 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
         elif event.source == participant.end_construction:
             if session_type == "train":
                 print("Construction was ", "correct" if np.all(grid_stimulus_np == numpify_grid(participant.construction_input.main[0])) else "incorrect")
-                participant.propagate_feedback(correct = np.all(grid_stimulus_np == numpify_grid(participant.construction_input.main[0])))
+                participant.propagate_feedback(correct = float(np.all(grid_stimulus_np == numpify_grid(participant.construction_input.main[0]))))
+                participant.end_construction_feedback()
             else:
                 participant.start_response_trial(timedelta()) #TODO: checkout the actual time delays
         elif event.source == participant.end_construction_feedback:

@@ -75,11 +75,12 @@ class BaseParticipant(Agent):
             lambda d: d.shift(x=1).scale(x=0.5).logit())
         self.response_pool["response_rules.rules"] = (
             self.response_rules.rules.main,
-            lambda d: d.shift(x=1).scale(x=0.5).logit())
+            lambda d: d.shift(x=1).scale(x=0.5).logit()) # you can take atmost 0.2 points of activation off using matchstats 
+        #TODO: the contribution of matchstats should be weakened as the neural network gets better ?
         
         self.search_space_pool["search_space_matchstats"] = (
             self.search_space_matchstats.main, 
-            lambda d: d.bound_min(x=1e-8).log().with_default(c=0.0)) # TODO: is the function here correct?
+            lambda d: d.exp().shift(x=1).inv().scale(0.2)) # TODO: is the function here correct?
         
         self.response_rules.bla_main = self.response_pool.main #updated site for the response rules to take BLAS into account
         self.search_space_rules.bla_main = self.search_space_pool.main
@@ -98,7 +99,8 @@ class BaseParticipant(Agent):
         #wait events for low level pool update;
         self.search_space_trigger_wait = []
         self.response_trigger_wait = []
-        self.trigger_response = False
+
+        self.trigger_response = False #TODO: prolly dont need this here. 
 
     def resolve(self, event: Event) -> None:
         # -- RESPONSE PROCESSING --
@@ -139,12 +141,12 @@ class BaseParticipant(Agent):
             self.search_space_matchstats.cond.data.append(new_empty_mask)
             self.search_space_matchstats.discount()#TODO: apt timedelta?
 
+        elif event.source == self.search_space_matchstats.discount and any(e.source == self.end_construction_feedback for e in self.system.queue):
+                self.propagate_feedback()
+
         elif event.source == self.end_construction:
             # clear system queue
             self.system.queue.clear() # at this point, you should have a clear target_grid representation built -- correct or incorrect
-        
-        elif event.source == self.propagate_feedback:
-            self.end_construction_feedback()
 
     def start_construct_trial(self, 
         dt: timedelta, 
@@ -180,25 +182,25 @@ class BaseParticipant(Agent):
     ) -> None:
         self.system.schedule(self.finish_response_trial, dt=dt, priority=priority)
 
-    def propagate_feedback(self, 
-                           dt: timedelta = timedelta(seconds=0),
-        priority: Priority = Priority.PROPAGATION,
-                           correct:float = 0) -> None:
+    def propagate_feedback(self, correct:float = 0) -> None:
+        if not self.past_chosen_rules:
+            return
         
-        for rule in self.past_chosen_rules:
-            new_rule_mask = self.search_space_matchstats.cond.new({rule: 1.0}).with_default(c=0.0)
-            new_crit_score = self.search_space_matchstats.crit.new({}).with_default(c=correct)
+        rule = self.past_chosen_rules.pop()
+        #is there a correct already in there?:
+        if self.search_space_matchstats.crit[0].c:
+            correct = 1.0
 
-            self.search_space_matchstats.cond.data.pop()
-            self.search_space_matchstats.crit.data.pop()
+        new_rule_mask = self.search_space_matchstats.cond.new({rule: 1.0}).with_default(c=0.0)
+        new_crit_score = self.search_space_matchstats.crit.new({}).with_default(c=correct)
 
-            self.search_space_matchstats.cond.data.append(new_rule_mask) # update the condition to only change scores for this rule
-            self.search_space_matchstats.crit.data.append(new_crit_score)
-            
-            self.search_space_matchstats.increment() # TODO: apt timedelta?
-            self.search_space_matchstats.discount()
-            
-        self.system.schedule(self.propagate_feedback, dt=dt, priority=priority)
+        self.search_space_matchstats.cond.data.pop()
+        self.search_space_matchstats.crit.data.pop()
+
+        self.search_space_matchstats.cond.data.append(new_rule_mask) # update the condition to only change scores for this rule
+        self.search_space_matchstats.crit.data.append(new_crit_score)
+        
+        self.search_space_matchstats.increment() # TODO: apt timedelta?
 
 class LowLevelParticipant(BaseParticipant):  
 
