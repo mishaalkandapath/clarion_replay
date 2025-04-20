@@ -6,7 +6,7 @@ import math
 import itertools
 import time
 
-SHAPES = ["horizontal", "vertical", "half_T", "mirror_L"]
+SHAPES = ["half_T", "mirror_L", "vertical", "horizontal"] 
 
 def init_participant_response_rules(participant) -> None:
     d = participant.response_space
@@ -1880,9 +1880,14 @@ def init_participant_construction_rule_w_abstract(participant):
     1 1
     1
     """
-    half_T_first_placement_rule_wabstract = [
+    half_T_first_placement_rule = [
         (   
             + io.start ** response.yes
+            + io.stop ** response.no
+            + io.left ** response.no
+            + io.right ** response.no
+            + io.above ** response.no
+            + io.below ** response.no
 
             + io.input_half_T ** response.yes
             + io.input_half_T_row1 ** numbers[f"n{row}"]
@@ -1906,9 +1911,15 @@ def init_participant_construction_rule_w_abstract(participant):
          for row in range(1, 6) for col in range(1, 6)
     ]
 
-    mirror_L_first_placement_rule_wabstract = [
+    mirror_L_first_placement_rule = [
         ( 
             + io.start ** response.yes
+            + io.stop ** response.no
+            + io.left ** response.no
+            + io.right ** response.no
+            + io.above ** response.no
+            + io.below ** response.no
+
             + io.input_mirror_L ** response.yes
             + io.input_mirror_L_row1 ** numbers[f"n{row}"]
             + io.input_mirror_L_row2 ** numbers[f"n{row+1}"]
@@ -1934,9 +1945,15 @@ def init_participant_construction_rule_w_abstract(participant):
     1 1
     """
 
-    horizontal_first_placement_rule_wabstract = [
+    horizontal_first_placement_rule = [
         (       
                 + io.start ** response.yes
+                + io.stop ** response.no
+                + io.left ** response.no
+                + io.right ** response.no
+                + io.above ** response.no
+                + io.below ** response.no
+
                 + io.horizontal ** response.yes
                 + io.input_horizontal_row1 ** numbers[f"n{row}"]
                 + io.input_horizontal_row2 ** numbers[f"n{row}"]
@@ -1958,10 +1975,16 @@ def init_participant_construction_rule_w_abstract(participant):
         for row in range(1, 7) for col in range(1, 5)
     ]
 
-    vertical_first_placement_rule_wabstract = [
+    vertical_first_placement_rule = [
 
         (   
                 + io.start ** response.yes    
+                + io.stop ** response.no
+                + io.left ** response.no
+                + io.right ** response.no
+                + io.above ** response.no
+                + io.below ** response.no
+
             +    io.input_vertical ** response.yes
                 + io.input_vertical_row1 ** numbers[f"n{row}"]
                 + io.input_vertical_row2 ** numbers[f"n{row+1}"]
@@ -1985,12 +2008,17 @@ def init_participant_construction_rule_w_abstract(participant):
     ]
 
     #SUBSEQUENCE PLACEMENT RULES
-    half_T_left_of_horizontal_placement_rule_wabstract = [
+    half_T_left_of_horizontal_placement_rule = [
         (
-
-            + io["left" if switcharoo else "right"] ** response.yes
             + io.input_half_T ** response.yes
             + io.input_horizontal ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** (response.yes if r_switcharoo else response.no)
+            + io.right ** (response.no if r_switcharoo else response.yes)
+            + io.above ** response.no
+            + io.below ** response.no
             
             + io[f"{'target' if switcharoo else 'input'}_half_T_row1"] ** numbers[f"n{row}"]
             + io[f"{'target' if switcharoo else 'input'}_half_T_row2"] ** numbers[f"n{row}"]
@@ -2006,30 +2034,37 @@ def init_participant_construction_rule_w_abstract(participant):
             + io[f"{'input' if switcharoo else 'target'}_horizontal_col2"] ** numbers[f"n{col+3-i}"]
             + io[f"{'input' if switcharoo else 'target'}_horizontal_col3"] ** numbers[f"n{col+4-i}"]
 
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}"] ** response.latest # half_T isnt already there
-            + io[f"target_shape{'horizontal' if switcharoo else 'half_T'}"] ** response.yes # but horizontal is
+            + io[f"target_{'half_T' if switcharoo else 'horizontal'}"] ** response.reference # half_T is already there
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}"] ** response.latest # but horizontal is not
 
             >>
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}"] ** response.yes
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}"] ** response.yes
+            + io[f"target_{'half_T' if switcharoo else 'horizontal'}"] ** response.yes
 
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_row2"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_row3"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+2-i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_col2"] ** (numbers[f"n{col+1}"] if switcharoo else numbers[f"n{col+3-i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_col3"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+4-i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_row2"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_row3"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+2-i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_col2"] ** (numbers[f"n{col+1}"] if not switcharoo else numbers[f"n{col+3-i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+4-i}"])
 
         )
-        for switcharoo in (True, False) for i in range(2) for row in range(1, 6) for col in range(1, 3 + i)
+        for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(2) for row in range(1, 6) for col in range(1, 3 + i)
     ]
 
-    half_T_right_of_horizontal_placement_rule_wabstract = [
+    half_T_right_of_horizontal_placement_rule = [
         (
-            + io["right" if switcharoo else "left"] ** response.yes
             + io.input_half_T ** response.yes
             + io.input_horizontal ** response.yes
 
-            + io[f"{'target' if switcharoo else 'input'}_half_T_row1"] ** numbers[f"n{row}"]
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** (response.no if r_switcharoo else response.yes)
+            + io.right ** (response.yes if r_switcharoo else response.no)
+            + io.above ** response.no
+            + io.below ** response.no
+
+            + io[f"{'target' if switcharoo else 'input'}_half_T_row1"]** numbers[f"n{row}"]
             + io[f"{'target' if switcharoo else 'input'}_half_T_row2"] ** numbers[f"n{row}"]
             + io[f"{'target' if switcharoo else 'input'}_half_T_row3"] ** numbers[f"n{row+1}"]
             + io[f"{'target' if switcharoo else 'input'}_half_T_col1"] ** numbers[f"n{col}"]
@@ -2043,62 +2078,76 @@ def init_participant_construction_rule_w_abstract(participant):
             + io[f"{'input' if switcharoo else 'target'}_horizontal_col2"] ** numbers[f"n{col-2}"]
             + io[f"{'input' if switcharoo else 'target'}_horizontal_col3"] ** numbers[f"n{col-1}"]
 
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}"] ** response.latest # half_T isnt already there
-            + io[f"target_shape{'horizontal' if switcharoo else 'half_T'}"] ** response.yes # but horizontal is
+            + io[f"target_{'half_T' if switcharoo else 'horizontal'}"] ** response.reference # half_T is already there
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}"] ** response.latest # but horizontal is not
 
             >>
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}"] ** response.yes
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}"] ** response.yes
+            + io[f"target_{'half_T' if switcharoo else 'horizontal'}"] ** response.yes
 
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_row2"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_row3"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col-3}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_col2"] ** (numbers[f"n{col+1}"] if switcharoo else numbers[f"n{col-2}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_col3"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col-1}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_row2"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_row3"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col-3}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_col2"] ** (numbers[f"n{col+1}"] if not switcharoo else numbers[f"n{col-2}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col-1}"])
         )
-        for switcharoo in (True, False) for i in range(2) for row in range(1, 6) for col in range(4, 6)
+        for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(2) for row in range(1, 6) for col in range(4, 6)
     ]
 
-    half_T_below_horizontal_placement_rule_wabstract = [
+    half_T_below_horizontal_placement_rule = [
         (
-            + io["below" if switcharoo else "above"] ** response.yes
             + io.input_half_T ** response.yes
             + io.input_horizontal ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** response.no
+            + io.right ** response.no
+            + io.above ** (response.no if r_switcharoo else response.yes)
+            + io.below ** (response.yes if r_switcharoo else response.no)
 
             + io[f"{'input' if switcharoo else 'target'}_half_T_row1"] ** numbers[f"n{row}"]
             + io[f"{'input' if switcharoo else 'target'}_half_T_row2"] ** numbers[f"n{row}"]
             + io[f"{'input' if switcharoo else 'target'}_half_T_row3"] ** numbers[f"n{row+1}"]
-            + io[f"{'input' if switcharoo else 'target'}_half_T_row1"] ** numbers[f"n{col}"]
+            + io[f"{'input' if switcharoo else 'target'}_half_T_col1"] ** numbers[f"n{col}"]
             + io[f"{'input' if switcharoo else 'target'}_half_T_col2"] ** numbers[f"n{col+1}"]
             + io[f"{'input' if switcharoo else 'target'}_half_T_col3"] ** numbers[f"n{col}"]
 
             + io[f"{'target' if switcharoo else 'input'}_horizontal_row1"] ** numbers[f"n{row-1}"]
             + io[f"{'target' if switcharoo else 'input'}_horizontal_row2"] ** numbers[f"n{row-1}"]
             + io[f"{'target' if switcharoo else 'input'}_horizontal_row3"] ** numbers[f"n{row-1}"]
-            + io[f"{'target' if switcharoo else 'input'}_horizontal_col1"] ** numbers[f"n{col-1+i}"]
-            + io[f"{'target' if switcharoo else 'input'}_horizontal_col2"] ** numbers[f"n{col+i}"]
-            + io[f"{'target' if switcharoo else 'input'}_horizontal_col3"] ** numbers[f"n{col+1+i}"]
+            + io[f"{'target' if switcharoo else 'input'}_horizontal_col1"] ** numbers[f"n{col-2+i}"]
+            + io[f"{'target' if switcharoo else 'input'}_horizontal_col2"] ** numbers[f"n{col-1+i}"]
+            + io[f"{'target' if switcharoo else 'input'}_horizontal_col3"] ** numbers[f"n{col+i}"]
 
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}"] ** response.latest # half_T isnt already there
-            + io[f"target_shape{'horizontal' if switcharoo else 'half_T'}"] ** response.yes # but horizontal is
+            + io[f"target_{'half_T' if switcharoo else 'horizontal'}"] ** response.reference # half_T is already there
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}"] ** response.latest # but horizontal is not
             >>
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}"] ** response.yes
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}"] ** response.yes
+            + io[f"target_{'half_T' if switcharoo else 'horizontal'}"] ** response.yes
 
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row-1}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_row2"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row-1}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_row3"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row-1}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col-1+i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_col2"] ** (numbers[f"n{col+1}"] if switcharoo else numbers[f"n{col+i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_col3"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+1+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row-1}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_row2"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row-1}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_row3"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row-1}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col-2+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_col2"] ** (numbers[f"n{col+1}"] if not switcharoo else numbers[f"n{col-1+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+i}"])
         ) 
-        for switcharoo in (True, False) for i in range(3) for row in range(2, 6) for col in range(1 + (i == 0), 6-i)
+        for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(4) for row in range(2, 6) for col in range(max(3-i, 1), 6-max(i-1, 0))
     ]
 
-    half_T_above_horizontal_placement_rule_wabstract = [
+    half_T_above_horizontal_placement_rule = [
         (
-            + io["above" if switcharoo else "below"] ** response.yes
             + io.input_half_T ** response.yes
             + io.input_horizontal ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** response.no
+            + io.right ** response.no
+            + io.above ** (response.yes if r_switcharoo else response.no)
+            + io.below ** (response.no if r_switcharoo else response.yes)
 
             + io[f"{'input' if switcharoo else 'target'}_half_T_row1"] ** numbers[f"n{row}"]
             + io[f"{'input' if switcharoo else 'target'}_half_T_row2"] ** numbers[f"n{row}"]
@@ -2114,27 +2163,34 @@ def init_participant_construction_rule_w_abstract(participant):
             + io[f"{'target' if switcharoo else 'input'}_horizontal_col2"] ** numbers[f"n{col-1+i}"]
             + io[f"{'target' if switcharoo else 'input'}_horizontal_col3"] ** numbers[f"n{col+i}"]
 
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}"] ** response.latest # half_T isnt already there
-            + io[f"target_shape{'horizontal' if switcharoo else 'half_T'}"] ** response.yes # but horizontal is
+            + io[f"target_{'half_T' if switcharoo else 'horizontal'}"] ** response.reference # half_T isnt already there
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}"] ** response.latest # but horizontal is
 
             >>
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}"] ** response.yes
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}"] ** response.yes
+            + io[f"target_{'half_T' if switcharoo else 'horizontal'}"] ** response.yes
 
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+2}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_row2"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+2}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_row3"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+2}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col-2+i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_col2"] ** (numbers[f"n{col+1}"] if switcharoo else numbers[f"n{col-1+i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'horizontal'}_col3"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+2}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_row2"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+2}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_row3"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row+2}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col-2+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_col2"] ** (numbers[f"n{col+1}"] if not switcharoo else numbers[f"n{col-1+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'half_T'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+i}"])
         ) 
-        for switcharoo in (True, False) for i in range(3) for row in range(1, 5) for col in range(3-i, 6-(i==2))
+        for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(3) for row in range(1, 5) for col in range(3-i, 6-(i==2))
 ]
 
-    half_T_left_vertical_placement_rule_wabstract = [
+    half_T_left_vertical_placement_rule = [
         (
-            + io["left" if switcharoo else "right"] ** response.yes
             + io.input_half_T ** response.yes
             + io.input_vertical ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** (response.yes if r_switcharoo else response.no)
+            + io.right ** (response.no if r_switcharoo else response.yes)
+            + io.above ** response.no
+            + io.below ** response.no
 
             + io1[f"{'target' if switcharoo else 'input'}_half_T_row1"]** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_half_T_row2"] ** numbers[f"n{row}"]
@@ -2150,26 +2206,33 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col2"] ** numbers[f"n{col+2- (i == 0)}"]
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col3"] ** numbers[f"n{col+2- (i == 0)}"]
 
-            + io1[f"target_shape{'half_T' if switcharoo else 'vertical'}"] ** response.latest # half_T isnt already there
-            + io1[f"target_shape{'vertical' if switcharoo else 'half_T'}"] ** response.yes # but vertical is
+            + io1[f"target_{'half_T' if switcharoo else 'vertical'}"] ** response.reference # half_T isnt already there
+            + io1[f"target_{'vertical' if switcharoo else 'half_T'}"] ** response.latest # but vertical is
             >>
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}"] ** response.yes
+            + io[f"target_{'vertical' if switcharoo else 'half_T'}"] ** response.yes
+            + io[f"target_{'half_T' if switcharoo else 'vertical'}"] ** response.yes
 
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+1-i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_row2"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+2-i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_row3"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+3-i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+2- (i == 0)}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_col2"] ** (numbers[f"n{col+1}"] if switcharoo else numbers[f"n{col+2- (i == 0)}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_col3"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+2- (i == 0)}"])
+            + io[f"target_{'vertical' if switcharoo else 'half_T'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+1-i}"])
+            + io[f"target_{'vertical' if switcharoo else 'half_T'}_row2"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+2-i}"])
+            + io[f"target_{'vertical' if switcharoo else 'half_T'}_row3"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row+3-i}"])
+            + io[f"target_{'vertical' if switcharoo else 'half_T'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+2- (i == 0)}"])
+            + io[f"target_{'vertical' if switcharoo else 'half_T'}_col2"] ** (numbers[f"n{col+1}"] if not switcharoo else numbers[f"n{col+2- (i == 0)}"])
+            + io[f"target_{'vertical' if switcharoo else 'half_T'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+2- (i == 0)}"])
             )
-            for switcharoo in (True, False) for i in range(4) for row in range(1+(i-1 if i > 1 else 0), 4 + (math.ceil(i/2))) for col in range(1, 6-(i > 0))
+            for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(4) for row in range(1+(i-1 if i > 1 else 0), 4 + (math.ceil(i/2))) for col in range(1, 6-(i > 0))
     ]
     
-    half_T_right_vertical_placement_rule_wabstract = [
+    half_T_right_vertical_placement_rule = [
         (
-            + io["right" if switcharoo else "left"] ** response.yes
             + io.input_half_T ** response.yes
             + io.input_vertical ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** (response.no if r_switcharoo else response.yes)
+            + io.right ** (response.yes if r_switcharoo else response.no)
+            + io.above ** response.no
+            + io.below ** response.no
             
             + io1[f"{'target' if switcharoo else 'input'}_half_T_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_half_T_row2"] ** numbers[f"n{row}"]
@@ -2185,27 +2248,34 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col2"] ** numbers[f"n{col-1}"]
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col3"] ** numbers[f"n{col-1}"]
 
-            + io1[f"target_shape{'half_T' if switcharoo else 'vertical'}"] ** response.latest # half_T isnt already there
-            + io1[f"target_shape{'vertical' if switcharoo else 'half_T'}"] ** response.yes # but vertical is
+            + io1[f"target_{'half_T' if switcharoo else 'vertical'}"] ** response.reference # half_T isnt already there
+            + io1[f"target_{'vertical' if switcharoo else 'half_T'}"] ** response.latest # but vertical is
 
             >>
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}"] ** response.yes
+            + io[f"target_{'half_T' if switcharoo else 'vertical'}"] ** response.yes
+            + io[f"target_{'vertical' if switcharoo else 'half_T'}"] ** response.yes
 
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row-2+i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_row2"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row-1+i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_row3"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col-1}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_col2"] ** (numbers[f"n{col+1}"] if switcharoo else numbers[f"n{col-1}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_col3"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col-1}"])
+            + io[f"target_{'half_T' if switcharoo else 'vertical'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row-2+i}"])
+            + io[f"target_{'half_T' if switcharoo else 'vertical'}_row2"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row-1+i}"])
+            + io[f"target_{'half_T' if switcharoo else 'vertical'}_row3"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row+i}"])
+            + io[f"target_{'half_T' if switcharoo else 'vertical'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col-1}"])
+            + io[f"target_{'half_T' if switcharoo else 'vertical'}_col2"] ** (numbers[f"n{col+1}"] if not switcharoo else numbers[f"n{col-1}"])
+            + io[f"target_{'half_T' if switcharoo else 'vertical'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col-1}"])
         ) 
-        for switcharoo in (True, False) for i in range(4) for row in range(max(1, 3-i), 6-max(0, i-1)) for col in range(2, 6)
+        for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(4) for row in range(max(1, 3-i), 6-max(0, i-1)) for col in range(2, 6)
     ]
     
-    half_T_below_vertical_placement_rule_wabstract = [
+    half_T_below_vertical_placement_rule = [
         (
-            + io["below" if switcharoo else "above"] ** response.yes
             + io.input_half_T ** response.yes
             + io.input_vertical ** response.yes
+            
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** response.no
+            + io.right ** response.no
+            + io.above ** (response.no if r_switcharoo else response.yes)
+            + io.below ** (response.yes if r_switcharoo else response.no)
             
             + io1[f"{'target' if switcharoo else 'input'}_half_T_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_half_T_row2"] ** numbers[f"n{row}"]
@@ -2217,32 +2287,39 @@ def init_participant_construction_rule_w_abstract(participant):
             
             + io1[f"{'input' if switcharoo else 'target'}_vertical_row1"] ** numbers[f"n{row-3}"]
             + io1[f"{'input' if switcharoo else 'target'}_vertical_row2"] ** numbers[f"n{row-2}"]
-            + io1[f"{'input' if switcharoo else 'target'}_vertical_row3"] ** numbers[f"n{row-3}"]
+            + io1[f"{'input' if switcharoo else 'target'}_vertical_row3"] ** numbers[f"n{row-1}"]
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col1"] ** numbers[f"n{col+i}"]
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col2"] ** numbers[f"n{col+i}"]
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col3"] ** numbers[f"n{col+i}"]
 
-            + io1[f"target_shape{'half_T' if switcharoo else 'vertical'}"] ** response.latest # half_T isnt already there
-            + io1[f"target_shape{'vertical' if switcharoo else 'half_T'}"] ** response.yes # but vertical is
+            + io1[f"target_{'half_T' if switcharoo else 'vertical'}"] ** response.reference # half_T isnt already there
+            + io1[f"target_{'vertical' if switcharoo else 'half_T'}"] ** response.latest # but vertical is
 
             >>
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}"] ** response.yes
+            + io[f"target_{'half_T' if switcharoo else 'vertical'}"] ** response.yes
+            + io[f"target_{'vertical' if switcharoo else 'half_T'}"] ** response.yes
 
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row-3}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_row2"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row-2}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_row3"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row-3}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_col2"] ** (numbers[f"n{col+1}"] if switcharoo else numbers[f"n{col+i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_col3"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+i}"])
+            + io[f"target_{'half_T' if switcharoo else 'vertical'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row-3}"])
+            + io[f"target_{'half_T' if switcharoo else 'vertical'}_row2"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row-2}"])
+            + io[f"target_{'half_T' if switcharoo else 'vertical'}_row3"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row-1}"])
+            + io[f"target_{'half_T' if switcharoo else 'vertical'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+i}"])
+            + io[f"target_{'half_T' if switcharoo else 'vertical'}_col2"] ** (numbers[f"n{col+1}"] if not switcharoo else numbers[f"n{col+i}"])
+            + io[f"target_{'half_T' if switcharoo else 'vertical'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+i}"])
             ) 
-            for switcharoo in (True, False) for i in range(2) for row in range(4, 6) for col in range(1, 6)
+            for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(2) for row in range(4, 6) for col in range(1, 6)
     ]
 
-    half_T_above_vertical_placement_rule_wabstract = [
+    half_T_above_vertical_placement_rule = [
         (
-            + io["above" if switcharoo else "below"] ** response.yes
             + io.input_half_T ** response.yes
             + io.input_vertical ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** response.no
+            + io.right ** response.no
+            + io.above ** (response.yes if r_switcharoo else response.no)
+            + io.below ** (response.no if r_switcharoo else response.yes)
 
             + io1[f"{'target' if switcharoo else 'input'}_half_T_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_half_T_row2"] ** numbers[f"n{row}"]
@@ -2258,26 +2335,33 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col2"] ** numbers[f"n{col}"]
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col3"] ** numbers[f"n{col}"]
 
-            + io1[f"target_shape{'half_T' if switcharoo else 'vertical'}"] ** response.latest # half_T isnt already there
-            + io1[f"target_shape{'vertical' if switcharoo else 'half_T'}"] ** response.yes # but vertical is
+            + io1[f"target_{'half_T' if switcharoo else 'vertical'}"] ** response.reference # half_T isnt already there
+            + io1[f"target_{'vertical' if switcharoo else 'half_T'}"] ** response.latest # but vertical is
             >>
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}"] ** response.yes
+            + io[f"target_{'vertical' if switcharoo else 'half_T'}"] ** response.yes
+            + io[f"target_{'half_T' if switcharoo else 'vertical'}"] ** response.yes
 
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+1}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_row2"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+2}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_row3"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+3}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_col2"] ** (numbers[f"n{col+1}"] if switcharoo else numbers[f"n{col}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'vertical'}_col3"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col}"])
+            + io[f"target_{'vertical' if switcharoo else 'half_T'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+1}"])
+            + io[f"target_{'vertical' if switcharoo else 'half_T'}_row2"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+2}"])
+            + io[f"target_{'vertical' if switcharoo else 'half_T'}_row3"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row+3}"])
+            + io[f"target_{'vertical' if switcharoo else 'half_T'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col}"])
+            + io[f"target_{'vertical' if switcharoo else 'half_T'}_col2"] ** (numbers[f"n{col+1}"] if not switcharoo else numbers[f"n{col}"])
+            + io[f"target_{'vertical' if switcharoo else 'half_T'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col}"])
             ) 
-            for switcharoo in (True, False) for row in range(1, 3) for col in range(1, 6)
+            for r_switcharoo in (True, False) for switcharoo in (True, False) for row in range(1, 3) for col in range(1, 6)
     ]
 
-    half_T_left_mirror_L_placement_rule_wabstract = [
+    half_T_left_mirror_L_placement_rule = [
         (
-            + io["left" if switcharoo else "right"] ** response.yes
             + io.input_half_T ** response.yes
             + io.input_mirror_L ** response.yes
+             
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** (response.yes if r_switcharoo else response.no)
+            + io.right ** (response.no if r_switcharoo else response.yes)
+            + io.above ** response.no
+            + io.below ** response.no
 
             + io1[f"{'target' if switcharoo else 'input'}_half_T_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_half_T_row2"]** numbers[f"n{row}"]
@@ -2293,26 +2377,33 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"{'input' if switcharoo else 'target'}_mirror_L_col2"] ** numbers[f"n{col+1+i}"]
             + io1[f"{'input' if switcharoo else 'target'}_mirror_L_col3"] ** numbers[f"n{col+2+i}"]
 
-            + io1[f"target_shape{'half_T' if switcharoo else 'mirror_L'}"] ** response.latest # half_T isnt already there
-            + io1[f"target_shape{'mirror_L' if switcharoo else 'half_T'}"] ** response.yes # but mirror_L is
+            + io1[f"target_{'half_T' if switcharoo else 'mirror_L'}"] ** response.reference # half_T isnt already there
+            + io1[f"target_{'mirror_L' if switcharoo else 'half_T'}"] ** response.latest # but mirror_L is
             >>
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}"] ** response.yes
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}"] ** response.yes
+            + io[f"target_{'half_T' if switcharoo else 'mirror_L'}"] ** response.yes
 
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row-i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_row2"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+1-i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_row3"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+1-i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+2+i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_col2"] ** (numbers[f"n{col+1}"] if switcharoo else numbers[f"n{col+1+i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_col3"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+2+i}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row-i}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_row2"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+1-i}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_row3"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row+1-i}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+2+i}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_col2"] ** (numbers[f"n{col+1}"] if not switcharoo else numbers[f"n{col+1+i}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+2+i}"])
         )
-        for switcharoo in (True, False) for i in range(2) for row in range(1+i, 6) for col in range(1, 5-i)
+        for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(2) for row in range(1+i, 6) for col in range(1, 5-i)
     ]
     
-    half_T_right_mirror_L_placement_rule_wabstract = [
+    half_T_right_mirror_L_placement_rule = [
         (
-            + io["right" if switcharoo else "left"] ** response.yes
             + io.input_half_T ** response.yes
             + io.input_mirror_L ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** (response.no if r_switcharoo else response.yes)
+            + io.right ** (response.yes if r_switcharoo else response.no)
+            + io.above ** response.no
+            + io.below ** response.no
 
             + io1[f"{'target' if switcharoo else 'input'}_half_T_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_half_T_row2"] ** numbers[f"n{row}"]
@@ -2328,27 +2419,34 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"{'input' if switcharoo else 'target'}_mirror_L_col2"] ** numbers[f"n{col-2}"]
             + io1[f"{'input' if switcharoo else 'target'}_mirror_L_col3"] ** numbers[f"n{col-1}"]
 
-            + io1[f"target_shape{'half_T' if switcharoo else 'mirror_L'}"] ** response.latest # half_T isnt already there
-            + io1[f"target_shape{'mirror_L' if switcharoo else 'half_T'}"] ** response.yes # but mirror_L is
+            + io1[f"target_{'half_T' if switcharoo else 'mirror_L'}"] ** response.reference # half_T isnt already there
+            + io1[f"target_{'mirror_L' if switcharoo else 'half_T'}"] ** response.latest # but mirror_L is
 
             >>
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}"] ** response.yes
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}"] ** response.yes
+            + io[f"target_{'half_T' if switcharoo else 'mirror_L'}"] ** response.yes
 
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row + (-1 if i== 0 else 1)*(i%2 == 0)}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_row2"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row + i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_row3"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col-1}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_col2"] ** (numbers[f"n{col+1}"] if switcharoo else numbers[f"n{col-2}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_col3"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col-1}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row + (-1 if i== 0 else 1)*(i%2 == 0)}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_row2"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row + i}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_row3"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row+i}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col-1}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_col2"] ** (numbers[f"n{col+1}"] if not switcharoo else numbers[f"n{col-2}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col-1}"])
         ) 
-        for switcharoo in (True, False) for i in range(3) for row in range(1+(i==0), 6-(i==2)) for col in range(3, 6)
+        for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(3) for row in range(1+(i==0), 6-(i==2)) for col in range(3, 6)
     ]
     
-    half_T_below_mirror_L_placement_rule_wabstract = [
+    half_T_below_mirror_L_placement_rule = [
         (
-            + io["below" if switcharoo else "above"] ** response.yes
             + io.input_half_T ** response.yes
             + io.input_mirror_L ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** response.no
+            + io.right ** response.no
+            + io.above ** (response.no if r_switcharoo else response.yes)
+            + io.below ** (response.yes if r_switcharoo else response.no)
 
             + io1[f"{'target' if switcharoo else 'input'}_half_T_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_half_T_row2"] ** numbers[f"n{row}"]
@@ -2360,30 +2458,37 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"{'input' if switcharoo else 'target'}_mirror_L_row1"] ** numbers[f"n{row-2}"]
             + io1[f"{'input' if switcharoo else 'target'}_mirror_L_row2"] ** numbers[f"n{row-1}"]
             + io1[f"{'input' if switcharoo else 'target'}_mirror_L_row3"] ** numbers[f"n{row-1}"]
-            + io1[f"{'input' if switcharoo else 'target'}_mirror_L_col1"] ** numbers[f"n{col+1+i}"]
-            + io1[f"{'input' if switcharoo else 'target'}_mirror_L_col2"] ** numbers[f"n{col+i}"]
-            + io1[f"{'input' if switcharoo else 'target'}_mirror_L_col3"] ** numbers[f"n{col+1+i}"]
+            + io1[f"{'input' if switcharoo else 'target'}_mirror_L_col1"] ** numbers[f"n{col+i}"]
+            + io1[f"{'input' if switcharoo else 'target'}_mirror_L_col2"] ** numbers[f"n{col-1+i}"]
+            + io1[f"{'input' if switcharoo else 'target'}_mirror_L_col3"] ** numbers[f"n{col+i}"]
 
-            + io1[f"target_shape{'half_T' if switcharoo else 'mirror_L'}"] ** response.latest # half_T isnt already there
-            + io1[f"target_shape{'mirror_L' if switcharoo else 'half_T'}"] ** response.yes # but mirror_L is
+            + io1[f"target_{'half_T' if switcharoo else 'mirror_L'}"] ** response.reference # half_T isnt already there
+            + io1[f"target_{'mirror_L' if switcharoo else 'half_T'}"] ** response.latest # but mirror_L is
             >>
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}"] ** response.yes
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}"] ** response.yes
+            + io[f"target_{'half_T' if switcharoo else 'mirror_L'}"] ** response.yes
 
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row-2}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_row2"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row-1}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_row3"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row-1}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+1+i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_col2"] ** (numbers[f"n{col+1}"] if switcharoo else numbers[f"n{col+i}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_col3"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+1+i}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row-2}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_row2"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row-1}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_row3"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row-1}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+i}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_col2"] ** (numbers[f"n{col+1}"] if not switcharoo else numbers[f"n{col-1+i}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+i}"])
         )
-        for switcharoo in (True, False) for i in range(2) for row in range(3, 6) for col in range(1, 6-i)
+        for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(3) for row in range(3, 6) for col in range(1+(i==0), 6-(i==2))
     ]
 
-    half_T_above_mirror_L_placement_rule_wabstract = [
+    half_T_above_mirror_L_placement_rule = [
         (
-            + io["above" if switcharoo else "below"] ** response.yes
             + io.input_half_T ** response.yes
             + io.input_mirror_L ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** response.no
+            + io.right ** response.no
+            + io.above ** (response.yes if r_switcharoo else response.no)
+            + io.below ** (response.no if r_switcharoo else response.yes)
 
              + io1[f"{'target' if switcharoo else 'input'}_half_T_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_half_T_row2"] ** numbers[f"n{row}"]
@@ -2399,26 +2504,33 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"{'input' if switcharoo else 'target'}_mirror_L_col2"] ** numbers[f"n{col-1}"]
             + io1[f"{'input' if switcharoo else 'target'}_mirror_L_col3"] ** numbers[f"n{col}"]
 
-            + io1[f"target_shape{'half_T' if switcharoo else 'mirror_L'}"] ** response.latest # half_T isnt already there
-            + io1[f"target_shape{'mirror_L' if switcharoo else 'half_T'}"] ** response.yes # but mirror_L is
-            >>
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}"] ** response.yes
+            + io1[f"target_{'half_T' if switcharoo else 'mirror_L'}"] ** response.reference # half_T isnt already there
+            + io1[f"target_{'mirror_L' if switcharoo else 'half_T'}"] ** response.latest # but mirror_L is
+            >>latest
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}"] ** response.yes
+            + io[f"target_{'half_T' if switcharoo else 'mirror_L'}"] ** response.yes
 
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+2}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_row2"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+3}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_row3"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+3}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_col2"] ** (numbers[f"n{col+1}"] if switcharoo else numbers[f"n{col-1}"])
-            + io[f"target_shape{'half_T' if switcharoo else 'mirror_L'}_col3"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+2}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_row2"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+3}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_row3"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row+3}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_col2"] ** (numbers[f"n{col+1}"] if not switcharoo else numbers[f"n{col-1}"])
+            + io[f"target_{'mirror_L' if switcharoo else 'half_T'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col}"])
         ) 
-        for switcharoo in (True, False) for row in range(1, 4) for col in range(2, 6)
+        for r_switcharoo in (True, False) for switcharoo in (True, False) for row in range(1, 4) for col in range(2, 6)
     ]
 
-    mirror_L_left_horizontal_placement_rule_wabstract  = [
+    mirror_L_left_horizontal_placement_rule  = [
         (
-            + io["left" if switcharoo else "right"] ** response.yes
             + io.input_mirror_L ** response.yes
             + io.input_horizontal ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** (response.yes if r_switcharoo else response.no)
+            + io.right ** (response.no if r_switcharoo else response.yes)
+            + io.above ** response.no
+            + io.below ** response.no
 
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row2"] ** numbers[f"n{row+1}"]
@@ -2434,27 +2546,34 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"{'target' if switcharoo else 'input'}_horizontal_col2"] ** numbers[f"n{col+2}"]
             + io1[f"{'target' if switcharoo else 'input'}_horizontal_col3"] ** numbers[f"n{col+3}"]
 
-            + io1[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}"] ** response.latest # mirror_L isnt already there
-            + io1[f"target_shape{'horizontal' if switcharoo else 'mirror_L'}"] ** response.yes # but horizontal is
+            + io1[f"target_{'mirror_L' if switcharoo else 'horizontal'}"] ** response.reference # mirror_L isnt already there
+            + io1[f"target_{'horizontal' if switcharoo else 'mirror_L'}"] ** response.latest # but horizontal is
 
             >>
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}"] ** response.yes
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}"] ** response.yes
+            + io[f"target_{'mirror_L' if switcharoo else 'horizontal'}"] ** response.yes
 
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+i}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_row2"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+i}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_row3"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+i}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+1}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_col2"] ** (numbers[f"n{col-1}"] if switcharoo else numbers[f"n{col+2}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_col3"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+3}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_row2"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_row3"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+1}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_col2"] ** (numbers[f"n{col-1}"] if not switcharoo else numbers[f"n{col+2}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+3}"])
             ) 
-            for switcharoo in (True, False) for i in range(2) for row in range(1, 6) for col in range(2, 4)
+            for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(2) for row in range(1, 6) for col in range(2, 4)
     ]
 
-    mirror_L_right_horizontal_placement_rule_wabstract = [
+    mirror_L_right_horizontal_placement_rule = [
         (
-            + io["right" if switcharoo else "left"] ** response.yes
             + io.input_mirror_L ** response.yes
             + io.input_horizontal ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** (response.no if r_switcharoo else response.yes)
+            + io.right ** (response.yes if r_switcharoo else response.no)
+            + io.above ** response.no
+            + io.below ** response.no
 
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row2"] ** numbers[f"n{row+1}"]
@@ -2470,26 +2589,33 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"{'input' if switcharoo else 'target'}_horizontal_col2"] ** numbers[f"n{col-2-i}"]
             + io1[f"{'input' if switcharoo else 'target'}_horizontal_col3"] ** numbers[f"n{col-1-i}"]
 
-            + io1[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}"] ** response.latest # mirror_L isnt already there
-            + io1[f"target_shape{'horizontal' if switcharoo else 'mirror_L'}"] ** response.yes # but horizontal is
+            + io1[f"target_{'mirror_L' if switcharoo else 'horizontal'}"] ** response.reference # mirror_L isnt already there
+            + io1[f"target_{'horizontal' if switcharoo else 'mirror_L'}"] ** response.latest # but horizontal is
             >>
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}"] ** response.yes
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}"] ** response.yes
+            + io[f"target_{'mirror_L' if switcharoo else 'horizontal'}"] ** response.yes
 
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+i}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_row2"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+i}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_row3"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+i}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col-3-i}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_col2"] ** (numbers[f"n{col-1}"] if switcharoo else numbers[f"n{col-2-i}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_col3"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col-1-i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_row2"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_row3"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col-3-i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_col2"] ** (numbers[f"n{col-1}"] if not switcharoo else numbers[f"n{col-2-i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col-1-i}"])
         ) 
-        for switcharoo in (True, False) for i in range(2) for row in range(1, 6) for col in range(4+i, 7)
+        for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(2) for row in range(1, 6) for col in range(4+i, 7)
     ]
 
-    mirror_L_above_horizontal_placement_rule_wabstract = [
+    mirror_L_above_horizontal_placement_rule = [
         (
-            + io["above" if switcharoo else "below"] ** response.yes
             + io.input_mirror_L ** response.yes
             + io.input_horizontal ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** response.no
+            + io.right ** response.no
+            + io.above ** (response.yes if r_switcharoo else response.no)
+            + io.below ** (response.no if r_switcharoo else response.yes)
 
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row2"] ** numbers[f"n{row+1}"]
@@ -2501,31 +2627,38 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"{'input' if switcharoo else 'target'}_horizontal_row1"] ** numbers[f"n{row+2}"]
             + io1[f"{'input' if switcharoo else 'target'}_horizontal_row2"] ** numbers[f"n{row+2}"]
             + io1[f"{'input' if switcharoo else 'target'}_horizontal_row3"] ** numbers[f"n{row+2}"]
-            + io1[f"{'input' if switcharoo else 'target'}_horizontal_col1"] ** numbers[f"n{col-2+i}"]
-            + io1[f"{'input' if switcharoo else 'target'}_horizontal_col2"] ** numbers[f"n{col-1+i}"]
-            + io1[f"{'input' if switcharoo else 'target'}_horizontal_col3"] ** numbers[f"n{col+i}"]
+            + io1[f"{'input' if switcharoo else 'target'}_horizontal_col1"] ** numbers[f"n{col-3+i}"]
+            + io1[f"{'input' if switcharoo else 'target'}_horizontal_col2"] ** numbers[f"n{col-2+i}"]
+            + io1[f"{'input' if switcharoo else 'target'}_horizontal_col3"] ** numbers[f"n{col-1+i}"]
 
-            + io1[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}"] ** response.latest # mirror_L isnt already there
-            + io1[f"target_shape{'horizontal' if switcharoo else 'mirror_L'}"] ** response.yes # but horizontal is
+            + io1[f"target_{'mirror_L' if switcharoo else 'horizontal'}"] ** response.reference # mirror_L isnt already there
+            + io1[f"target_{'horizontal' if switcharoo else 'mirror_L'}"] ** response.latest # but horizontal is
 
             >>
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}"] ** response.yes
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}"] ** response.yes
+            + io[f"target_{'mirror_L' if switcharoo else 'horizontal'}"] ** response.yes
 
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+2}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_row2"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+2}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_row3"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+2}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col-2+i}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_col2"] ** (numbers[f"n{col-1}"] if switcharoo else numbers[f"n{col-1+i}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_col3"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+2}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_row2"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row+2}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_row3"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row+2}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col-3+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_col2"] ** (numbers[f"n{col-1}"] if not switcharoo else numbers[f"n{col-2+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col-1+i}"])
             )
-            for switcharoo in (True, False) for i in range(3) for row in range(1, 5) for col in range(2 + (i == 0), 7-i)
+            for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(4) for row in range(1, 5) for col in range((4 - i if i < 2 else 2), 7-(i-1 if i >= 2 else 0))
     ]
 
-    mirror_L_below_horizontal_placement_rule_wabstract = [
+    mirror_L_below_horizontal_placement_rule = [
         (
-            +  io["below" if switcharoo else "above"] ** response.yes
             + io.input_mirror_L ** response.yes
             + io.input_horizontal ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** response.no
+            + io.right ** response.no
+            + io.above ** (response.no if r_switcharoo else response.yes)
+            + io.below ** (response.yes if r_switcharoo else response.no)
 
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row2"] ** numbers[f"n{row+1}"]
@@ -2541,26 +2674,33 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"{'input' if switcharoo else 'target'}_horizontal_col2"] ** numbers[f"n{col-1+i}"]
             + io1[f"{'input' if switcharoo else 'target'}_horizontal_col3"] ** numbers[f"n{col+i}"]
 
-            + io1[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}"] ** response.latest # mirror_L isnt already there
-            + io1[f"target_shape{'horizontal' if switcharoo else 'mirror_L'}"] ** response.yes # but horizontal is
+            + io1[f"target_{'mirror_L' if switcharoo else 'horizontal'}"] ** response.reference # mirror_L isnt already there
+            + io1[f"target_{'horizontal' if switcharoo else 'mirror_L'}"] ** response.latest # but horizontal is
             >>
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}"] ** response.yes
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}"] ** response.yes
+            + io[f"target_{'mirror_L' if switcharoo else 'horizontal'}"] ** response.yes
 
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row-1}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_row2"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row-1}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_row3"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row-1}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col-2+i}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_col2"] ** (numbers[f"n{col-1}"] if switcharoo else numbers[f"n{col-1+i}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'horizontal'}_col3"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row-1}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_row2"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row-1}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_row3"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row-1}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col-2+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_col2"] ** (numbers[f"n{col-1}"] if not switcharoo else numbers[f"n{col-1+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'mirror_L'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+i}"])
             ) 
-            for switcharoo in (True, False) for i in range (3) for row in range(2, 6) for col in range(3-(i!=0), 7-i)
+            for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range (3) for row in range(2, 6) for col in range(3-(i!=0), 7-i)
     ]
 
-    mirror_L_left_vertical_placement_rule_wabstract  = [
+    mirror_L_left_vertical_placement_rule  = [
         (
-            + io["left" if switcharoo else "right"] ** response.yes
             + io.input_mirror_L ** response.yes
             + io.input_vertical ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** (response.yes if r_switcharoo else response.no)
+            + io.right ** (response.no if r_switcharoo else response.yes)
+            + io.above ** response.no
+            + io.below ** response.no
 
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row2"] ** numbers[f"n{row+1}"]
@@ -2569,33 +2709,40 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_col2"] ** numbers[f"n{col-1}"]
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_col3"] ** numbers[f"n{col}"]
             
-            + io1[f"{'input' if switcharoo else 'target'}_vertical_row1"] ** numbers[f"n{row-1+i}"]
-            + io1[f"{'input' if switcharoo else 'target'}_vertical_row2"] ** numbers[f"n{row+i}"]
-            + io1[f"{'input' if switcharoo else 'target'}_vertical_row3"] ** numbers[f"n{row+1+i}"]
+            + io1[f"{'input' if switcharoo else 'target'}_vertical_row1"] ** numbers[f"n{row-2+i}"]
+            + io1[f"{'input' if switcharoo else 'target'}_vertical_row2"] ** numbers[f"n{row-1+i}"]
+            + io1[f"{'input' if switcharoo else 'target'}_vertical_row3"] ** numbers[f"n{row+i}"]
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col1"] ** numbers[f"n{col+1}"]
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col2"] ** numbers[f"n{col+1}"]
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col3"] ** numbers[f"n{col+1}"]
 
-            + io1[f"target_shape{'mirror_L' if switcharoo else 'vertical'}"] ** response.latest # mirror_L isnt already there
-            + io1[f"target_shape{'vertical' if switcharoo else 'mirror_L'}"] ** response.yes # but vertical is
+            + io1[f"target_{'mirror_L' if switcharoo else 'vertical'}"] ** response.reference # mirror_L isnt already there
+            + io1[f"target_{'vertical' if switcharoo else 'mirror_L'}"] ** response.latest # but vertical is
             >>
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}"] ** response.yes
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}"] ** response.yes
+            + io[f"target_{'mirror_L' if switcharoo else 'vertical'}"] ** response.yes
 
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row-1+i}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_row2"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+i}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_row3"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+1+i}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+1}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_col2"] ** (numbers[f"n{col-1}"] if switcharoo else numbers[f"n{col+1}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_col3"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+1}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row-2+i}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_row2"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row-1+i}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_row3"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row+i}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+1}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_col2"] ** (numbers[f"n{col-1}"] if not switcharoo else numbers[f"n{col+1}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+1}"])
             ) 
-            for switcharoo in (True, False) for i in range(3) for row in range(1+(i==0), 6-i) for col in range(2, 6)
+            for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(4) for row in range(max(3-i, 1), 6-(0 if i<2 else i-1)) for col in range(2, 6)
     ]
 
-    mirror_L_right_vertical_placement_rule_wabstract = [
+    mirror_L_right_vertical_placement_rule = [
         (
-            + io["right" if switcharoo else "left"] ** response.yes
             + io.input_mirror_L ** response.yes
             + io.input_vertical ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** (response.no if r_switcharoo else response.yes)
+            + io.right ** (response.yes if r_switcharoo else response.no)
+            + io.above ** response.no
+            + io.below ** response.no
 
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row2"] ** numbers[f"n{row+1}"]
@@ -2611,26 +2758,33 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col2"] ** numbers[f"n{col-2 + (i == 3)}"]
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col3"] ** numbers[f"n{col-2 + (i == 3)}"]
 
-            + io1[f"target_shape{'mirror_L' if switcharoo else 'vertical'}"] ** response.latest # mirror_L isnt already there
-            + io1[f"target_shape{'vertical' if switcharoo else 'mirror_L'}"] ** response.yes # but vertical is
+            + io1[f"target_{'mirror_L' if switcharoo else 'vertical'}"] ** response.reference # mirror_L isnt already there
+            + io1[f"target_{'vertical' if switcharoo else 'mirror_L'}"] ** response.latest # but vertical is
             >>
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}"] ** response.yes
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}"] ** response.yes
+            + io[f"target_{'mirror_L' if switcharoo else 'vertical'}"] ** response.yes
 
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+1-i}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_row2"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+2-i}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_row3"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+3-i}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col-2 + (i == 3)}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_col2"] ** (numbers[f"n{col-1}"] if switcharoo else numbers[f"n{col-2 + (i == 3)}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_col3"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col-2 + (i == 3)}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+1-i}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_row2"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row+2-i}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_row3"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row+3-i}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col-2 + (i == 3)}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_col2"] ** (numbers[f"n{col-1}"] if not switcharoo else numbers[f"n{col-2 + (i == 3)}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col-2 + (i == 3)}"])
             )
-            for switcharoo in (True, False) for i in range(4) for row in range(1+max(0, i-1), min(4+i, 6)) for col in range(3 - (i == 3), 7)
+            for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(4) for row in range(1+max(0, i-1), min(4+i, 6)) for col in range(3 - (i == 3), 7)
     ]
 
-    mirror_L_above_vertical_placement_rule_wabstract = [
+    mirror_L_above_vertical_placement_rule = [
         (
-            + io["above" if switcharoo else "below"] ** response.yes
             + io.input_mirror_L ** response.yes
             + io.input_vertical ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** response.no
+            + io.right ** response.no
+            + io.above ** (response.yes if r_switcharoo else response.no)
+            + io.below ** (response.no if r_switcharoo else response.yes)
 
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row2"] ** numbers[f"n{row+1}"]
@@ -2646,26 +2800,33 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col2"] ** numbers[f"n{col-1+i}"]
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col3"] ** numbers[f"n{col-1+i}"]
 
-            + io1[f"target_shape{'mirror_L' if switcharoo else 'vertical'}"] ** response.latest # mirror_L isnt already there
-            + io1[f"target_shape{'vertical' if switcharoo else 'mirror_L'}"] ** response.yes # but vertical is
+            + io1[f"target_{'mirror_L' if switcharoo else 'vertical'}"] ** response.reference # mirror_L isnt already there
+            + io1[f"target_{'vertical' if switcharoo else 'mirror_L'}"] ** response.latest # but vertical is
             >>
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}"] ** response.yes
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}"] ** response.yes
+            + io[f"target_{'mirror_L' if switcharoo else 'vertical'}"] ** response.yes
 
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+2}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_row2"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+3}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_row3"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row+4}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col-1+i}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_col2"] ** (numbers[f"n{col-1}"] if switcharoo else numbers[f"n{col-1+i}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_col3"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col-1+i}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+2}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_row2"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row+3}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_row3"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row+4}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col-1+i}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_col2"] ** (numbers[f"n{col-1}"] if not switcharoo else numbers[f"n{col-1+i}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col-1+i}"])
         )
-        for switcharoo in (True, False) for i in range(2) for row in range(1, 3) for col in range(2, 7)
+        for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(2) for row in range(1, 3) for col in range(2, 7)
     ]
 
-    mirror_L_below_vertical_placement_rule_wabstract = [
+    mirror_L_below_vertical_placement_rule = [
         (
-            + io["below" if switcharoo else "above"] ** response.yes
             + io.input_mirror_L ** response.yes
             + io.input_vertical ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** response.no
+            + io.right ** response.no
+            + io.above ** (response.no if r_switcharoo else response.yes)
+            + io.below ** (response.yes if r_switcharoo else response.no)
 
            + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row2"] ** numbers[f"n{row+1}"]
@@ -2681,26 +2842,33 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col2"] ** numbers[f"n{col}"]
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col3"] ** numbers[f"n{col}"]
 
-            + io1[f"target_shape{'mirror_L' if switcharoo else 'vertical'}"] ** response.latest # mirror_L isnt already there
-            + io1[f"target_shape{'vertical' if switcharoo else 'mirror_L'}"] ** response.yes # but vertical is
+            + io1[f"target_{'mirror_L' if switcharoo else 'vertical'}"] ** response.reference # mirror_L isnt already there
+            + io1[f"target_{'vertical' if switcharoo else 'mirror_L'}"] ** response.latest # but vertical is
             >>
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}"] ** response.yes
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}"] ** response.yes
+            + io[f"target_{'mirror_L' if switcharoo else 'vertical'}"] ** response.yes
 
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row-3}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_row2"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row-2}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_row3"] ** (numbers[f"n{row+1}"] if switcharoo else numbers[f"n{row-1}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_col2"] ** (numbers[f"n{col-1}"] if switcharoo else numbers[f"n{col}"])
-            + io[f"target_shape{'mirror_L' if switcharoo else 'vertical'}_col3"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row-3}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_row2"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row-2}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_row3"] ** (numbers[f"n{row+1}"] if not switcharoo else numbers[f"n{row-1}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_col2"] ** (numbers[f"n{col-1}"] if not switcharoo else numbers[f"n{col}"])
+            + io[f"target_{'vertical' if switcharoo else 'mirror_L'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col}"])
             )
-            for switcharoo in (True, False) for row in range(4, 6) for col in range(2, 7)
+            for r_switcharoo in (True, False) for switcharoo in (True, False) for row in range(4, 6) for col in range(2, 7)
     ]
 
-    horizontal_left_vertical_placement_rule_wabstract  = [
+    horizontal_left_vertical_placement_rule  = [
         (
-            + io["left" if switcharoo else "right"] ** response.yes
             + io.input_vertical ** response.yes
             + io.input_horizontal ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** (response.yes if r_switcharoo else response.no)
+            + io.right ** (response.no if r_switcharoo else response.yes)
+            + io.above ** response.no
+            + io.below ** response.no
             
             + io1[f"{'input' if switcharoo else 'target'}_horizontal_row1"] ** numbers[f"n{row}"]
             + io1[f"{'input' if switcharoo else 'target'}_horizontal_row2"]** numbers[f"n{row}"]
@@ -2717,25 +2885,33 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col2"] ** numbers[f"n{col+3}"]
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col3"] ** numbers[f"n{col+3}"]
 
-            + io1[f"target_shape{'horizontal' if switcharoo else 'vertical'}"] ** response.latest # horizontal isnt already there
-            + io1[f"target_shape{'vertical' if switcharoo else 'horizontal'}"] ** response.yes # but vertical is
+            + io1[f"target_{'horizontal' if switcharoo else 'vertical'}"] ** response.reference # horizontal isnt already there
+            + io1[f"target_{'vertical' if switcharoo else 'horizontal'}"] ** response.latest # but vertical is
             >>
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}"] ** response.yes
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row-2+i}"])
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_row2"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row-1+i}"])
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_row3"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+i}"])
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+3}"])
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_col2"] ** (numbers[f"n{col+1}"] if switcharoo else numbers[f"n{col+3}"])
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_col3"] ** (numbers[f"n{col+2}"] if switcharoo else numbers[f"n{col+3}"])
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}"] ** response.yes
+            + io[f"target_{'horizontal' if switcharoo else 'vertical'}"] ** response.yes
+
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row-2+i}"])
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}_row2"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row-1+i}"])
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}_row3"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+i}"])
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+3}"])
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}_col2"] ** (numbers[f"n{col+1}"] if not switcharoo else numbers[f"n{col+3}"])
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}_col3"] ** (numbers[f"n{col+2}"] if not switcharoo else numbers[f"n{col+3}"])
             ) 
-            for switcharoo in (True, False) for i in range(3) for row in range(3-i, 7-i) for col in range(1, 4)
+            for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(3) for row in range(3-i, 7-i) for col in range(1, 4)
     ]
 
-    horizontal_right_vertical_placement_rule_wabstract = [
+    horizontal_right_vertical_placement_rule = [
         (
-            + io["right" if switcharoo else "left"] ** response.yes
             + io.input_vertical ** response.yes
             + io.input_horizontal ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** (response.no if r_switcharoo else response.yes)
+            + io.right ** (response.yes if r_switcharoo else response.no)
+            + io.above ** response.no
+            + io.below ** response.no
 
             + io1[f"{'target' if switcharoo else 'input'}_horizontal_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_horizontal_row2"]** numbers[f"n{row}"]
@@ -2751,26 +2927,33 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col2"] ** numbers[f"n{col-1}"]
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col3"] ** numbers[f"n{col-1}"]
 
-            + io1[f"target_shape{'horizontal' if switcharoo else 'vertical'}"] ** response.latest # horizontal isnt already there
-            + io1[f"target_shape{'vertical' if switcharoo else 'horizontal'}"] ** response.yes # but vertical is
+            + io1[f"target_{'horizontal' if switcharoo else 'vertical'}"] ** response.reference # horizontal isnt already there
+            + io1[f"target_{'vertical' if switcharoo else 'horizontal'}"] ** response.latest # but vertical is
             >>
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}"] ** response.yes
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}"] ** response.yes
+            + io[f"target_{'horizontal' if switcharoo else 'vertical'}"] ** response.yes
 
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row-2+i}"])
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_row2"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row-1+i}"])
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_row3"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+i}"])
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col-1}"])
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_col2"] ** (numbers[f"n{col+1}"] if switcharoo else numbers[f"n{col-1}"])
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_col3"] ** (numbers[f"n{col+2}"] if switcharoo else numbers[f"n{col-1}"])
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row-2+i}"])
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}_row2"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row-1+i}"])
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}_row3"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+i}"])
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col-1}"])
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}_col2"] ** (numbers[f"n{col+1}"] if not switcharoo else numbers[f"n{col-1}"])
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}_col3"] ** (numbers[f"n{col+2}"] if not switcharoo else numbers[f"n{col-1}"])
             ) 
-            for switcharoo in (True, False) for i in range(3) for row in range(3-i, 7-i) for col in range(2, 5)
+            for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(3) for row in range(3-i, 7-i) for col in range(2, 5)
     ]
 
-    horizontal_above_vertical_placement_rule_wabstract = [
+    horizontal_above_vertical_placement_rule = [
         (
-            + io["above" if switcharoo else "below"] ** response.yes
             + io.input_vertical ** response.yes
             + io.input_horizontal ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** response.no
+            + io.right ** response.no
+            + io.above ** (response.yes if r_switcharoo else response.no)
+            + io.below ** (response.no if r_switcharoo else response.yes)
 
             + io1[f"{'target' if switcharoo else 'input'}_horizontal_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_horizontal_row2"]** numbers[f"n{row}"]
@@ -2786,26 +2969,33 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col2"] ** numbers[f"n{col+i}"]
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col3"] ** numbers[f"n{col+i}"]
 
-            + io1[f"target_shape{'horizontal' if switcharoo else 'vertical'}"] ** response.latest # horizontal isnt already there
-            + io1[f"target_shape{'vertical' if switcharoo else 'horizontal'}"] ** response.yes # but vertical is
+            + io1[f"target_{'horizontal' if switcharoo else 'vertical'}"] ** response.reference # horizontal isnt already there
+            + io1[f"target_{'vertical' if switcharoo else 'horizontal'}"] ** response.latest # but vertical is
             >>
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}"] ** response.yes
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}"] ** response.yes
+            + io[f"target_{'horizontal' if switcharoo else 'vertical'}"] ** response.yes
 
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+1}"])
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_row2"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+2}"])
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_row3"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row+3}"])
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+i}"])
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_col2"] ** (numbers[f"n{col+1}"] if switcharoo else numbers[f"n{col+i}"])
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_col3"] ** (numbers[f"n{col+2}"] if switcharoo else numbers[f"n{col+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'vertical'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+1}"])
+            + io[f"target_{'horizontal' if switcharoo else 'vertical'}_row2"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+2}"])
+            + io[f"target_{'horizontal' if switcharoo else 'vertical'}_row3"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row+3}"])
+            + io[f"target_{'horizontal' if switcharoo else 'vertical'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'vertical'}_col2"] ** (numbers[f"n{col+1}"] if not switcharoo else numbers[f"n{col+i}"])
+            + io[f"target_{'horizontal' if switcharoo else 'vertical'}_col3"] ** (numbers[f"n{col+2}"] if not switcharoo else numbers[f"n{col+i}"])
         ) 
-        for switcharoo in (True, False) for i in range(3) for row in range(1, 4) for col in range(1, 5)
+        for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(3) for row in range(1, 4) for col in range(1, 5)
     ]
 
-    horizontal_below_vertical_placement_rule_wabstract = [
+    horizontal_below_vertical_placement_rule = [
         (
-            + io["below" if switcharoo else "above"] ** response.yes
             + io.input_vertical ** response.yes
             + io.input_horizontal ** response.yes
+
+            + io.start ** response.no
+            + io.stop ** response.no
+            + io.left ** response.no
+            + io.right ** response.no
+            + io.above ** (response.no if r_switcharoo else response.yes)
+            + io.below ** (response.yes if r_switcharoo else response.no)
 
             + io1[f"{'target' if switcharoo else 'input'}_horizontal_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_horizontal_row2"]** numbers[f"n{row}"]
@@ -2821,32 +3011,44 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col2"] ** numbers[f"n{col+i}"]
             + io1[f"{'input' if switcharoo else 'target'}_vertical_col3"] ** numbers[f"n{col+i}"]
 
-            + io1[f"target_shape{'horizontal' if switcharoo else 'vertical'}"] ** response.latest # horizontal isnt already there
-            + io1[f"target_shape{'vertical' if switcharoo else 'horizontal'}"] ** response.yes # but vertical is
+            + io1[f"target_{'horizontal' if switcharoo else 'vertical'}"] ** response.reference # horizontal isnt already there
+            + io1[f"target_{'vertical' if switcharoo else 'horizontal'}"] ** response.latest # but vertical is
             >>
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}"] ** response.latest
-            >>
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}"] ** response.yes
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}"] ** response.yes
+            + io[f"target_{'horizontal' if switcharoo else 'vertical'}"] ** response.yes
 
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_row1"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row-3}"])
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_row2"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row-2}"])
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_row3"] ** (numbers[f"n{row}"] if switcharoo else numbers[f"n{row-1}"])
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_col1"] ** (numbers[f"n{col}"] if switcharoo else numbers[f"n{col+i}"])
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_col2"] ** (numbers[f"n{col+1}"] if switcharoo else numbers[f"n{col+i}"])
-            + io[f"target_shape{'horizontal' if switcharoo else 'vertical'}_col3"] ** (numbers[f"n{col+2}"] if switcharoo else numbers[f"n{col+i}"])
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}_row1"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row-3}"])
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}_row2"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row-2}"])
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}_row3"] ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row-1}"])
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+i}"])
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}_col2"] ** (numbers[f"n{col+1}"] if not switcharoo else numbers[f"n{col+i}"])
+            + io[f"target_{'vertical' if switcharoo else 'horizontal'}_col3"] ** (numbers[f"n{col+2}"] if not switcharoo else numbers[f"n{col+i}"])
             )
-            for switcharoo in (True, False) for i in range(3) for row in range(4, 7) for col in range(1, 5)
+            for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(3) for row in range(4, 7) for col in range(1, 5)
+    ]
+
+    #Backtracking rules
+    bad_brick_backtracking_rule = [
+        (
+            +io[f"input_{shape}"] ** response.no
+            +io[f"target_{shape}"] ** response.yes
+
+            >>
+            io.construction_signal ** response.backtrack
+        )
+        for shape in SHAPES
     ]
     
     participant.search_space_rules.rules.compile(
         *(
-            + half_T_first_placement_rule_wabstract + mirror_L_first_placement_rule_wabstract + horizontal_first_placement_rule_wabstract + vertical_first_placement_rule_wabstract
-            + half_T_left_of_horizontal_placement_rule_wabstract + half_T_right_of_horizontal_placement_rule_wabstract + half_T_above_horizontal_placement_rule_wabstract + half_T_below_horizontal_placement_rule_wabstract
-            + half_T_left_vertical_placement_rule_wabstract + half_T_right_vertical_placement_rule_wabstract + half_T_above_vertical_placement_rule_wabstract + half_T_below_vertical_placement_rule_wabstract
-            + half_T_left_mirror_L_placement_rule_wabstract + half_T_right_mirror_L_placement_rule_wabstract + half_T_above_mirror_L_placement_rule_wabstract + half_T_below_mirror_L_placement_rule_wabstract
-            + mirror_L_left_horizontal_placement_rule_wabstract + mirror_L_right_horizontal_placement_rule_wabstract + mirror_L_above_horizontal_placement_rule_wabstract + mirror_L_below_horizontal_placement_rule_wabstract
-            + mirror_L_left_vertical_placement_rule_wabstract + mirror_L_right_vertical_placement_rule_wabstract + mirror_L_above_vertical_placement_rule_wabstract + mirror_L_below_vertical_placement_rule_wabstract
-            + horizontal_left_vertical_placement_rule_wabstract + horizontal_right_vertical_placement_rule_wabstract + horizontal_above_vertical_placement_rule_wabstract + horizontal_below_vertical_placement_rule_wabstract 
+            + half_T_first_placement_rule + mirror_L_first_placement_rule + horizontal_first_placement_rule + vertical_first_placement_rule
+            + half_T_left_of_horizontal_placement_rule + half_T_right_of_horizontal_placement_rule + half_T_above_horizontal_placement_rule + half_T_below_horizontal_placement_rule
+            + half_T_left_vertical_placement_rule + half_T_right_vertical_placement_rule + half_T_above_vertical_placement_rule + half_T_below_vertical_placement_rule
+            + half_T_left_mirror_L_placement_rule + half_T_right_mirror_L_placement_rule + half_T_above_mirror_L_placement_rule + half_T_below_mirror_L_placement_rule
+            + mirror_L_left_horizontal_placement_rule + mirror_L_right_horizontal_placement_rule + mirror_L_above_horizontal_placement_rule + mirror_L_below_horizontal_placement_rule
+            + mirror_L_left_vertical_placement_rule + mirror_L_right_vertical_placement_rule + mirror_L_above_vertical_placement_rule + mirror_L_below_vertical_placement_rule
+            + horizontal_left_vertical_placement_rule + horizontal_right_vertical_placement_rule + horizontal_above_vertical_placement_rule + horizontal_below_vertical_placement_rule 
+            + bad_brick_backtracking_rule
         )
     )
 
@@ -2863,16 +3065,14 @@ def init_abstract_participant_construction_rules(participant):
     1 1
     1
     """
-    half_T_first_placement_rule_abstract = [(
-            + io1.input_half_T ** response.yes
-
-            + io1.target_half_T ** response.no
-            + io1.target_mirror_L ** response.no
-            + io1.target_vertical ** response.no
-            + io1.target_horizontal ** response.no
+    first_placement_rule_abstract = [(
+            + io1.input_half_T ** response.no  if not i else response.yes
+            + io1.target_mirror_L ** response.no if i != 1 else response.yes
+            + io1.target_vertical ** response.no if i !=2 else response.yes
+            + io1.target_horizontal ** response.no if i != 3 else response.yes
 
             >>
-            + io2.target_half_T ** response.latest
+            + io2[f"target_{SHAPES[i]}"] ** response.latest
             + io2.stop ** response.no
             + io2.start ** response.yes
             + io2.left ** response.no
@@ -2880,68 +3080,7 @@ def init_abstract_participant_construction_rules(participant):
             + io2.below ** response.no
             + io2.above ** response.no
          )
-    ]
-
-    mirror_L_first_placement_rule_abstract = [
-        (   
-            + io1.input_mirror_L ** response.yes
-
-            + io1.target_half_T ** response.no
-            + io1.target_mirror_L ** response.no
-            + io1.target_vertical ** response.no
-            + io1.target_horizontal ** response.no
-            >>
-            + io2.target_mirror_L ** response.latest
-            + io2.stop ** response.no
-            + io2.start ** response.yes
-            + io2.left ** response.no
-            + io2.right ** response.no
-            + io2.below ** response.no
-            + io2.above ** response.no
-        )
-    ]
-    """
-      1
-    1 1
-    """
-
-    horizontal_first_placement_rule_abstract = [
-        ( 
-                + io1.input_horizontal ** response.yes  
-
-                + io1.target_half_T ** response.no
-                + io1.target_mirror_L ** response.no
-                + io1.target_vertical ** response.no
-                + io1.target_horizontal ** response.no
-
-                >>
-                + io2.target_vertical ** response.latest
-                + io2.stop ** response.no
-                + io2.start ** response.yes
-                + io2.left ** response.no
-                + io2.right ** response.no
-                + io2.below ** response.no
-                + io2.above ** response.no  
-            )
-    ]
-
-    vertical_first_placement_rule_abstract = [
-        ( 
-                + io1.input_vertical ** response.yes
-
-                + io1.target_half_T ** response.no
-                + io1.target_mirror_L ** response.no
-                + io1.target_vertical ** response.no
-                + io1.target_horizontal ** response.no
-                >>
-                + io2.target_horizontal ** response.latest
-                + io2.stop ** response.no
-                + io2.start ** response.yes
-                + io2.left ** response.no
-                + io2.right ** response.no
-                + io2.below ** response.no
-                + io2.above ** response.no
-            )
+         for i in range(4)
     ]
 
     #SUBSEQUENCE PLACEMENT RULES
@@ -2960,7 +3099,7 @@ def init_abstract_participant_construction_rules(participant):
             + io2.left ** (response.yes if switcharoo else response.no) # the relation is always in reference to the shape that is already in target
             + io2.right ** (response.no if switcharoo else response.yes)
             + io2.below ** response.no
-            + io2.above ** (response.yes if switcharoo else response.no)
+            + io2.above ** response.no
         )
         for switcharoo in (True, False)
     ]
@@ -2980,7 +3119,7 @@ def init_abstract_participant_construction_rules(participant):
             + io2.left ** (response.no if switcharoo else response.yes) # the relation is always in reference to the shape that is already in target
             + io2.right ** (response.yes if switcharoo else response.no)
             + io2.below ** response.no
-            + io2.above ** (response.no if switcharoo else response.yes)
+            + io2.above ** response.no
         )
         for switcharoo in (True, False)
     ]
@@ -3041,7 +3180,7 @@ def init_abstract_participant_construction_rules(participant):
             + io2.left ** (response.yes if switcharoo else response.no) # the relation is always in reference to the shape that is already in target
             + io2.right ** (response.no if switcharoo else response.yes)
             + io2.below ** response.no
-            + io2.above ** (response.no if switcharoo else response.yes)
+            + io2.above ** response.no
             )
             for switcharoo in (True, False)
     ]
@@ -3061,7 +3200,7 @@ def init_abstract_participant_construction_rules(participant):
             + io2.left ** (response.no if switcharoo else response.yes) # the relation is always in reference to the shape that is already in target
             + io2.right ** (response.yes if switcharoo else response.no)
             + io2.below ** response.no
-            + io2.above ** (response.no if switcharoo else response.yes)
+            + io2.above ** response.no
         ) 
         for switcharoo in (True, False)
     ]
@@ -3077,8 +3216,8 @@ def init_abstract_participant_construction_rules(participant):
             + io2[f"target_shape{'half_T' if switcharoo else 'vertical'}"] ** response.latest
             + io2.start ** response.no
             + io2.stop ** response.no
-            + io2.left ** (response.no if switcharoo else response.yes) # the relation is always in reference to the shape that is already in target
-            + io2.right ** (response.yes if switcharoo else response.no)
+            + io2.left ** response.no # the relation is always in reference to the shape that is already in target
+            + io2.right ** response.no
             + io2.below ** (response.yes if switcharoo else response.no)
             + io2.above ** (response.no if switcharoo else response.yes)
             ) 
@@ -3097,8 +3236,8 @@ def init_abstract_participant_construction_rules(participant):
             + io2[f"target_shape{'half_T' if switcharoo else 'vertical'}"] ** response.latest
             + io2.start ** response.no
             + io2.stop ** response.no
-            + io2.left ** (response.no if switcharoo else response.yes) # the relation is always in reference to the shape that is already in target
-            + io2.right ** (response.yes if switcharoo else response.no)
+            + io2.left ** response.no # the relation is always in reference to the shape that is already in target
+            + io2.right ** response.no
             + io2.below ** (response.no if switcharoo else response.yes)
             + io2.above ** (response.yes if switcharoo else response.no)
             ) 
@@ -3257,8 +3396,8 @@ def init_abstract_participant_construction_rules(participant):
             + io2.stop ** response.no
             + io2.left ** response.no
             + io2.right ** response.no
-            + io2.below ** (response.no if switcharoo else response.yes) # the relation is always in reference to the shape that is already in target
-            + io2.above ** (response.yes if switcharoo else response.no)
+            + io2.below ** (response.yes if switcharoo else response.no) # the relation is always in reference to the shape that is already in target
+            + io2.above ** (response.no if switcharoo else response.yes)
             ) 
             for switcharoo in (True, False)
     ]
@@ -3506,7 +3645,7 @@ def init_abstract_participant_construction_rules(participant):
 
     # combine rules
     participant.construction_abstract_rule.rules.compile(
-        *[half_T_first_placement_rule_abstract + mirror_L_first_placement_rule_abstract + vertical_first_placement_rule_abstract + horizontal_first_placement_rule_abstract
+        *[first_placement_rule_abstract
             + half_T_left_mirror_L_placement_rule_abstract + half_T_right_mirror_L_placement_rule_abstract + half_T_below_mirror_L_placement_rule_abstract + half_T_above_mirror_L_placement_rule_abstract
             + half_T_left_of_horizontal_placement_rule_abstract + half_T_right_of_horizontal_placement_rule_abstract + half_T_above_horizontal_placement_rule_abstract + half_T_below_horizontal_placement_rule_abstract
             + half_T_left_vertical_placement_rule_abstract + half_T_right_vertical_placement_rule_abstract + half_T_above_vertical_placement_rule_abstract + half_T_below_vertical_placement_rule_abstract

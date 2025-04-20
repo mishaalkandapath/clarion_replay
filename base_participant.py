@@ -257,7 +257,7 @@ class AbstractParticipant(BaseParticipant):
         construction_space = BrickConstructionTaskAbstractParticipant()
         abstract_space = HighLevelConstruction() 
 
-        super().__init__(name, h=h,
+        super().__init__(name,
                          construction_space=construction_space, abstract_space=abstract_space,
                          r_abstract=r_abstract,
                          c_abstract=c_abstract,)

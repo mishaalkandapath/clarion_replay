@@ -146,6 +146,7 @@ class HighLevelResponse(Atoms):
     yes: Atom
     no: Atom
     latest: Atom
+    backtrack: Atom
 
 class MLPConstructionIO(Atoms):
     # strictly speaking, only need the input shape rows and target shape rows and cols
@@ -199,30 +200,13 @@ class MLPConstructionIO(Atoms):
     target_horizontal_col2: Atom
     target_horizontal_col3: Atom
 
-
-class HighLevelConstructionConditions(Atoms):
+class ConstructionIOwAbstract(Atoms):
     input_half_T: Atom
     input_mirror_L: Atom
     input_vertical: Atom
     input_horizontal: Atom
 
-    target_half_T: Atom
-    target_mirror_L: Atom
-    target_vertical: Atom
-    target_horizontal: Atom
-
-    stop: Atom
-    start: Atom
-    left: Atom
-    right: Atom
-    above: Atom
-    below: Atom
-
-class AbstractParticipantLowLevelConstructionIO(Atoms):
-    input_half_T: Atom
-    input_mirror_L: Atom
-    input_vertical: Atom
-    input_horizontal: Atom
+    brick_nos: Atom
 
     target_half_T: Atom
     target_mirror_L: Atom
@@ -285,6 +269,24 @@ class AbstractParticipantLowLevelConstructionIO(Atoms):
     target_horizontal_col2: Atom
     target_horizontal_col3: Atom
 
+    start: Atom
+    stop: Atom
+    left: Atom
+    right: Atom
+    above: Atom
+    below: Atom
+
+class HighLevelConstructionConditions(Atoms):
+    input_half_T: Atom
+    input_mirror_L: Atom
+    input_vertical: Atom
+    input_horizontal: Atom
+
+    target_half_T: Atom
+    target_mirror_L: Atom
+    target_vertical: Atom
+    target_horizontal: Atom
+
     stop: Atom
     start: Atom
     left: Atom
@@ -300,7 +302,7 @@ class BrickConstructionTask(Family):
 
 class BrickConstructionTaskAbstractParticipant(Family):
     numbers: Numbers
-    io: ConstructionIO
+    io: ConstructionIOwAbstract
     response: HighLevelResponse
 
 class BrickResponseTask(Family):
