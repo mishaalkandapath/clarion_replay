@@ -90,9 +90,11 @@ def load_trial(construction_space: BrickConstructionTask, response_space: BrickR
                       + d.io.query_block_reference ** brick_map[trial["Q_Brick_Right"]])
     elif t_type == "train" and q_type == "query":
         # choose 2 blocks randomly
-        blocks = np.random.choice((t := np.unique(stim_grid))[t != 0], 2, replace=False)
+        # blocks = np.random.choice((t := np.unique(stim_grid))[t != 0], 2, replace=False)
+        blocks = [2, 4]
         # choose a relation randomly
-        relation = np.random.choice([1, 2, 3, 4], 1)
+        # relation = np.random.choice([1, 2, 3, 4], 1)
+        relation = [2]
         chunk_test = ( + d.io.query_relation ** query_map[relation[0]] 
                       + d.io.query_block ** brick_map[blocks[0]]
                       + d.io.query_block_reference ** brick_map[blocks[1]])
