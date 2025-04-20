@@ -150,12 +150,12 @@ def mlpify(cur_working_space: NumDict, index: Index) -> NumDict:
 
     return numdict(index ,data_dict, c=0.0)
 
-def filter_keys_by_rule_chunk(rule_rhs_chunk: Chunk, choice_main: dict) -> dict:
+def filter_keys_by_rule_chunk(rule_rhs_chunk: Chunk, choice_main: dict, space_descr="construction_space") -> dict:
     key_filter = []
     for (d, v), _ in rule_rhs_chunk._dyads_.items():
         k1, k2 = ~d, ~v
         p1, p2 = [label for label, _ in k1[-2:]], [label for label, _ in k2[-2:]]
-        key_filter.append(Key(f"(construction_space,construction_space):({p1[0]+","+p2[0]}):({p1[1]+","+p2[1]})"))
+        key_filter.append(Key(f"({space_descr},{space_descr}):({p1[0]+","+p2[0]}):({p1[1]+","+p2[1]})"))
     new_choice_main = {}
     for k in choice_main:
         if k in key_filter:
