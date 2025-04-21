@@ -167,7 +167,7 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             participant.response_choice.select()
         elif event.source == participant.response_choice.select:
             results.append(((event.time - last_end_construction_time).total_seconds(), 
-                            (participant.response_choice.poll()[~participant.response_space.io * ~participant.response_space.response] == ~participant.response_space.io.output * ~participant.response_space.response.yes) == choice_is_yes)) #TODO: come up with a way to save the sequences of search space rules that were activated -- is there in sample attribute of the choice in a rule i believe?
+                            (participant.response_choice.poll()[~participant.response_space.io.output * ~participant.response_space.response] == ~participant.response_space.io.output * ~participant.response_space.response.yes) == choice_is_yes)) #TODO: come up with a way to save the sequences of search space rules that were activated -- is there in sample attribute of the choice in a rule i believe?
             last_end_construction_time = None
             participant.finish_response_trial(timedelta())
         elif event.source == participant.finish_response_trial:
@@ -191,6 +191,24 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
         train_trials = pd.DataFrame(train_grids, columns=["Grid_Name"])
         train_results, train_construction_correctness, _, _ = run_participant_session(participant, train_trials)
 
+        train_results_df = pd.DataFrame(train_results, columns=["rt", "response_correctness"])
+        train_results_df["construction_correctness"] = train_construction_correctness
+        train_results_df["trial #"] = list(range(1, len(train_results_df) + 1))
+
+        # ---- Plotting ---- 
+        sns.scatterplot(train_results_df, x="trial #", y="construction_correctness")
+        plt.savefig("train_construction_correctness.png")
+        plt.clf()
+
+        sns.scatterplot(train_results_df, x="trial #", y="rt")
+        sns.lineplot(train_results_df, x="trial #", y="rt", color="red")
+        plt.savefig("train_rt.png")
+        plt.clf()
+
+        sns.scatterplot(train_results_df, x="trial #", y="response_correctness")
+        plt.savefig("train_response_correctness.png")
+        plt.clf()
+
     if run_train_only: return
 
     test_trial_indices = random.sample(range(len(test_trials)), num_test_trials)
@@ -201,36 +219,22 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
 
     test_results, test_construction_correctness, test_rule_choices, test_rule_lhs_information = run_participant_session(participant, test_trials, session_type="test", q_type="query")
 
-    train_results_df = pd.DataFrame(train_results, columns=["time", "response_choice"])
-    train_results_df["construction_correctness"] = train_construction_correctness
-
-    test_results_df = pd.DataFrame(test_results, columns=["time", "response_choice"])
+    test_results_df = pd.DataFrame(test_results, columns=["rt", "response_correctness"])
     test_results_df["construction_correctness"] = test_construction_correctness
+    test_results_df["trial #"] = list(range(1, len(test_results_df) + 1))
 
-    # ---- Plotting ---- 
-    sns.scatterplot(train_results_df["construction_correctness"], x="trial #", y="correct constructions")
-    plt.savefig("train_construction_correctness.png")
-    plt.clf()
+    # --- Plotting ---
 
-    sns.scatterplot(train_results_df["time"], x="trial #", y="rt")
-    sns.lineplot(train_results_df["time"], x="trial #", y="rt", color="red")
-    plt.savefig("train_rt.png")
-    plt.clf()
-
-    sns.scatterplot(train_results_df["response_choice"], x="trial #", y="correct responses")
-    plt.savefig("train_response_correctness.png")
-    plt.clf()
-
-    sns.scatterplot(test_results_df["construction_correctness"], x="trial #", y="correct constructions")
+    sns.scatterplot(test_results_df, x="trial #", y="construction_correctness")
     plt.savefig("test_construction_correctness.png")
     plt.clf()
 
-    sns.scatterplot(test_results_df["time"], x="trial #", y="rt")
-    sns.lineplot(test_results_df["time"], x="trial #", y="rt", color="red")
+    sns.scatterplot(test_results_df, x="trial #", y="rt")
+    sns.lineplot(test_results_df, x="trial #", y="rt", color="red")
     plt.savefig("test_rt.png")
     plt.clf()
 
-    sns.scatterplot(test_results_df["response_choice"], x="trial #", y="correct responses")
+    sns.scatterplot(test_results_df, x="trial #", y="response_correctness")
     plt.savefig("test_response_correctness.png")
     plt.clf()
 
@@ -251,6 +255,7 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
     plt.xlabel('Time steps')
     plt.ylabel('Sequence occurence average')
     plt.title("Sequences across steps")
+    plt.legend()
     plt.savefig("sequences_simple.png")
 
     # n_lags, betas, pvals = calculate_delayed_effects(test_rule_choices, max_lag=10)

@@ -166,7 +166,7 @@ def calculate_delayed_effects(normal_search_stats, mlp_search_stats):
 
 def simple_sequenceness(rule_choices, rule_lhs_information, grids):
     
-    max_len = max([len(g) for g in grids])-1
+    max_len = max([len(g) for g in rule_choices])-1
     stable_to_present = np.zeros((len(rule_choices), max_len))
     present_to_stable = np.zeros((len(rule_choices), max_len)) # backtracking
     distant_to_stable = np.zeros((len(rule_choices), max_len)) 
@@ -174,23 +174,24 @@ def simple_sequenceness(rule_choices, rule_lhs_information, grids):
     present_to_present = np.zeros((len(rule_choices), max_len)) 
 
     for i, choices_in_trial in enumerate(rule_choices):
-        stable_block = [k[-1] for k in choices_in_trial[0] if re.match(r"target_{mirror_L|half_T|horizontal|vertical}", str(k[-1][0]))][0][0]
+        stable_block = [str(k).split(":")[-1] for k in choices_in_trial[0] if re.fullmatch(r"target_(mirror_L|half_T|horizontal|vertical)", str(k).split(":")[-1].split(",")[0][1:])][0].split(",")[0][1:]
         stable_block = str(stable_block)[len('target_'):]
         
         #now is it a present, present typa situation or a present, distant present typa situation. 
         _, brick_rel = brick_connectedness(grids[i])
-        only_presents = brick_rel.tolist().count(SHAPE_MAP[stable_block]) == 2
-        present = brick_rel((t := brick_rel.tolist().index(SHAPE_MAP[stable_block])) - 2 if t > 2 else t + 2)
-        present2 = (t := np.unique(grids))[t not in (present, SHAPE_MAP[stable_block], 0)]
+        only_presents = brick_rel.count(SHAPE_MAP[stable_block]) == 2
+        t = brick_rel.index(SHAPE_MAP[stable_block])
+        present = brick_rel[t - 2 if t >= 2 else t + 2]
+        present2 = np.unique(grids)[(np.unique(grids) != present) & (np.unique(grids) != SHAPE_MAP[stable_block]) & (np.unique(grids) != 0)].item()
         present_block = REVERSE_SHAPE_MAP[present]
         present2_block = REVERSE_SHAPE_MAP[present2]
 
         for j, _ in enumerate(choices_in_trial[1:]):
-            other_blocks = [(str((~(k[0]))[-1]), str((~(k[1]))[-1])) for k in rule_lhs_information[j+1].__dyads__ if re.match(r"(target_{mirror_L|half_T|horizontal|vertical})", str((~(k[0]))[-1]))]
+            other_blocks = [(str((~(k[0]))).split(":")[-1], str((~(k[1]))).split(":")[-1]) for k in rule_lhs_information[i][j+1]._dyads_ if re.fullmatch(r"(target_(mirror_L|half_T|horizontal|vertical))", str((~(k[0]))).split(":")[-1])]
             
             if only_presents:
                 if stable_block in [k[0][len("target_"):] for k in other_blocks]\
-                and "yes" in [k[1] for k in other_blocks if k[0][len("target_"):] == stable_block]:
+                and "yes" in [k[1] for k in other_blocks if k[0][len("target_"):]]:
                     stable_to_present[i, j] = 1
                 elif stable_block in [k[0][len("target_"):] for k in other_blocks]:
                     present_to_stable[i, j] = 1 # this prolly will never happen -- but curious to see
@@ -198,11 +199,11 @@ def simple_sequenceness(rule_choices, rule_lhs_information, grids):
                     present_to_present[i, j] = 1
             else:
                 if stable_block in [k[0][len("target_"):] for k in other_blocks]\
-                and "yes" in [k[1] for k in other_blocks if k[0][len("target_"):] == stable_block]\
+                and "yes" in [k[1] for k in other_blocks if k[0][len("target_"):]]\
                     and present_block in [k[0][len("target_"):] for k in other_blocks]:
                     stable_to_present[i, j] = 1
                 elif stable_block in [k[0][len("target_"):] for k in other_blocks]\
-                    and "yes" in [k[1] for k in other_blocks if k[0][len("target_"):] == stable_block]\
+                    and "yes" in [k[1] for k in other_blocks if k[0][len("target_"):]]\
                         and present2_block in [k[0][len("target_"):] for k in other_blocks]:
                     stable_to_distant[i, j] = 1
                 elif stable_block in [k[0][len("target_"):] for k in other_blocks]\

@@ -231,7 +231,6 @@ class LowLevelParticipant(BaseParticipant):
 
             self.search_space_matchstats.increment() # TODO: apt timedelta?
             last_construction = self.past_constructions.pop()
-            self.past_chosen_rules.pop()
             self.past_chosen_rule_lhs_history.pop()
             self.construction_input.send(last_construction, flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
 
