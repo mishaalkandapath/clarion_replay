@@ -3,3 +3,8 @@ raw/
 processed
 raw
 *.DS_Store
+forms.txt
+paired_associates.ipynb
+rl_demo.ipynb
+.vscode/
+__pycache__/
