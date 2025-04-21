@@ -182,7 +182,7 @@ def simple_sequenceness(rule_choices, rule_lhs_information, grids):
         only_presents = brick_rel.count(SHAPE_MAP[stable_block]) == 2
         t = brick_rel.index(SHAPE_MAP[stable_block])
         present = brick_rel[t - 2 if t >= 2 else t + 2]
-        present2 = np.unique(grids)[(np.unique(grids) != present) & (np.unique(grids) != SHAPE_MAP[stable_block]) & (np.unique(grids) != 0)].item()
+        present2 = np.unique(grids[i])[(np.unique(grids[i]) != present) & (np.unique(grids[i]) != SHAPE_MAP[stable_block]) & (np.unique(grids[i]) != 0)].item()
         present_block = REVERSE_SHAPE_MAP[present]
         present2_block = REVERSE_SHAPE_MAP[present2]
 

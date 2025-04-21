@@ -355,3 +355,12 @@ class AbstractParticipant(BaseParticipant):
         self.abstract_space_matchstats.crit.data.append(new_crit_score)
         
         self.abstract_space_matchstats.increment() # TODO: apt timedelta?
+
+
+"""
+MLP will be changing the weights of the main in the input class -- by a certain amount
+but ideally it should only change the weights of that which is already there. -- you can establish that by multiplication -- because if it isnt there, 
+it is 0.
+
+But what about the MLP -- it cant be an IDN with TD error. What do attention MLPs look like? Whats a good way to implement that?
+"""

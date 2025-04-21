@@ -187,6 +187,7 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
 
     if num_train_trials:
         train_grids = random.choices(grid_names, k=num_train_trials)
+        train_grids = [grid_name.split(".")[0] for grid_name in train_grids]
         #make this list a pandas dataframe
         train_trials = pd.DataFrame(train_grids, columns=["Grid_Name"])
         train_results, train_construction_correctness, _, _ = run_participant_session(participant, train_trials)
@@ -211,8 +212,8 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
 
     if run_train_only: return
 
-    test_trial_indices = random.sample(range(len(test_trials)), num_test_trials)
-    test_trials = test_trials.iloc[test_trial_indices]
+    test_trial_indices = random.sample(test_trials['PID'].unique().tolist(), num_test_trials)
+    test_trials = test_trials[test_trials["PID"].isin(test_trial_indices)]
 
     test_grid_names = test_trials["Grid_Name"].tolist()
     test_grids = [np.load(f"processed/test_data/test_stims/{grid_name}.npy") for grid_name in test_grid_names]
@@ -277,4 +278,4 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
     # plt.show()
 
 if __name__ == "__main__":
-    run_experiment(num_train_trials=0, num_test_trials=1)
+    run_experiment(num_train_trials=0, num_test_trials=2)
