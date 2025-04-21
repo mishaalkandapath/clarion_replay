@@ -92,6 +92,8 @@ def load_trial(construction_space: BrickConstructionTask | BrickConstructionTask
 
     choice_is_yes = None
 
+    print("Stimulus grid: \n", stim_grid)
+
     if t_type == "test":
         chunk_test = ( + d.io.query_relation ** query_map[trial["Q_Relation"]] 
                       + d.io.query_block ** brick_map[trial["Q_Brick_Left"]]
@@ -100,7 +102,6 @@ def load_trial(construction_space: BrickConstructionTask | BrickConstructionTask
         choice_is_yes = trial[query_col_map[trial["Q_Relation"]]] == brick_map[trial["Q_Brick_Left"]] and trial[query_col_map[trial["Q_Relation"] - 2 if trial["Q_Relation"] > 2 else trial["Q_Relation"]+2]] == brick_map[trial["Q_Brick_Right"]]
     elif t_type == "train" and q_type == "query":
         #get connection structure 
-        _, brick_conn = brick_connectedness(stim_grid)
         # choose 2 blocks randomly
         blocks = np.random.choice((t := np.unique(stim_grid))[t != 0], 2, replace=False)
         # choose a relation randomly
@@ -108,10 +109,13 @@ def load_trial(construction_space: BrickConstructionTask | BrickConstructionTask
         chunk_test = ( + d.io.query_relation ** query_map[relation[0]] 
                       + d.io.query_block ** brick_map[blocks[0]]
                       + d.io.query_block_reference ** brick_map[blocks[1]])
-        choice_is_yes = brick_conn[relation - 1] == blocks[0] and brick_conn[relation - 3 if relation in (3, 4) else relation + 1] == blocks[1]
+        if len((t := np.unique(stim_grid))[t != 0]) == 3:
+            _, brick_conn = brick_connectedness(stim_grid)
+            choice_is_yes = brick_conn[relation - 1] == blocks[0] and brick_conn[relation - 3 if relation in (3, 4) else relation + 1] == blocks[1]
+        else:
+            choice_is_yes = input(f"Query Block {blocks[0]} and Reference Block {blocks[1]} with relation {relation[0]} is: ") == "yes"
     else: chunk_test = ()
-
-    print("Stimulus grid: \n", stim_grid)
+    
     if q_type == "query" and t_type == "test":
         print("Query brick 1: ", trial["Q_Brick_Left"])
         print("Query brick 2: ", trial["Q_Brick_Right"])
@@ -171,6 +175,9 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             participant.start_construct_trial(timedelta())
     return results, construction_correctness, all_rule_history
 
+trials_df = pd.read_csv("~/personalproj/clarion_replay/processed/test_data/all_test_data.csv")
+run_participant_session(LowLevelParticipant("p1"), trials_df)
+
 def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=False):
     grid_names = os.listdir("processed/train_data/train_stims/")
     test_trials = pd.read_csv("processed/test_data/all_test_data.csv")
@@ -189,25 +196,24 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
 
     test_results, test_construction_correctness, test_rule_choices = run_participant_session(participant, test_trials, session_type="test", q_type="query")
 
-    # ---- Plotting ---- 
     train_results_df = pd.DataFrame(train_results, columns=["time", "response_choice"])
     train_results_df["construction_correctness"] = train_construction_correctness
 
-    #test
     test_results_df = pd.DataFrame(test_results, columns=["time", "response_choice"])
     test_results_df["construction_correctness"] = test_construction_correctness
 
-    #plto correctness using seaborn
+    # ---- Plotting ---- 
     sns.scatterplot(train_results_df["construction_correctness"], x="trial #", y="correct constructions")
     plt.savefig("train_construction_correctness.png")
     plt.clf()
 
-    sns.scatterplot(test_results_df["time"], x="trial #", y="rt")
-    plt.savefig("test_rt.png")
+    sns.scatterplot(train_results_df["time"], x="trial #", y="rt")
+    sns.lineplot(train_results_df["time"], x="trial #", y="rt", color="red")
+    plt.savefig("train_rt.png")
     plt.clf()
 
-    sns.scatterplot(test_results_df["response_choice"], x="trial #", y="correct responses")
-    plt.savefig("test_response_correctness.png")
+    sns.scatterplot(train_results_df["response_choice"], x="trial #", y="correct responses")
+    plt.savefig("train_response_correctness.png")
     plt.clf()
 
     sns.scatterplot(test_results_df["construction_correctness"], x="trial #", y="correct constructions")
@@ -215,6 +221,7 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
     plt.clf()
 
     sns.scatterplot(test_results_df["time"], x="trial #", y="rt")
+    sns.lineplot(test_results_df["time"], x="trial #", y="rt", color="red")
     plt.savefig("test_rt.png")
     plt.clf()
 
@@ -224,7 +231,3 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
 
     # delayed effects data:
     d_effects = calculate_delayed_effects(test_rule_choices)
-    
-    
-
-

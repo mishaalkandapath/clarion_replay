@@ -80,7 +80,7 @@ class BaseParticipant(Agent):
         
         self.search_space_pool["search_space_matchstats"] = (
             self.search_space_matchstats.main, 
-            lambda d: d.exp().shift(x=1).inv().scale(0.2)) # TODO: is the function here correct?
+            lambda d: d.shift(x=1).tanh().scale(x=0.2)) # TODO: is the function here correct?
         
         self.response_rules.bla_main = self.response_pool.main #updated site for the response rules to take BLAS into account
         self.search_space_rules.bla_main = self.search_space_pool.main
@@ -235,9 +235,12 @@ class LowLevelParticipant(BaseParticipant):
         elif cur_choice[~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens] == ~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens.stop_construction:
             self.end_construction() # TODO: consider adding stop construction rules to rule history for matchstats
         else: #continue construction
-            self.past_chosen_rules.append(list(cur_rule_choice.values())[0])
-            self.all_rule_history.append(list(cur_rule_choice.values())[0])
-            self.construction_input.send(filter_keys_by_rule_chunk(self.search_space_rules.rules.rhs.chunks._members_[Key(f"{cur_rule_number}")], self.search_space_choice.main[0].d)) # loop it back in --for more selections
+            # self.past_chosen_rules.append(list(cur_rule_choice.values())[0])
+            # self.all_rule_history.append(list(cur_rule_choice.values())[0])
+            cur_additions = filter_keys_by_rule_chunk(self.search_space_rules.rules.rhs.chunks._members_[Key(f"{cur_rule_number}")], self.search_space_choice.main[0].d)
+            self.past_chosen_rules.append(cur_additions)
+            self.all_rule_history.append(cur_additions)
+            self.construction_input.send(cur_additions) # loop it back in --for more selections
 
 class AbstractParticipant(BaseParticipant):  
     """
@@ -277,7 +280,7 @@ class AbstractParticipant(BaseParticipant):
         
         self.abstract_space_pool["abstract_space_matchstats"] = (
             self.abstract_space_matchstats.main,
-            lambda d: d.exp().shift(x=1).inv().scale(0.2))
+            lambda d:  d.shift(x=1).tanh().scale(x=0.2))
         
         self.abstract_space_rules.choice.input = self.abstract_space_pool.main
 

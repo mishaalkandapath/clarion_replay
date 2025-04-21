@@ -1,4 +1,11 @@
 import numpy as np
+import re
+from utils import filter_keys_by_rule_chunk
+
+from pyClarion import Key
+
+SHAPE_MAP = {"half_T": 1, "mirror_L": 2, "vertical": 3, "horizontal": 4}
+REVERSE_SHAPE_MAP = {v: k for k, v in SHAPE_MAP.items()}
 
 def mk_ontopness(REQUIRED_FORM):
     """
@@ -112,5 +119,67 @@ def brick_connectedness(stim_grid):
     
     return bricks_conn_trial.flatten(), bricks_rel_trial
 
-def calculate_delayed_effects(rule_choices):
+def calculate_delayed_effects(rule_choices, grids, participant):
+    """
+    bascially one - zero vectors of categorie of rules, plot em to get a plot like the one in the paper. 
+    """
+    max_len = max([len(g) for g in grids])
+    stable_to_present = np.zeros((len(rule_choices), max_len))
+    present_to_stable = np.zeros((len(rule_choices), max_len)) # backtracking
+    distant_to_stable = np.zeros((len(rule_choices), max_len)) 
+    stable_to_distant = np.zeros((len(rule_choices), max_len)) 
+    present_to_present = np.zeros((len(rule_choices), max_len)) 
+
     pass
+
+def simple_sequenceness(rule_choices, rule_lhs_information, grids, participant):
+    
+    max_len = max([len(g) for g in grids])-1
+    stable_to_present = np.zeros((len(rule_choices), max_len))
+    present_to_stable = np.zeros((len(rule_choices), max_len)) # backtracking
+    distant_to_stable = np.zeros((len(rule_choices), max_len)) 
+    stable_to_distant = np.zeros((len(rule_choices), max_len)) 
+    present_to_present = np.zeros((len(rule_choices), max_len)) 
+
+    for i, choices_in_trial in enumerate(rule_choices):
+        stable_block = [k[-1] for k in choices_in_trial[0] if re.match(r"target_{mirror_L|half_T|horizontal|vertical}", str(k[-1][0]))][0][0]
+        stable_block = str(stable_block)[len('target_'):]
+        
+        #now is it a present, present typa situation or a present, distant present typa situation. 
+        _, brick_rel = brick_connectedness(grids[i])
+        only_presents = brick_rel.tolist().count(SHAPE_MAP[stable_block]) == 2
+        present = brick_rel((t := brick_rel.tolist().index(SHAPE_MAP[stable_block])) - 2 if t > 2 else t + 2)
+        present2 = (t := np.unique(grids))[t not in (present, SHAPE_MAP[stable_block], 0)]
+        present_block = REVERSE_SHAPE_MAP[present]
+        present2_block = REVERSE_SHAPE_MAP[present2]
+
+        for j, _ in enumerate(choices_in_trial[1:]):
+            other_blocks = [k[-1] for k in rule_lhs_information[j+1] if re.match(r"(target_{mirror_L|half_T|horizontal|vertical})", str(k[-1][0]))]
+            
+            if only_presents:
+                if stable_block in [k[0][len("target_"):] for k in other_blocks]\
+                and "yes" in [k[1] for k in other_blocks if k[0][len("target_"):] == stable_block]:
+                    stable_to_present[i, j] = 1
+                elif stable_block in [k[0][len("target_"):] for k in other_blocks]:
+                    present_to_stable[i, j] = 1 # this prolly will never happen -- but curious to see
+                else:
+                    present_to_present[i, j] = 1
+            else:
+                if stable_block in [k[0][len("target_"):] for k in other_blocks]\
+                and "yes" in [k[1] for k in other_blocks if k[0][len("target_"):] == stable_block]\
+                    and present_block in [k[0][len("target_"):] for k in other_blocks]:
+                    stable_to_present[i, j] = 1
+                elif stable_block in [k[0][len("target_"):] for k in other_blocks]\
+                    and "yes" in [k[1] for k in other_blocks if k[0][len("target_"):] == stable_block]\
+                        and present2_block in [k[0][len("target_"):] for k in other_blocks]:
+                    stable_to_distant[i, j] = 1
+                elif stable_block in [k[0][len("target_"):] for k in other_blocks]\
+                    and present_block in [k[0][len("target_"):] for k in other_blocks]:
+                    present_to_stable[i, j] = 1
+                elif stable_block in [k[0][len("target_"):] for k in other_blocks]\
+                    and present2_block in [k[0][len("target_"):] for k in other_blocks]:
+                    distant_to_stable[i, j] = 1
+                else:
+                    present_to_present[i, j] = 1
+
+    return stable_to_present, present_to_stable, distant_to_stable, stable_to_distant, present_to_present
