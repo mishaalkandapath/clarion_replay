@@ -96,10 +96,10 @@ def load_trial(construction_space: BrickConstructionTask | BrickConstructionTask
 
     if t_type == "test":
         chunk_test = ( + d.io.query_relation ** query_map[trial["Q_Relation"]] 
-                      + d.io.query_block ** brick_map[trial["Q_Brick_Left"]]
-                      + d.io.query_block_reference ** brick_map[trial["Q_Brick_Right"]])
+                      + d.io.query_block_reference ** brick_map[trial["Q_Brick_Left"]]
+                      + d.io.query_block ** brick_map[trial["Q_Brick_Middle"]])
 
-        choice_is_yes = trial[query_col_map[trial["Q_Relation"]]] == brick_map[trial["Q_Brick_Left"]] and trial[query_col_map[trial["Q_Relation"] - 2 if trial["Q_Relation"] > 2 else trial["Q_Relation"]+2]] == brick_map[trial["Q_Brick_Right"]]
+        choice_is_yes = trial[query_col_map[trial["Q_Relation"]]] == brick_map[trial["Q_Brick_Left"]] and trial[query_col_map[trial["Q_Relation"] - 2 if trial["Q_Relation"] > 2 else trial["Q_Relation"]+2]] == brick_map[trial["Q_Brick_Middle"]]
     elif t_type == "train" and q_type == "query":
         #get connection structure 
         # choose 2 blocks randomly
@@ -118,7 +118,7 @@ def load_trial(construction_space: BrickConstructionTask | BrickConstructionTask
     
     if q_type == "query" and t_type == "test":
         print("Query brick 1: ", trial["Q_Brick_Left"])
-        print("Query brick 2: ", trial["Q_Brick_Right"])
+        print("Query brick 2: ", trial["Q_Brick_Middle"])
         print("Query relation: ", trial["Q_Relation"])
     elif q_type == "query":
         print("Query brick 1: ", blocks[0])
@@ -129,7 +129,7 @@ def load_trial(construction_space: BrickConstructionTask | BrickConstructionTask
 
 def run_participant_session(participant: BaseParticipant, session_df: pd.DataFrame, session_type="train", q_type="query"):
     global rule_defs
-    results, construction_correctness, all_rule_history = [], [], []
+    results, construction_correctness, all_rule_history, all_rule_lhs_history = [], [], [], []
     trials = []
     # Knowledge initialization
     init_participant_response_rules(participant)
@@ -172,29 +172,34 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             participant.finish_response_trial(timedelta())
         elif event.source == participant.finish_response_trial:
             all_rule_history.append(participant.all_rule_history)
+            all_rule_lhs_history.append(participant.all_rule_lhs_history)
             participant.start_construct_trial(timedelta())
-    return results, construction_correctness, all_rule_history
+    return results, construction_correctness, all_rule_history, all_rule_lhs_history
 
-trials_df = pd.read_csv("~/personalproj/clarion_replay/processed/test_data/all_test_data.csv")
-run_participant_session(LowLevelParticipant("p1"), trials_df)
+# trials_df = pd.read_csv("~/personalproj/clarion_replay/processed/test_data/all_test_data.csv")
+# run_participant_session(LowLevelParticipant("p1"), trials_df)
 
 def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=False):
+
     grid_names = os.listdir("processed/train_data/train_stims/")
     test_trials = pd.read_csv("processed/test_data/all_test_data.csv")
-
     participant = LowLevelParticipant("p1")
 
-    train_grids = random.choices(grid_names, k=num_train_trials)
-    #make this list a pandas dataframe
-    train_trials = pd.DataFrame(train_grids, columns=["Grid_Name"])
-    train_results, train_construction_correctness, _ = run_participant_session(participant, train_trials)
+    if num_train_trials:
+        train_grids = random.choices(grid_names, k=num_train_trials)
+        #make this list a pandas dataframe
+        train_trials = pd.DataFrame(train_grids, columns=["Grid_Name"])
+        train_results, train_construction_correctness, _, _ = run_participant_session(participant, train_trials)
 
     if run_train_only: return
 
     test_trial_indices = random.sample(range(len(test_trials)), num_test_trials)
     test_trials = test_trials.iloc[test_trial_indices]
 
-    test_results, test_construction_correctness, test_rule_choices = run_participant_session(participant, test_trials, session_type="test", q_type="query")
+    test_grid_names = test_trials["Grid_Name"].tolist()
+    test_grids = [np.load(f"processed/test_data/test_stims/{grid_name}.npy") for grid_name in test_grid_names]
+
+    test_results, test_construction_correctness, test_rule_choices, test_rule_lhs_information = run_participant_session(participant, test_trials, session_type="test", q_type="query")
 
     train_results_df = pd.DataFrame(train_results, columns=["time", "response_choice"])
     train_results_df["construction_correctness"] = train_construction_correctness
@@ -230,8 +235,23 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
     plt.clf()
 
     # delayed effects data:
-    d_effects = calculate_delayed_effects(test_rule_choices)
-
+    n_stable_to_present, n_present_to_stable, n_distant_to_stable, n_stable_to_distant, n_present_to_present = simple_sequenceness(test_rule_choices, test_rule_lhs_information, test_grids)
+    n_stable_to_present = n_stable_to_present.mean(axis=0)
+    n_present_to_stable = n_present_to_stable.mean(axis=0)
+    n_distant_to_stable = n_distant_to_stable.mean(axis=0)
+    n_stable_to_distant = n_stable_to_distant.mean(axis=0)
+    n_present_to_present = n_present_to_present.mean(axis=0)
+    # plot the delayed effects
+    plt.figure(figsize=(8, 4))
+    plt.plot(n_stable_to_present, label='Stable to Present', color='C0')
+    plt.plot(n_present_to_stable, label='Present to Stable', color='C1')
+    plt.plot(n_distant_to_stable, label='Distant to Stable', color='C2')
+    plt.plot(n_stable_to_distant, label='Stable to Distant', color='C3')
+    plt.plot(n_present_to_present, label='Present to Present', color='C4')
+    plt.xlabel('Time steps')
+    plt.ylabel('Sequence occurence average')
+    plt.title("Sequences across steps")
+    plt.savefig("sequences_simple.png")
 
     # n_lags, betas, pvals = calculate_delayed_effects(test_rule_choices, max_lag=10)
     # time_ms = np.arange(n_lags) * 10  # adjust if your step ≠10ms
@@ -250,3 +270,6 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
     # plt.legend()
     # plt.tight_layout()
     # plt.show()
+
+if __name__ == "__main__":
+    run_experiment(num_train_trials=0, num_test_trials=1)

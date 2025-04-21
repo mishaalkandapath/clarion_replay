@@ -164,7 +164,7 @@ def calculate_delayed_effects(normal_search_stats, mlp_search_stats):
 
     return n_lags, betas, pvals
 
-def simple_sequenceness(rule_choices, rule_lhs_information, grids, participant):
+def simple_sequenceness(rule_choices, rule_lhs_information, grids):
     
     max_len = max([len(g) for g in grids])-1
     stable_to_present = np.zeros((len(rule_choices), max_len))
@@ -186,7 +186,7 @@ def simple_sequenceness(rule_choices, rule_lhs_information, grids, participant):
         present2_block = REVERSE_SHAPE_MAP[present2]
 
         for j, _ in enumerate(choices_in_trial[1:]):
-            other_blocks = [k[-1] for k in rule_lhs_information[j+1] if re.match(r"(target_{mirror_L|half_T|horizontal|vertical})", str(k[-1][0]))]
+            other_blocks = [(str((~(k[0]))[-1]), str((~(k[1]))[-1])) for k in rule_lhs_information[j+1].__dyads__ if re.match(r"(target_{mirror_L|half_T|horizontal|vertical})", str((~(k[0]))[-1]))]
             
             if only_presents:
                 if stable_block in [k[0][len("target_"):] for k in other_blocks]\

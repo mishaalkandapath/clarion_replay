@@ -95,6 +95,8 @@ class BaseParticipant(Agent):
         self.past_constructions = []
         self.past_chosen_rules = []
         self.all_rule_history = []
+        self.all_rule_lhs_history = []
+        self.past_chosen_rule_lhs_history = []
 
         #wait events for low level pool update;
         self.search_space_trigger_wait = []
@@ -230,6 +232,7 @@ class LowLevelParticipant(BaseParticipant):
             self.search_space_matchstats.increment() # TODO: apt timedelta?
             last_construction = self.past_constructions.pop()
             self.past_chosen_rules.pop()
+            self.past_chosen_rule_lhs_history.pop()
             self.construction_input.send(last_construction, flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
 
         elif cur_choice[~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens] == ~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens.stop_construction:
@@ -240,6 +243,8 @@ class LowLevelParticipant(BaseParticipant):
             cur_additions = filter_keys_by_rule_chunk(self.search_space_rules.rules.rhs.chunks._members_[Key(f"{cur_rule_number}")], self.search_space_choice.main[0].d)
             self.past_chosen_rules.append(cur_additions)
             self.all_rule_history.append(cur_additions)
+            self.all_rule_lhs_history.append(self.search_space_rules.rules.lhs.chunks._members_[Key(f"{cur_rule_number}")])
+            self.past_chosen_rule_lhs_history.append(self.search_space_rules.rules.lhs.chunks._members_[Key(f"{cur_rule_number}")])
             self.construction_input.send(cur_additions) # loop it back in --for more selections
 
 class AbstractParticipant(BaseParticipant):  
