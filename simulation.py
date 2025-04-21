@@ -231,3 +231,22 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
 
     # delayed effects data:
     d_effects = calculate_delayed_effects(test_rule_choices)
+
+
+    # n_lags, betas, pvals = calculate_delayed_effects(test_rule_choices, max_lag=10)
+    # time_ms = np.arange(n_lags) * 10  # adjust if your step ≠10ms
+
+    # plt.figure(figsize=(8, 4))
+    # plt.plot(time_ms, betas, label='GLM β (data ← theory)', color='C2')
+    # plt.axhline(0, color='k', linestyle='--', linewidth=0.8)
+
+    # # Optionally, mark timepoints with p<0.05
+    # sig = pvals < 0.05
+    # plt.scatter(time_ms[sig], betas[sig], color='red', s=20, label='p < 0.05')
+
+    # plt.xlabel('Time lag (ms)')
+    # plt.ylabel('Regression β')
+    # plt.title('Sequenceness β‑weights (empirical vs. theoretical)')
+    # plt.legend()
+    # plt.tight_layout()
+    # plt.show()

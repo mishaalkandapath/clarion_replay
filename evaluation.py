@@ -1,5 +1,6 @@
 import numpy as np
 import re
+import statsmodels.api as sm
 from utils import filter_keys_by_rule_chunk
 
 from pyClarion import Key
@@ -119,18 +120,49 @@ def brick_connectedness(stim_grid):
     
     return bricks_conn_trial.flatten(), bricks_rel_trial
 
-def calculate_delayed_effects(rule_choices, grids, participant):
+def calculate_delayed_effects(normal_search_stats, mlp_search_stats):
     """
     bascially one - zero vectors of categorie of rules, plot em to get a plot like the one in the paper. 
+    normal search stats is treated as the theoretical transitions matrix
     """
-    max_len = max([len(g) for g in grids])
-    stable_to_present = np.zeros((len(rule_choices), max_len))
-    present_to_stable = np.zeros((len(rule_choices), max_len)) # backtracking
-    distant_to_stable = np.zeros((len(rule_choices), max_len)) 
-    stable_to_distant = np.zeros((len(rule_choices), max_len)) 
-    present_to_present = np.zeros((len(rule_choices), max_len)) 
+    n_stable_to_present, n_present_to_stable, n_distant_to_stable, n_stable_to_distant, n_present_to_present = normal_search_stats
+    m_stable_to_present, m_present_to_stable, m_distant_to_stable, m_stable_to_distant, m_present_to_present = mlp_search_stats
 
-    pass
+    # -----------------------------------------------------------------------------
+    # Step 1: Stack your theoretical (n_*) and empirical (m_*) arrays
+    # -----------------------------------------------------------------------------
+    # Build (5 x n_lags) arrays
+    theory = np.vstack([
+        n_stable_to_present,
+        n_present_to_stable,
+        n_distant_to_stable,
+        n_stable_to_distant,
+        n_present_to_present
+    ])  # shape = (5, n_lags)
+
+    data = np.vstack([
+        m_stable_to_present,
+        m_present_to_stable,
+        m_distant_to_stable,
+        m_stable_to_distant,
+        m_present_to_present
+    ])  # shape = (5, n_lags)
+
+    # -----------------------------------------------------------------------------
+    # Step 2: For each lag, run a simple regression: m[:, t] ~ 1 + n[:, t]
+    # -----------------------------------------------------------------------------
+    n_lags = theory.shape[1]
+    betas = np.zeros(n_lags)
+    pvals = np.zeros(n_lags)
+
+    for t in range(n_lags):
+        y = data[:, t]                  # empirical sequenceness at lag t
+        X = sm.add_constant(theory[:, t])  # design: [intercept, theoretical]
+        res = sm.OLS(y, X).fit()
+        betas[t]  = res.params[1]       # coefficient for the theoretical regressor
+        pvals[t]  = res.pvalues[1]      # p-value for that coefficient
+
+    return n_lags, betas, pvals
 
 def simple_sequenceness(rule_choices, rule_lhs_information, grids, participant):
     
