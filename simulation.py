@@ -4,7 +4,7 @@ from pyClarion.components.stats import MatchStats
 from datetime import timedelta
 
 import logging
-import sys
+import sys, os, random
 
 import numpy as np
 import pandas as pd
@@ -14,7 +14,12 @@ from utils import *
 from knowledge_init import *
 from rule_defs import * 
 from base_participant import *
+from evaluation import * 
 import math
+
+# plotting 
+import seaborn as sns
+from matplotlib import pyplot as plt
 
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(funcName)s - %(message)s')
 
@@ -72,7 +77,7 @@ def present_stimulus(d:BrickConstructionTask, stim_grid: np.ndarray):
             
     return in_send_val, mlp_send_val
 
-def load_trial(construction_space: BrickConstructionTask, response_space: BrickResponseTask,
+def load_trial(construction_space: BrickConstructionTask | BrickConstructionTaskAbstractParticipant, response_space: BrickResponseTask,
                 trial: pd.Series, t_type="test", q_type="query"):
     d = response_space
     
@@ -82,25 +87,31 @@ def load_trial(construction_space: BrickConstructionTask, response_space: BrickR
     chunk_grid, chunk_grid_mlp = present_stimulus(construction_space, stim_grid)
     
     query_map = {1: d.query_rel.left, 2: d.query_rel.above, 3: d.query_rel.right, 4: d.query_rel.below}
+    query_col_map = {1: "left_element", 2: "ontop_element", 3: "right_element", 4: "below_element"}
     brick_map = {1: d.bricks.half_T, 2: d.bricks.mirror_L, 3: d.bricks.vertical, 4: d.bricks.horizontal}
+
+    choice_is_yes = None
 
     if t_type == "test":
         chunk_test = ( + d.io.query_relation ** query_map[trial["Q_Relation"]] 
                       + d.io.query_block ** brick_map[trial["Q_Brick_Left"]]
                       + d.io.query_block_reference ** brick_map[trial["Q_Brick_Right"]])
+
+        choice_is_yes = trial[query_col_map[trial["Q_Relation"]]] == brick_map[trial["Q_Brick_Left"]] and trial[query_col_map[trial["Q_Relation"] - 2 if trial["Q_Relation"] > 2 else trial["Q_Relation"]+2]] == brick_map[trial["Q_Brick_Right"]]
     elif t_type == "train" and q_type == "query":
+        #get connection structure 
+        _, brick_conn = brick_connectedness(stim_grid)
         # choose 2 blocks randomly
-        # blocks = np.random.choice((t := np.unique(stim_grid))[t != 0], 2, replace=False)
-        blocks = [2, 4]
+        blocks = np.random.choice((t := np.unique(stim_grid))[t != 0], 2, replace=False)
         # choose a relation randomly
-        # relation = np.random.choice([1, 2, 3, 4], 1)
-        relation = [2]
+        relation = np.random.choice([1, 2, 3, 4], 1)
         chunk_test = ( + d.io.query_relation ** query_map[relation[0]] 
                       + d.io.query_block ** brick_map[blocks[0]]
                       + d.io.query_block_reference ** brick_map[blocks[1]])
+        choice_is_yes = brick_conn[relation - 1] == blocks[0] and brick_conn[relation - 3 if relation in (3, 4) else relation + 1] == blocks[1]
     else: chunk_test = ()
 
-    print("Stimulus grid: ", stim_grid)
+    print("Stimulus grid: \n", stim_grid)
     if q_type == "query" and t_type == "test":
         print("Query brick 1: ", trial["Q_Brick_Left"])
         print("Query brick 2: ", trial["Q_Brick_Right"])
@@ -110,11 +121,11 @@ def load_trial(construction_space: BrickConstructionTask, response_space: BrickR
         print("Query brick 2: ", blocks[1])
         print("Query relation: ", relation[0])
 
-    return stim_grid, chunk_grid, chunk_grid_mlp, chunk_test
+    return stim_grid, chunk_grid, chunk_grid_mlp, chunk_test, choice_is_yes
 
 def run_participant_session(participant: BaseParticipant, session_df: pd.DataFrame, session_type="train", q_type="query"):
     global rule_defs
-    results = []
+    results, construction_correctness, all_rule_history = [], [], []
     trials = []
     # Knowledge initialization
     init_participant_response_rules(participant)
@@ -125,18 +136,21 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
         break # testing
     
     participant.start_construct_trial(timedelta(seconds=1))
+    last_end_construction_time = None
     while participant.system.queue:
         event = participant.system.advance()
         if event.source == participant.start_construct_trial:
             if not trials: break
             #load the next trial
             trial = trials.pop(0)
-            grid_stimulus_np, grid_stimulus, grid_stimulus_mlp, test_query = load_trial(participant.construction_space, participant.response_space, trial, t_type=session_type, q_type=q_type)
+            grid_stimulus_np, grid_stimulus, grid_stimulus_mlp, test_query, choice_is_yes = load_trial(participant.construction_space, participant.response_space, trial, t_type=session_type, q_type=q_type)
             participant.construction_input.send(grid_stimulus) # TODO: have a timeout somehow: but how to do timeout wihout proper timinmg constraints for the various events in the queue?
         elif event.source == participant.end_construction:
+            correctness = np.all(grid_stimulus_np == numpify_grid(participant.construction_input.main[0]))
+            construction_correctness.append(correctness)
             if session_type == "train":
-                print("Construction was ", "correct" if np.all(grid_stimulus_np == numpify_grid(participant.construction_input.main[0])) else "incorrect")
-                participant.propagate_feedback(correct = float(np.all(grid_stimulus_np == numpify_grid(participant.construction_input.main[0]))))
+                print("Construction was ", "correct" if correctness else "incorrect")
+                participant.propagate_feedback(correct = float(correctness))
                 participant.end_construction_feedback()
             else:
                 participant.start_response_trial(timedelta()) #TODO: checkout the actual time delays
@@ -144,13 +158,73 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             participant.start_response_trial(timedelta())
         elif event.source == participant.start_response_trial:
             participant.response_input.send(test_query, flip=True) # dont reset, just add
+            last_end_construction_time = event.time
         elif event.source == participant.response_rules.rules.rhs.td.update:
             participant.response_choice.select()
         elif event.source == participant.response_choice.select:
-            results.append((event.time, participant.response_choice.poll())) #TODO: come up with a way to save the sequences of search space rules that were activated -- is there in sample attribute of the choice in a rule i believe?
+            results.append(((event.time - last_end_construction_time).total_seconds(), 
+                            (participant.response_choice.poll()[~participant.response_space.io * ~participant.response_space.response] == ~participant.response_space.io.output * ~participant.response_space.response.yes) == choice_is_yes)) #TODO: come up with a way to save the sequences of search space rules that were activated -- is there in sample attribute of the choice in a rule i believe?
+            last_end_construction_time = None
             participant.finish_response_trial(timedelta())
         elif event.source == participant.finish_response_trial:
+            all_rule_history.append(participant.all_rule_history)
             participant.start_construct_trial(timedelta())
+    return results, construction_correctness, all_rule_history
 
-trials_df = pd.read_csv("~/personalproj/clarion_replay/processed/test_data/all_test_data.csv")
-run_participant_session(LowLevelParticipant("p1"), trials_df)
+def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=False):
+    grid_names = os.listdir("processed/train_data/train_stims/")
+    test_trials = pd.read_csv("processed/test_data/all_test_data.csv")
+
+    participant = LowLevelParticipant("p1")
+
+    train_grids = random.choices(grid_names, k=num_train_trials)
+    #make this list a pandas dataframe
+    train_trials = pd.DataFrame(train_grids, columns=["Grid_Name"])
+    train_results, train_construction_correctness, _ = run_participant_session(participant, train_trials)
+
+    if run_train_only: return
+
+    test_trial_indices = random.sample(range(len(test_trials)), num_test_trials)
+    test_trials = test_trials.iloc[test_trial_indices]
+
+    test_results, test_construction_correctness, test_rule_choices = run_participant_session(participant, test_trials, session_type="test", q_type="query")
+
+    # ---- Plotting ---- 
+    train_results_df = pd.DataFrame(train_results, columns=["time", "response_choice"])
+    train_results_df["construction_correctness"] = train_construction_correctness
+
+    #test
+    test_results_df = pd.DataFrame(test_results, columns=["time", "response_choice"])
+    test_results_df["construction_correctness"] = test_construction_correctness
+
+    #plto correctness using seaborn
+    sns.scatterplot(train_results_df["construction_correctness"], x="trial #", y="correct constructions")
+    plt.savefig("train_construction_correctness.png")
+    plt.clf()
+
+    sns.scatterplot(test_results_df["time"], x="trial #", y="rt")
+    plt.savefig("test_rt.png")
+    plt.clf()
+
+    sns.scatterplot(test_results_df["response_choice"], x="trial #", y="correct responses")
+    plt.savefig("test_response_correctness.png")
+    plt.clf()
+
+    sns.scatterplot(test_results_df["construction_correctness"], x="trial #", y="correct constructions")
+    plt.savefig("test_construction_correctness.png")
+    plt.clf()
+
+    sns.scatterplot(test_results_df["time"], x="trial #", y="rt")
+    plt.savefig("test_rt.png")
+    plt.clf()
+
+    sns.scatterplot(test_results_df["response_choice"], x="trial #", y="correct responses")
+    plt.savefig("test_response_correctness.png")
+    plt.clf()
+
+    # delayed effects data:
+    d_effects = calculate_delayed_effects(test_rule_choices)
+    
+    
+
+

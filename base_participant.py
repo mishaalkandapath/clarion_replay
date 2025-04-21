@@ -212,7 +212,6 @@ class LowLevelParticipant(BaseParticipant):
 
     def resolve_lowlevel_search_choice(self, event):
         #check if indeed we need to stop construction, if triggered the STOP rule
-        cur_rule_sample = self.search_space_rules.choice.sample
         cur_rule_choice = self.search_space_rules.choice.poll()
         cur_rule_number = list(cur_rule_choice.values())[0][-1:][0][0]
 
