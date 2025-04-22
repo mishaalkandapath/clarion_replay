@@ -109,11 +109,13 @@ def load_trial(construction_space: BrickConstructionTask | BrickConstructionTask
         chunk_test = ( + d.io.query_relation ** query_map[relation[0]] 
                       + d.io.query_block ** brick_map[blocks[0]]
                       + d.io.query_block_reference ** brick_map[blocks[1]])
-        if len((t := np.unique(stim_grid))[t != 0]) == 3:
-            _, brick_conn = brick_connectedness(stim_grid)
-            choice_is_yes = brick_conn[relation - 1] == blocks[0] and brick_conn[relation - 3 if relation in (3, 4) else relation + 1] == blocks[1]
+
+        if blocks[0] in stim_grid and blocks[1] in stim_grid:
+            _, brick_conn = brick_connectedness(np.where((stim_grid == blocks[0]) | (stim_grid == blocks[1]), stim_grid, 0))
+            choice_is_yes = brick_conn[relation[0] - 1] == blocks[0] and brick_conn[relation[0] - 3 if relation[0] in (3, 4) else relation[0] + 1] == blocks[1]
         else:
-            choice_is_yes = input(f"Query Block {blocks[0]} and Reference Block {blocks[1]} with relation {relation[0]} is: ") == "yes"
+            choice_is_yes = False
+
     else: chunk_test = ()
     
     if q_type == "query" and t_type == "test":
@@ -278,4 +280,4 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
     # plt.show()
 
 if __name__ == "__main__":
-    run_experiment(num_train_trials=0, num_test_trials=2)
+    run_experiment(num_train_trials=10, num_test_trials=2)

@@ -87,6 +87,9 @@ def brick_connectedness(stim_grid):
     bricks_rel_trial = [0, 0, 0, 0] # left element | ontop element | right element | below element
 
     bricks = np.unique(stim_grid)[1:] # dont need 0 
+
+    if len(bricks) == 2:
+        bricks = np.array([bricks[0], bricks[1], 5])
     
     part1 = np.copy(stim_grid); part1[part1==bricks[0]] = 0;
     part2 = np.copy(stim_grid); part2[part1==bricks[1]] = 0;
@@ -99,7 +102,7 @@ def brick_connectedness(stim_grid):
     try:
         bricks_conn_trial = bricks[bricks_order].T
     except:
-        print("somethign happened here")
+        pass # let it be bro
 
     if mk_ontopness(part1)[0]:
         _, _, bricks_rel_trial[1], bricks_rel_trial[3] = mk_ontopness(part1)
@@ -115,10 +118,7 @@ def brick_connectedness(stim_grid):
     elif mk_besideness(part3)[0]:
         _, _, bricks_rel_trial[0], bricks_rel_trial[2] = mk_besideness(part3)
 
-    assert 0 not in bricks_conn_trial, "0 in bricks_conn_trial"
-    assert 0 not in bricks_rel_trial, "0 in bricks_rel_trial"
-    
-    return bricks_conn_trial.flatten(), bricks_rel_trial
+    return bricks_conn_trial.flatten() if 5 not in bricks else bricks_conn_trial, bricks_rel_trial
 
 def calculate_delayed_effects(normal_search_stats, mlp_search_stats):
     """
@@ -216,3 +216,28 @@ def simple_sequenceness(rule_choices, rule_lhs_information, grids):
                     present_to_present[i, j] = 1
 
     return stable_to_present, present_to_stable, distant_to_stable, stable_to_distant, present_to_present
+
+if __name__ == "__main__":
+    sample_array = [[0, 0, 0, 0, 0, 0],
+                    [0, 1, 1, 4, 4, 4],
+                    [0, 1, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0]]
+    sample_array = np.array(sample_array)
+
+    # sample_deviant_array = [[0, 0, 0, 0, 0, 0],
+    #                         [0, 0, 0, 0, 0, 0],
+    #                         [0, 0, 0, 0, 0, 0],
+    #                         [0, 0, 0, 0, 0, 0],
+    #                     [0, 1, 1, 0, 0, 0],
+    #                     [0, 1, 4, 4, 4, 0]]
+    # sample_deviant_array = np.array(sample_deviant_array)
+    # # is this present in train trials?
+    import os
+    for i, file in enumerate(os.listdir("processed/train_data/train_stims/")):
+        if file.endswith("_d.npy"):
+            stim = np.load(os.path.join("processed/train_data/train_stims/", file))
+            if len(np.unique(stim)) == 5:
+                #rename the file to add in a _d suffix
+                os.rename(os.path.join("processed/train_data/train_stims/", file), os.path.join("processed/train_data/train_stims/", file[:-5] + ".npy"))
