@@ -187,3 +187,6 @@ def make_response_input(cur_working_space: NumDict, response_index: Index) -> Nu
             continue
         response_data[Key(k)] = cur_working_space[k_]
     return numdict(response_index, response_data, c=0.0)
+
+def make_goal_outputs_construction_input(cur_working_space: NumDict, goal_outputs: NumDict, working_space_index: Index):
+    pass

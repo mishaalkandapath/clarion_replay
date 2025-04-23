@@ -263,37 +263,49 @@ class AbstractParticipant(BaseParticipant):
         construction_space = BrickConstructionTaskAbstractParticipant()
         abstract_space = HighLevelConstruction() 
 
+        #RL components:
+        h = Family()
+        mlp_space_1 = MLPConstructionIO()
+        mlp_space_2 = Numbers()
+        mlp_output_space_1 = HighLevelConstructionSignals()
+        mlp_output_space_2 = JustYes()
+
         super().__init__(name,
+                         h=h,
                          construction_space=construction_space, abstract_space=abstract_space,
                          r_abstract=r_abstract,
-                         c_abstract=c_abstract,)
+                         c_abstract=c_abstract,
+                         mlp_space_1=mlp_space_1, mlp_space_2=mlp_space_2,
+                         mlp_output_space=mlp_output_space)
+        
+        self.mlp_space_1 = mlp_space_1
+        self.mlp_space_2 = mlp_space_2
+        self.mlp_output_space_1 = mlp_output_space_1
+        self.mlp_output_space_2 = mlp_output_space_2
+
         with self:
-            self.abstract_construction_input = Input("abstract_construction_input", (abstract_space, abstract_space), reset=False)
 
-            self.abstract_space_rules = RuleWBLA("abstract_space_rules", p=self.p, r=r_abstract, c=c_abstract, d=abstract_space, v=abstract_space, sd=1e-4)
-
-            self.abstract_space_matchstats = MatchStats("abstract_space_matchstats", self.p, self.abstract_space_rules.rules.rules, th_cond=0.9, th_crit=0.9) # 0.9 because i want to compare against 1.
-            self.abstract_space_pool = Pool("abstract_space_pool", self.p, self.abstract_space_rules.rules.rules, func=NumDict.sum) # similar function
-            self.abstract_space_choice = Choice("abstract_space_choice", self.p, (abstract_space, abstract_space))
-
-        self.abstract_space_rules.rules.lhs.bu.input = self.abstract_construction_input.main
-
-        self.abstract_space_pool["abstract_space_rules.rules"] = (
-            self.abstract_space_rules.rules.main,
-            lambda d: d.shift(x=1).scale(x=0.5).logit())
-        
-        self.abstract_space_pool["abstract_space_matchstats"] = (
-            self.abstract_space_matchstats.main,
-            lambda d:  d.shift(x=1).tanh().scale(x=0.2))
-        
-        self.abstract_space_rules.choice.input = self.abstract_space_pool.main
-
-        
-        self.abstract_space_choice.input = self.abstract_space_rules.rules.rhs.td.main
+            self.mlp_construction_input = Input("mlp_construction_input", (mlp_space_1, mlp_space_2), reset=True)
+            self.abstract_goal_choice = Choice("abstract_goal_choice", self.p, (mlp_output_space_1, mlp_output_space_2), sd=1e-2)
+            # setup goal direction network:
+            with self.abstract_goal_choice:
+                self.goal_net = self.mlp_construction_input >> IDN("goal_net",
+                                                                   p=self.p,
+                                                                   h=h,
+                                                                   r=self.JustYes,
+                                                                   s1=(mlp_space_1, mlp_space_2),
+                                                                   s2=(mlp_output_space_1, mlp_output_space_2),
+                                                                   layers=(),
+                                                                   train=Train.WEIGHTS,
+                                                                   gamma=.9,
+                                                                   lr=1e-2)
+                
+        # goal setup:
+        self.abstract_goal_choice.input = self.goal_net.olayer.main
         
         #extra backtracking queues: #TODO: better way to do this is probably with Sites, adn their inbuilt deque
-        self.past_chosen_rules_abstract = []
-        self.all_rule_history_abstract = []
+        self.past_chosen_goals = []
+        self.all_goal_history = []
 
         self.search_space_trigger_wait = [self.search_space_pool.update, self.abstract_search_space_pool.update]
         self.abstract_space_trigger_wait = [self.abstract_space_pool.update]

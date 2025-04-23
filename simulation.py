@@ -200,16 +200,16 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
 
         # ---- Plotting ---- 
         sns.scatterplot(train_results_df, x="trial #", y="construction_correctness")
-        plt.savefig("train_construction_correctness.png")
+        plt.savefig("figures/train_construction_correctness.png")
         plt.clf()
 
         sns.scatterplot(train_results_df, x="trial #", y="rt")
         sns.lineplot(train_results_df, x="trial #", y="rt", color="red")
-        plt.savefig("train_rt.png")
+        plt.savefig("figures/train_rt.png")
         plt.clf()
 
         sns.scatterplot(train_results_df, x="trial #", y="response_correctness")
-        plt.savefig("train_response_correctness.png")
+        plt.savefig("figures/train_response_correctness.png")
         plt.clf()
 
     if run_train_only: return
@@ -229,16 +229,16 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
     # --- Plotting ---
 
     sns.scatterplot(test_results_df, x="trial #", y="construction_correctness")
-    plt.savefig("test_construction_correctness.png")
+    plt.savefig("figures/test_construction_correctness.png")
     plt.clf()
 
     sns.scatterplot(test_results_df, x="trial #", y="rt")
     sns.lineplot(test_results_df, x="trial #", y="rt", color="red")
-    plt.savefig("test_rt.png")
+    plt.savefig("figrues/test_rt.png")
     plt.clf()
 
     sns.scatterplot(test_results_df, x="trial #", y="response_correctness")
-    plt.savefig("test_response_correctness.png")
+    plt.savefig("figures/test_response_correctness.png")
     plt.clf()
 
     # delayed effects data:
@@ -259,7 +259,7 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
     plt.ylabel('Sequence occurence average')
     plt.title("Sequences across steps")
     plt.legend()
-    plt.savefig("sequences_simple.png")
+    plt.savefig("figures/sequences_simple.png")
 
     # n_lags, betas, pvals = calculate_delayed_effects(test_rule_choices, max_lag=10)
     # time_ms = np.arange(n_lags) * 10  # adjust if your step ≠10ms

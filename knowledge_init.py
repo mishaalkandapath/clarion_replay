@@ -294,6 +294,81 @@ class HighLevelConstructionConditions(Atoms):
     above: Atom
     below: Atom
 
+class HighLevelConstructionSignals(Atoms):
+    # stop: Atom
+    # start: Atom
+    # left: Atom
+    # right: Atom
+    # above: Atom
+    # below: Atom
+    half_T_start: Atom
+    mirror_L_start: Atom
+    vertical_start: Atom
+    horizontal_start: Atom
+
+    half_T_horizontal_left: Atom # reference, new block, relation
+    half_T_horizontal_right: Atom 
+    half_T_horizontal_above: Atom
+    half_T_horizontal_below: Atom
+    horizontal_half_T_left: Atom
+    horizontal_half_T_right: Atom
+    horizontal_half_T_above: Atom
+    horizontal_half_T_below: Atom
+
+    half_T_vertical_left: Atom
+    half_T_vertical_right: Atom
+    half_T_vertical_above: Atom
+    half_T_vertical_below: Atom
+    vertical_half_T_left: Atom
+    vertical_half_T_right: Atom
+    vertical_half_T_above: Atom
+    vertical_half_T_below: Atom
+
+    half_T_mirror_L_left: Atom
+    half_T_mirror_L_right: Atom
+    half_T_mirror_L_above: Atom
+    half_T_mirror_L_below: Atom
+    mirror_L_half_T_left: Atom
+    mirror_L_half_T_right: Atom
+    mirror_L_half_T_above: Atom
+    mirror_L_half_T_below: Atom
+
+    mirror_L_horizontal_left: Atom
+    mirror_L_horizontal_right: Atom
+    mirror_L_horizontal_above: Atom
+    mirror_L_horizontal_below: Atom
+    horizontal_mirror_L_left: Atom
+    horizontal_mirror_L_right: Atom
+    horizontal_mirror_L_above: Atom
+    horizontal_mirror_L_below: Atom
+
+    mirror_L_vertical_left: Atom
+    mirror_L_vertical_right: Atom
+    mirror_L_vertical_above: Atom
+    mirror_L_vertical_below: Atom
+    vertical_mirror_L_left: Atom
+    vertical_mirror_L_right: Atom
+    vertical_mirror_L_above: Atom
+    vertical_mirror_L_below: Atom
+
+    vertical_horizontal_left: Atom
+    vertical_horizontal_right: Atom
+    vertical_horizontal_above: Atom
+    vertical_horizontal_below: Atom
+    horizontal_vertical_left: Atom
+    horizontal_vertical_right: Atom
+    horizontal_vertical_above: Atom
+    horizontal_vertical_below: Atom
+
+    stop: Atom
+
+class JustYes(Atoms):
+    yes: Atom
+
+class GoalMLPOutputSpace(Family):
+    construction_signal: HighLevelConstructionSignals
+    response: JustYes
+
 class BrickConstructionTask(Family):
     numbers: Numbers
     signal_tokens: SignalTokens
