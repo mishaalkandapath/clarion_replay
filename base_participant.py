@@ -101,6 +101,7 @@ class BaseParticipant(Agent):
         #wait events for low level pool update;
         self.search_space_trigger_wait = []
         self.response_trigger_wait = []
+        self.construction_input_wait = []
 
         self.trigger_response = False #TODO: prolly dont need this here. 
 
@@ -120,7 +121,8 @@ class BaseParticipant(Agent):
         # -- SEARCH PROCESSING --
         elif event.source == self.start_construct_trial:
             self.trigger_response = False
-        elif event.source == self.construction_input.send:
+        elif event.source == self.construction_input.send \
+            and all(e.source not in self.construction_input_wait for e in self.system.queue):
             self.past_constructions.append(self.construction_input.main[0]) # add the current construction to the past constructions    
         
         elif event.source == self.search_space_rules.rules.update:
@@ -184,7 +186,7 @@ class BaseParticipant(Agent):
     ) -> None:
         self.system.schedule(self.finish_response_trial, dt=dt, priority=priority)
 
-    def propagate_feedback(self, correct:float = 0) -> None:
+    def feedback(self, correct: float=0) -> None:
         if not self.past_chosen_rules:
             return
         
@@ -203,6 +205,9 @@ class BaseParticipant(Agent):
         self.search_space_matchstats.crit.data.append(new_crit_score)
         
         self.search_space_matchstats.increment() # TODO: apt timedelta?
+
+    def propagate_feedback(self, correct:float = 0) -> None:
+        self.feedback(correct)
 
 class LowLevelParticipant(BaseParticipant):  
 
@@ -276,7 +281,7 @@ class AbstractParticipant(BaseParticipant):
                          r_abstract=r_abstract,
                          c_abstract=c_abstract,
                          mlp_space_1=mlp_space_1, mlp_space_2=mlp_space_2,
-                         mlp_output_space=mlp_output_space)
+                         mlp_output_space=mlp_output_space_1, mlp_output_space_2=mlp_output_space_2)
         
         self.mlp_space_1 = mlp_space_1
         self.mlp_space_2 = mlp_space_2
@@ -307,45 +312,69 @@ class AbstractParticipant(BaseParticipant):
         self.past_chosen_goals = []
         self.all_goal_history = []
 
-        self.search_space_trigger_wait = [self.search_space_pool.update, self.abstract_search_space_pool.update]
-        self.abstract_space_trigger_wait = [self.abstract_space_pool.update]
+        self.search_space_trigger_wait = [self.search_space_pool.update, self.shift_goal]
         self.response_trigger_wait = [self.response_rules.rules.update]
+        self.construction_input_wait = [self.shift_goal]
 
     def resolve(self, event: Event) -> None:
         super().resolve(event)
 
-        # ABSTRACT SEARCH PROCESSING
-        if event.source == self.abstract_space_rules.rules.update:
-            self.abstract_space_matchstats.update()
-        
-        elif event.source == self.abstract_space_pool.update and all(e.source not in self.abstract_space_trigger_wait for e in self.system.queue):
-            self.abstract_space_rules.trigger()
-        
-        elif event.source == self.abstract_space_rules.rules.rhs.td.update:
-            self.abstract_space_choice.trigger()
-        
-        elif event.source == self.abstract_space_choice.select:
-            cur_sample = self.abstract_space_rules.choice.sample
-            cur_rule_choice = self.abstract_space_rules.choice.poll()
-            cur_rule_number = list(cur_rule_choice.values())[0][-1:][0][0]
-            cur_choice = self.abstract_space_choice.poll()
+        # ABSTRACT SEARCH PROCESSING    
+        if event.source == self.mlp_construction_input.send:
+            self.shift_goal()
+        elif event.source == self.goal_net.optimizer.update \
+            and all(e.source != self.end_construction_feedback for e in self.system.queue):
+            # goal set, redo
+            last_construction = self.past_constructions.pop()
+            self.mlp_construction_input.send(mlpify(last_construction, self.mlp_construction_input.main[0].i))
+        elif event.source == self.shift_goal:
+            self.abstract_goal_choice.trigger() # at this point olayer.forward has been applied
+        elif event.source == self.abstract_goal_choice.select:
+            cur_sample = self.abstract_goal_choice.sample
+            cur_choice = self.abstract_goal_choice.poll()
 
-            if cur_choice[~self.abstract_space.io.stop * ~self.abstract_space.response] == ~self.abstract_space.io.stop * ~self.abstract_space.response.yes:
+            if cur_choice[~self.mlp_output_space_1.stop * ~self.mlp_output_space_2] == ~self.mlp_output_space_1.stop * ~self.mlp_output_space_2.yes:
                 self.end_construction()
             else:
-                self.past_chosen_rules_abstract.append(list(cur_rule_choice.values())[0])
-                self.all_rule_history_abstract.append(list(cur_rule_choice.values())[0])
-                self.construction_input.send(filter_keys_by_rule_chunk(self.abstract_space_rules.rules.rhs.chunks._members_[Key(f"{cur_rule_number}")], self.abstract_space_choice.main[0].d)) # #TODO: does this add or replace?
-        
-        elif self.abstract_space_matchstats.increment:
-            # make the mask zero:
-            new_empty_mask = self.abstract_space_matchstats.cond.new({}).with_default(c=0.0)
-            self.abstract_space_matchstats.cond.data.pop()
-            self.abstract_space_matchstats.cond.data.append(new_empty_mask)
-            self.abstract_space_matchstats.discount()
-        
-        elif event.source == self.abstract_space_matchstats.discount and any(e.source == self.end_construction_feedback for e in self.system.queue):
-                self.propagate_abstract_feedback()
+                self.past_chosen_rules_abstract.append(cur_choice[~self.mlp_output_space_1 * ~self.mlp_output_space_2.yes])
+                self.all_rule_history_abstract.append(cur_choice[~self.mlp_output_space_1 * ~self.mlp_output_space_2.yes])
+                self.construction_input.send(make_goal_outputs_construction_input(self.construction_input.main[0], cur_choice, self.construction_input.main[0].i))
+
+    def resolve_lowlevel_search_choice(self, event):
+        #check if indeed we need to stop construction, if triggered the STOP rule
+        cur_rule_choice = self.search_space_rules.choice.poll()
+        cur_rule_number = list(cur_rule_choice.values())[0][-1:][0][0]
+
+        cur_choice = self.search_space_choice.poll()
+
+        if cur_choice[~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens] == ~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens.backtrack_construction: #backtrack
+            new_rule_mask = self.search_space_matchstats.cond.new({list(cur_rule_choice.values())[0]: 1.0}).with_default(c=0.0)
+            new_crit_score = self.search_space_matchstats.crit.new({}).with_default(c=0.0)#we want to increment the negativity count
+            
+            self.search_space_matchstats.cond.data.pop()
+            self.search_space_matchstats.crit.data.pop()
+
+            self.search_space_matchstats.cond.data.append(new_rule_mask) # update the condition ot only change scores for this rule
+            self.search_space_matchstats.crit.data.append(new_crit_score) 
+
+            self.search_space_matchstats.increment() # TODO: apt timedelta?
+            self.past_chosen_rule_lhs_history.pop()
+
+            #-- MLP ACTIONS --
+            # one bad reward for the last choice
+            self.goal_net.error.send({self.mlp_output_space_2: -1.0})
+
+        elif cur_choice[~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens] == ~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens.stop_construction:
+            self.end_construction() # TODO: consider adding stop construction rules to rule history for matchstats
+        else: #continue construction
+            cur_additions = filter_keys_by_rule_chunk(self.search_space_rules.rules.rhs.chunks._members_[Key(f"{cur_rule_number}")], self.search_space_choice.main[0].d)
+            self.past_chosen_rules.append(cur_additions)
+            self.all_rule_history.append(cur_additions)
+            self.all_rule_lhs_history.append(self.search_space_rules.rules.lhs.chunks._members_[Key(f"{cur_rule_number}")])
+            self.past_chosen_rule_lhs_history.append(self.search_space_rules.rules.lhs.chunks._members_[Key(f"{cur_rule_number}")])
+            
+            self.mlp_construction_input.send(mlpify(cur_additions, self.mlp_construction_input.main[0].i)) 
+            self.construction_input.send(cur_additions) # loop it back in --for more selections
 
     def propagate_abstract_feedback(self, 
                            correct:float = 0) -> None:
@@ -368,6 +397,19 @@ class AbstractParticipant(BaseParticipant):
         
         self.abstract_space_matchstats.increment() # TODO: apt timedelta?
 
+    @override
+    def propagate_feedback(self, correct = 0):
+        self.feedback(correct)
+        # feedback for the MLP
+        self.goal_net.error.send({self.mlp_output_space_2: 1.0 if correct else -1.0})
+
+    
+    def shift_goal(self, 
+        dt: timedelta = timedelta(seconds=0),
+        priority: Priority = Priority.DEFERRED
+    ) -> None:
+        self.system.schedule(self.shift_goal, dt=dt, priority=priority)
+
 
 """
 MLP will be changing the weights of the main in the input class -- by a certain amount
@@ -375,4 +417,24 @@ but ideally it should only change the weights of that which is already there. --
 it is 0.
 
 But what about the MLP -- it cant be an IDN with TD error. What do attention MLPs look like? Whats a good way to implement that?
+"""
+
+"""
+Workflow:
+1. send mlp inputs -- DONE
+2. send construction_inputs -- DONE
+3. forward mlp -- DONE
+4. get mlp choice and pass it along to construction -- DONE
+5. add new workign space to past constructions (NEED TO ADD AN MLP WAIT HERE) -- DONE
+6. update rules and what not -- DONE
+7. fire and choose a rule (NEED TO ADD AN MLP WAIT HERE) -- DONE
+8. if a backtrack rule was chosen:
+    -1 for the last two choices, propagate rewards - DONE
+    pop the last construction, send it to MLP, continue -- DONE
+9. otherwise, send the new construction to MLP, continue. -- DONE
+10. repeat
+11. at the end of the trial, if the construction was correct, make supposed changes to matchstats of low level rules, and propagate rewards to all the choices of the MLP in that right path
+
+MLP WAIT has to disappear once olayer.forward has been applied. 
+
 """

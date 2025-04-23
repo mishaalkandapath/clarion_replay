@@ -150,6 +150,7 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             #load the next trial
             trial = trials.pop(0)
             grid_stimulus_np, grid_stimulus, grid_stimulus_mlp, test_query, choice_is_yes = load_trial(participant.construction_space, participant.response_space, trial, t_type=session_type, q_type=q_type)
+            participant.mlp_construction_input.send(grid_stimulus_mlp)
             participant.construction_input.send(grid_stimulus) # TODO: have a timeout somehow: but how to do timeout wihout proper timinmg constraints for the various events in the queue?
         elif event.source == participant.end_construction:
             correctness = np.all(grid_stimulus_np == numpify_grid(participant.construction_input.main[0]))
