@@ -266,8 +266,6 @@ class AbstractParticipant(BaseParticipant):
         c_abstract = Family() # abstract family for abstract chunks
 
         construction_space = BrickConstructionTaskAbstractParticipant()
-        abstract_space = HighLevelConstruction() 
-
         #RL components:
         h = Family()
         mlp_space_1 = MLPConstructionIO()
@@ -277,7 +275,7 @@ class AbstractParticipant(BaseParticipant):
 
         super().__init__(name,
                          h=h,
-                         construction_space=construction_space, abstract_space=abstract_space,
+                         construction_space=construction_space,
                          r_abstract=r_abstract,
                          c_abstract=c_abstract,
                          mlp_space_1=mlp_space_1, mlp_space_2=mlp_space_2,
@@ -291,15 +289,15 @@ class AbstractParticipant(BaseParticipant):
         with self:
 
             self.mlp_construction_input = Input("mlp_construction_input", (mlp_space_1, mlp_space_2), reset=True)
-            self.abstract_goal_choice = Choice("abstract_goal_choice", self.p, (mlp_output_space_1, mlp_output_space_2), sd=1e-2)
+            self.abstract_goal_choice = Choice("abstract_goal_choice", self.p, (mlp_output_space_2, mlp_output_space_1), sd=1e-2)
             # setup goal direction network:
             with self.abstract_goal_choice:
                 self.goal_net = self.mlp_construction_input >> IDN("goal_net",
                                                                    p=self.p,
                                                                    h=h,
-                                                                   r=self.JustYes,
+                                                                   r=self.mlp_output_space_2,
                                                                    s1=(mlp_space_1, mlp_space_2),
-                                                                   s2=(mlp_output_space_1, mlp_output_space_2),
+                                                                   s2=(mlp_output_space_2, mlp_output_space_1),
                                                                    layers=(),
                                                                    train=Train.WEIGHTS,
                                                                    gamma=.9,
@@ -333,12 +331,10 @@ class AbstractParticipant(BaseParticipant):
             cur_sample = self.abstract_goal_choice.sample
             cur_choice = self.abstract_goal_choice.poll()
 
-            if cur_choice[~self.mlp_output_space_1.stop * ~self.mlp_output_space_2] == ~self.mlp_output_space_1.stop * ~self.mlp_output_space_2.yes:
+            if cur_choice[~self.mlp_output_space_2.yes * ~self.mlp_output_space_1] == ~self.mlp_output_space_2.yes * ~self.mlp_output_space_1.stop:
                 self.end_construction()
             else:
-                self.past_chosen_rules_abstract.append(cur_choice[~self.mlp_output_space_1 * ~self.mlp_output_space_2.yes])
-                self.all_rule_history_abstract.append(cur_choice[~self.mlp_output_space_1 * ~self.mlp_output_space_2.yes])
-                self.construction_input.send(make_goal_outputs_construction_input(self.construction_input.main[0], cur_choice, self.construction_input.main[0].i))
+                self.construction_input.send(make_goal_outputs_construction_input(self.construction_input.main[0], cur_choice))
 
     def resolve_lowlevel_search_choice(self, event):
         #check if indeed we need to stop construction, if triggered the STOP rule

@@ -135,7 +135,10 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
     trials = []
     # Knowledge initialization
     init_participant_response_rules(participant)
-    init_participant_construction_rules(participant)
+    if type(participant) is LowLevelParticipant:
+        init_participant_construction_rules(participant)
+    elif type(participant) is AbstractParticipant:
+        init_participant_construction_rule_w_abstract(participant)
     
     for _, trial in session_df.iterrows():
         trials.append(trial)
@@ -186,7 +189,7 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
 
     grid_names = os.listdir("processed/train_data/train_stims/")
     test_trials = pd.read_csv("processed/test_data/all_test_data.csv")
-    participant = LowLevelParticipant("p1")
+    participant = AbstractParticipant("p1")
 
     if num_train_trials:
         train_grids = random.choices(grid_names, k=num_train_trials)

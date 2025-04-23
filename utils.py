@@ -188,5 +188,64 @@ def make_response_input(cur_working_space: NumDict, response_index: Index) -> Nu
         response_data[Key(k)] = cur_working_space[k_]
     return numdict(response_index, response_data, c=0.0)
 
-def make_goal_outputs_construction_input(cur_working_space: NumDict, goal_outputs: NumDict, working_space_index: Index):
-    pass
+def make_goal_outputs_construction_input(cur_working_space: NumDict, goal_outputs: NumDict):
+    key_template = lambda shape, response: f"(construction_space,construction_space):(io,response):(target_{shape},{response})"
+    rel_key_template = lambda rel, response: f"(construction_space,construction_space):(io,response):({rel},{response})"
+    
+    SHAPES = ["half_T", "mirror_L", "vertical", "horizontal"]
+    RELS = ["start", "stop", "left", "right", "above", "below"]
+
+    for shape in SHAPES:
+        reference_key = Key(key_template(shape, "reference"))
+        latest_key = Key(key_template(shape, "latest"))
+        if reference_key in cur_working_space.d:
+            with cur_working_space.d.mutable():
+                del cur_working_space.d[reference_key]
+        if latest_key in cur_working_space.d:
+            with cur_working_space.d.mutable():
+                del cur_working_space.d[latest_key]
+    
+    for rel in RELS:
+        yes_key = Key(rel_key_template(rel, "yes"))
+        no_key = Key(rel_key_template(rel, "no"))
+        if yes_key in cur_working_space.d:
+            with cur_working_space.d.mutable():
+                del cur_working_space.d[yes_key]
+        if no_key in cur_working_space.d:
+            with cur_working_space.d.mutable():
+                del cur_working_space.d[no_key]
+    
+    cur_state = str(list(goal_outputs.d.keys())[0][-1]).split("_")
+
+    if len(cur_state) == 3:
+        cur_reference, cur_latest, cur_relation = cur_state
+
+        if key_template(cur_reference, "yes") in cur_working_space.d:
+            with cur_working_space.d.mutable():
+                del cur_working_space.d[Key(key_template(cur_reference, "yes"))]
+        if key_template(cur_latest, "no") in cur_working_space.d:
+            with cur_working_space.d.mutable():
+                del cur_working_space.d.d[Key(key_template(cur_latest, "no"))]
+        
+        with cur_working_space.d.mutable():
+            cur_working_space.d.update({Key(key_template(cur_reference, "reference")): 1.0})
+            cur_working_space.d.update({Key(key_template(cur_latest, "latest")): 1.0})
+            cur_working_space.d.update({Key(key_template(cur_relation, "yes")): 1.0})
+    else:
+        cur_latest, cur_relation = cur_state
+        if key_template(cur_latest, "no") in cur_working_space.d:
+            with cur_working_space.d.mutable():
+                del cur_working_space.d[Key(key_template(cur_latest, "no"))]
+        
+        with cur_working_space.d.mutable():
+            cur_working_space.d.update({Key(key_template(cur_latest, "latest")): 1.0})
+            cur_working_space.d.update({Key(key_template(cur_relation, "yes")): 1.0})
+
+    with cur_working_space.d.mutable():
+        cur_working_space.d.update(Key(rel_key_template(cur_relation, "yes")), 1.0)
+        for rel in RELS:
+            if rel != cur_relation:
+                cur_working_space.d.update(Key(rel_key_template(rel, "no")), 1.0)
+
+    return cur_working_space.d
+            

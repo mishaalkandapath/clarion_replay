@@ -1954,7 +1954,7 @@ def init_participant_construction_rule_w_abstract(participant):
                 + io.above ** response.no
                 + io.below ** response.no
 
-                + io.horizontal ** response.yes
+                + io.input_horizontal ** response.yes
                 + io.input_horizontal_row1 ** numbers[f"n{row}"]
                 + io.input_horizontal_row2 ** numbers[f"n{row}"]
                 + io.input_horizontal_row3 ** numbers[f"n{row}"]
@@ -2506,7 +2506,7 @@ def init_participant_construction_rule_w_abstract(participant):
 
             + io1[f"target_{'half_T' if switcharoo else 'mirror_L'}"] ** response.reference # half_T isnt already there
             + io1[f"target_{'mirror_L' if switcharoo else 'half_T'}"] ** response.latest # but mirror_L is
-            >>latest
+            >>
             + io[f"target_{'mirror_L' if switcharoo else 'half_T'}"] ** response.yes
             + io[f"target_{'half_T' if switcharoo else 'mirror_L'}"] ** response.yes
 
@@ -3034,14 +3034,14 @@ def init_participant_construction_rule_w_abstract(participant):
             +io[f"target_{shape}"] ** response.yes
 
             >>
-            io.construction_signal ** response.backtrack
+            io.construction_signal ** con_signal.backtrack_construction
         )
         for shape in SHAPES
     ]
-    
+
     participant.search_space_rules.rules.compile(
         *(
-            + half_T_first_placement_rule + mirror_L_first_placement_rule + horizontal_first_placement_rule + vertical_first_placement_rule
+            half_T_first_placement_rule + mirror_L_first_placement_rule + horizontal_first_placement_rule + vertical_first_placement_rule
             + half_T_left_of_horizontal_placement_rule + half_T_right_of_horizontal_placement_rule + half_T_above_horizontal_placement_rule + half_T_below_horizontal_placement_rule
             + half_T_left_vertical_placement_rule + half_T_right_vertical_placement_rule + half_T_above_vertical_placement_rule + half_T_below_vertical_placement_rule
             + half_T_left_mirror_L_placement_rule + half_T_right_mirror_L_placement_rule + half_T_above_mirror_L_placement_rule + half_T_below_mirror_L_placement_rule

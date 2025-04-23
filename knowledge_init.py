@@ -146,6 +146,7 @@ class HighLevelResponse(Atoms):
     yes: Atom
     no: Atom
     latest: Atom
+    reference: Atom
     backtrack: Atom
 
 class MLPConstructionIO(Atoms):
@@ -205,8 +206,6 @@ class ConstructionIOwAbstract(Atoms):
     input_mirror_L: Atom
     input_vertical: Atom
     input_horizontal: Atom
-
-    brick_nos: Atom
 
     target_half_T: Atom
     target_mirror_L: Atom
@@ -295,12 +294,6 @@ class HighLevelConstructionConditions(Atoms):
     below: Atom
 
 class HighLevelConstructionSignals(Atoms):
-    # stop: Atom
-    # start: Atom
-    # left: Atom
-    # right: Atom
-    # above: Atom
-    # below: Atom
     half_T_start: Atom
     mirror_L_start: Atom
     vertical_start: Atom
@@ -362,6 +355,10 @@ class HighLevelConstructionSignals(Atoms):
 
     stop: Atom
 
+class SmallerSigTokens(Atoms):
+    continue_construction: Atom
+    backtrack_construction: Atom
+
 class JustYes(Atoms):
     yes: Atom
 
@@ -377,6 +374,7 @@ class BrickConstructionTask(Family):
 
 class BrickConstructionTaskAbstractParticipant(Family):
     numbers: Numbers
+    signal_tokens: SmallerSigTokens
     io: ConstructionIOwAbstract
     response: HighLevelResponse
 
