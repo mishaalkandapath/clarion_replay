@@ -269,11 +269,12 @@ class ConstructionIOwAbstract(Atoms):
     target_horizontal_col3: Atom
 
     start: Atom
-    stop: Atom
     left: Atom
     right: Atom
     above: Atom
     below: Atom
+
+    construction_signal: Atom
 
 class HighLevelConstructionConditions(Atoms):
     input_half_T: Atom
@@ -353,9 +354,8 @@ class HighLevelConstructionSignals(Atoms):
     horizontal_vertical_above: Atom
     horizontal_vertical_below: Atom
 
-    stop: Atom
-
 class SmallerSigTokens(Atoms):
+    stop_construction: Atom
     continue_construction: Atom
     backtrack_construction: Atom
 

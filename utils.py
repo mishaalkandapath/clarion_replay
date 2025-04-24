@@ -1,5 +1,7 @@
-from pyClarion import FixedRules, Choice, NumDict, numdict, Index, Chunk, Priority
-from pyClarion import Site, RuleStore, Choice, KeyForm, Family, Sort, Atom, Input, Key
+from pyClarion import FixedRules, Choice, NumDict, numdict, Index, Chunk, Priority, TDError, MLP
+from pyClarion import Site, RuleStore, Choice, KeyForm, Family, Sort, Atom, Input, Key, Event
+from pyClarion import Activation, Adam, Optimizer, Train
+from pyClarion.components.base import D, V, DV
 
 from typing import *
 from datetime import timedelta
@@ -61,6 +63,45 @@ class FlippableInput(Input):
                     data.update({k: 0.0})      
             #update
             d[index].update(data.d)
+
+
+class DelayedTDError(TDError):
+    @override 
+    def resolve(self, event: Event) -> None:
+        return
+    
+class ChoiceDelayIDN(MLP):
+    """
+    An implicit decision network (IDN).
+    
+    Learns to make action decisions in the bottom level via temporal difference 
+    learning.
+    """
+
+    error: DelayedTDError
+
+    def __init__(self, 
+        name: str, 
+        p: Family,
+        h: Family,
+        r: D | DV, 
+        s1: V | DV,
+        s2: V | DV | None = None,
+        layers: Sequence[int] = (),
+        optimizer: Type[Optimizer] = Adam,
+        afunc: Activation | None = None,
+        func: Callable[[TDError], NumDict] = TDError.max_Q,
+        gamma: float = .3,
+        l: int = 1,
+        train: Train = Train.ALL,
+        init_sd: float = 1e-2,
+        **kwargs: Any
+    ) -> None:
+        super().__init__(
+            name, p, h, s1, s2, layers, optimizer, afunc, l + 1, train, init_sd, 
+            **kwargs)
+        self.error = self >> DelayedTDError(f"{name}.error", 
+            p, r, func=func, gamma=gamma, l=l)
 
 
 def numpify_grid(grid: NumDict) -> np.ndarray:
@@ -132,7 +173,7 @@ def mlpify(cur_working_space: NumDict, index: Index) -> NumDict:
     ignore other keys
     """
 
-    data = cur_working_space._d
+    data = cur_working_space
     data_dict = {}
     for k_ in data:
         k = str(k_).split(":")[-1]
@@ -193,59 +234,61 @@ def make_goal_outputs_construction_input(cur_working_space: NumDict, goal_output
     rel_key_template = lambda rel, response: f"(construction_space,construction_space):(io,response):({rel},{response})"
     
     SHAPES = ["half_T", "mirror_L", "vertical", "horizontal"]
-    RELS = ["start", "stop", "left", "right", "above", "below"]
+    RELS = ["start", "left", "right", "above", "below"]
+
+    new_working_space = cur_working_space.d
 
     for shape in SHAPES:
         reference_key = Key(key_template(shape, "reference"))
         latest_key = Key(key_template(shape, "latest"))
-        if reference_key in cur_working_space.d:
-            with cur_working_space.d.mutable():
-                del cur_working_space.d[reference_key]
-        if latest_key in cur_working_space.d:
-            with cur_working_space.d.mutable():
-                del cur_working_space.d[latest_key]
+        if reference_key in new_working_space:
+            del new_working_space[reference_key]
+        if latest_key in new_working_space:
+            del new_working_space[latest_key]
     
     for rel in RELS:
         yes_key = Key(rel_key_template(rel, "yes"))
         no_key = Key(rel_key_template(rel, "no"))
-        if yes_key in cur_working_space.d:
-            with cur_working_space.d.mutable():
-                del cur_working_space.d[yes_key]
-        if no_key in cur_working_space.d:
-            with cur_working_space.d.mutable():
-                del cur_working_space.d[no_key]
+        if yes_key in new_working_space:
+            del new_working_space[yes_key]
+        if no_key in new_working_space:
+            del new_working_space[no_key]
     
-    cur_state = str(list(goal_outputs.d.keys())[0][-1]).split("_")
+    cur_state = str(list(goal_outputs.values())[0][-1][0])
+    if "start" not in cur_state:
+        cur_state = cur_state.split("_")
+        if len(cur_state) > 3:
+            t= [i for i in range(len(cur_state)) if len(cur_state[i]) == 1]
+            for i in t:
+                cur_state[i-1] = cur_state[i-1] + "_"+cur_state[i]
+            cur_state = cur_state[:min(t)] + cur_state[min(t)+1:max(t)] + cur_state[max(t)+1:]
 
-    if len(cur_state) == 3:
         cur_reference, cur_latest, cur_relation = cur_state
 
-        if key_template(cur_reference, "yes") in cur_working_space.d:
-            with cur_working_space.d.mutable():
-                del cur_working_space.d[Key(key_template(cur_reference, "yes"))]
-        if key_template(cur_latest, "no") in cur_working_space.d:
-            with cur_working_space.d.mutable():
-                del cur_working_space.d.d[Key(key_template(cur_latest, "no"))]
-        
-        with cur_working_space.d.mutable():
-            cur_working_space.d.update({Key(key_template(cur_reference, "reference")): 1.0})
-            cur_working_space.d.update({Key(key_template(cur_latest, "latest")): 1.0})
-            cur_working_space.d.update({Key(key_template(cur_relation, "yes")): 1.0})
+        if Key(key_template(cur_reference, "yes")) in new_working_space:
+            del new_working_space[Key(key_template(cur_reference, "yes"))]
+        if Key(key_template(cur_latest, "no")) in new_working_space:
+            del new_working_space[Key(key_template(cur_latest, "no"))]
+
+        new_working_space.update({Key(key_template(cur_reference, "reference")): 1.0})
+        new_working_space.update({Key(key_template(cur_latest, "latest")): 1.0})
     else:
+        cur_state = cur_state.split("_")
+        if len(cur_state) > 2:
+            t= [i for i in range(len(cur_state)) if len(cur_state[i]) == 1][0]
+            cur_state[t-1] = cur_state[t-1] + "_"+cur_state[t]
+            cur_state = cur_state[:t] + cur_state[t+1:]
+
         cur_latest, cur_relation = cur_state
-        if key_template(cur_latest, "no") in cur_working_space.d:
-            with cur_working_space.d.mutable():
-                del cur_working_space.d[Key(key_template(cur_latest, "no"))]
-        
-        with cur_working_space.d.mutable():
-            cur_working_space.d.update({Key(key_template(cur_latest, "latest")): 1.0})
-            cur_working_space.d.update({Key(key_template(cur_relation, "yes")): 1.0})
+        if Key(key_template(cur_latest, "no")) in new_working_space:
+            del new_working_space[Key(key_template(cur_latest, "no"))]
 
-    with cur_working_space.d.mutable():
-        cur_working_space.d.update(Key(rel_key_template(cur_relation, "yes")), 1.0)
-        for rel in RELS:
-            if rel != cur_relation:
-                cur_working_space.d.update(Key(rel_key_template(rel, "no")), 1.0)
+        new_working_space.update({Key(key_template(cur_latest, "latest")): 1.0})
 
-    return cur_working_space.d
+    new_working_space.update({Key(rel_key_template(cur_relation, "yes")): 1.0})
+    for rel in RELS:
+        if rel != cur_relation:
+            new_working_space.update({Key(rel_key_template(rel, "no")): 1.0})
+
+    return new_working_space
             

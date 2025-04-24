@@ -1,4 +1,4 @@
-from pyClarion import Input, Choice, Agent, Event, Priority, Family, Atoms, Atom, BaseLevel, Pool, NumDict, IDN, Train
+from pyClarion import Input, Choice, Agent, Event, Priority, Family, Atoms, Atom, BaseLevel, Pool, NumDict, Train
 from pyClarion.components.stats import MatchStats
 
 
@@ -292,7 +292,7 @@ class AbstractParticipant(BaseParticipant):
             self.abstract_goal_choice = Choice("abstract_goal_choice", self.p, (mlp_output_space_2, mlp_output_space_1), sd=1e-2)
             # setup goal direction network:
             with self.abstract_goal_choice:
-                self.goal_net = self.mlp_construction_input >> IDN("goal_net",
+                self.goal_net = self.mlp_construction_input >> ChoiceDelayIDN("goal_net",
                                                                    p=self.p,
                                                                    h=h,
                                                                    r=self.mlp_output_space_2,
@@ -320,6 +320,8 @@ class AbstractParticipant(BaseParticipant):
         # ABSTRACT SEARCH PROCESSING    
         if event.source == self.mlp_construction_input.send:
             self.shift_goal()
+        elif event.source == self.goal_net.error.send:
+            self.goal_net.error.update()
         elif event.source == self.goal_net.optimizer.update \
             and all(e.source != self.end_construction_feedback for e in self.system.queue):
             # goal set, redo
@@ -330,11 +332,7 @@ class AbstractParticipant(BaseParticipant):
         elif event.source == self.abstract_goal_choice.select:
             cur_sample = self.abstract_goal_choice.sample
             cur_choice = self.abstract_goal_choice.poll()
-
-            if cur_choice[~self.mlp_output_space_2.yes * ~self.mlp_output_space_1] == ~self.mlp_output_space_2.yes * ~self.mlp_output_space_1.stop:
-                self.end_construction()
-            else:
-                self.construction_input.send(make_goal_outputs_construction_input(self.construction_input.main[0], cur_choice))
+            self.construction_input.send(make_goal_outputs_construction_input(self.construction_input.main[0], cur_choice))
 
     def resolve_lowlevel_search_choice(self, event):
         #check if indeed we need to stop construction, if triggered the STOP rule
@@ -371,27 +369,6 @@ class AbstractParticipant(BaseParticipant):
             
             self.mlp_construction_input.send(mlpify(cur_additions, self.mlp_construction_input.main[0].i)) 
             self.construction_input.send(cur_additions) # loop it back in --for more selections
-
-    def propagate_abstract_feedback(self, 
-                           correct:float = 0) -> None:
-        
-        if not self.past_chosen_rules_abstract:
-            return
-        if self.abstract_search_space_matchstats.crit[0].c:
-            correct = 1.0
-        
-        rule = self.past_chosen_rules_abstract.pop()
-        
-        new_rule_mask = self.abstract_space_matchstats.cond.new({rule: 1.0}).with_default(c=0.0)
-        new_crit_score = self.abstract_space_matchstats.crit.new({}).with_default(c=correct)
-
-        self.abstract_space_matchstats.cond.data.pop()
-        self.abstract_space_matchstats.crit.data.pop()
-
-        self.abstract_space_matchstats.cond.data.append(new_rule_mask) # update the condition to only change scores for this rule
-        self.abstract_space_matchstats.crit.data.append(new_crit_score)
-        
-        self.abstract_space_matchstats.increment() # TODO: apt timedelta?
 
     @override
     def propagate_feedback(self, correct = 0):
