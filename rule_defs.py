@@ -2021,7 +2021,7 @@ def init_participant_construction_rule_w_abstract(participant):
 
             + io.start ** response.no
             
-            + (2.0 if r_switchharoo else 1.0) * (io.left ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.left ** (response.yes if r_switcharoo else response.no))
             + (1.0 if r_switcharoo else 2.0) * (io.right ** (response.no if r_switcharoo else response.yes))
             + io.above ** response.no
             + io.below ** response.no
@@ -2069,7 +2069,7 @@ def init_participant_construction_rule_w_abstract(participant):
             + io.start ** response.no
             
             + (1.0 if r_switcharoo else 2.0) * (io.left ** (response.no if r_switcharoo else response.yes))
-            + (2.0 if r_switchharoo else 1.0) * (io.right ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.right ** (response.yes if r_switcharoo else response.no))
             + io.above ** response.no
             + io.below ** response.no
 
@@ -2115,7 +2115,7 @@ def init_participant_construction_rule_w_abstract(participant):
             + io.left ** response.no
             + io.right ** response.no
             + (1.0 if r_switcharoo else 2.0) * (io.above ** (response.no if r_switcharoo else response.yes))
-            + (2.0 if r_switchharoo else 1.0) * (io.below ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.below ** (response.yes if r_switcharoo else response.no))
 
             + io[f"{'input' if switcharoo else 'target'}_half_T_row1"] ** numbers[f"n{row}"]
             + io[f"{'input' if switcharoo else 'target'}_half_T_row2"] ** numbers[f"n{row}"]
@@ -2157,7 +2157,7 @@ def init_participant_construction_rule_w_abstract(participant):
             
             + io.left ** response.no
             + io.right ** response.no
-            + (2.0 if r_switchharoo else 1.0) * (io.above ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.above ** (response.yes if r_switcharoo else response.no))
             + (1.0 if r_switcharoo else 2.0) * (io.below ** (response.no if r_switcharoo else response.yes))
 
             + io[f"{'input' if switcharoo else 'target'}_half_T_row1"] ** numbers[f"n{row}"]
@@ -2198,7 +2198,7 @@ def init_participant_construction_rule_w_abstract(participant):
 
             + io.start ** response.no
             
-            + (2.0 if r_switchharoo else 1.0) * (io.left ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.left ** (response.yes if r_switcharoo else response.no))
             + (1.0 if r_switcharoo else 2.0) * (io.right ** (response.no if r_switcharoo else response.yes))
             + io.above ** response.no
             + io.below ** response.no
@@ -2242,7 +2242,7 @@ def init_participant_construction_rule_w_abstract(participant):
             + io.start ** response.no
             
             + (1.0 if r_switcharoo else 2.0) * (io.left ** (response.no if r_switcharoo else response.yes))
-            + (2.0 if r_switchharoo else 1.0) * (io.right ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.right ** (response.yes if r_switcharoo else response.no))
             + io.above ** response.no
             + io.below ** response.no
             
@@ -2288,7 +2288,7 @@ def init_participant_construction_rule_w_abstract(participant):
             + io.left ** response.no
             + io.right ** response.no
             + (1.0 if r_switcharoo else 2.0) * (io.above ** (response.no if r_switcharoo else response.yes))
-            + (2.0 if r_switchharoo else 1.0) * (io.below ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.below ** (response.yes if r_switcharoo else response.no))
             
             + io1[f"{'target' if switcharoo else 'input'}_half_T_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_half_T_row2"] ** numbers[f"n{row}"]
@@ -2332,7 +2332,7 @@ def init_participant_construction_rule_w_abstract(participant):
             
             + io.left ** response.no
             + io.right ** response.no
-            + (2.0 if r_switchharoo else 1.0) * (io.above ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.above ** (response.yes if r_switcharoo else response.no))
             + (1.0 if r_switcharoo else 2.0) * (io.below ** (response.no if r_switcharoo else response.yes))
 
             + io1[f"{'target' if switcharoo else 'input'}_half_T_row1"] ** numbers[f"n{row}"]
@@ -2373,7 +2373,7 @@ def init_participant_construction_rule_w_abstract(participant):
              
             + io.start ** response.no
             
-            + (2.0 if r_switchharoo else 1.0) * (io.left ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.left ** (response.yes if r_switcharoo else response.no))
             + (1.0 if r_switcharoo else 2.0) * (io.right ** (response.no if r_switcharoo else response.yes))
             + io.above ** response.no
             + io.below ** response.no
@@ -2417,7 +2417,7 @@ def init_participant_construction_rule_w_abstract(participant):
             + io.start ** response.no
             
             + (1.0 if r_switcharoo else 2.0) * (io.left ** (response.no if r_switcharoo else response.yes))
-            + (2.0 if r_switchharoo else 1.0) * (io.right ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.right ** (response.yes if r_switcharoo else response.no))
             + io.above ** response.no
             + io.below ** response.no
 
@@ -2463,7 +2463,7 @@ def init_participant_construction_rule_w_abstract(participant):
             + io.left ** response.no
             + io.right ** response.no
             + (1.0 if r_switcharoo else 2.0) * (io.above ** (response.no if r_switcharoo else response.yes))
-            + (2.0 if r_switchharoo else 1.0) * (io.below ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.below ** (response.yes if r_switcharoo else response.no))
 
             + io1[f"{'target' if switcharoo else 'input'}_half_T_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_half_T_row2"] ** numbers[f"n{row}"]
@@ -2505,7 +2505,7 @@ def init_participant_construction_rule_w_abstract(participant):
             
             + io.left ** response.no
             + io.right ** response.no
-            + (2.0 if r_switchharoo else 1.0) * (io.above ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.above ** (response.yes if r_switcharoo else response.no))
             + (1.0 if r_switcharoo else 2.0) * (io.below ** (response.no if r_switcharoo else response.yes))
 
              + io1[f"{'target' if switcharoo else 'input'}_half_T_row1"] ** numbers[f"n{row}"]
@@ -2546,7 +2546,7 @@ def init_participant_construction_rule_w_abstract(participant):
 
             + io.start ** response.no
             
-            + (2.0 if r_switchharoo else 1.0) * (io.left ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.left ** (response.yes if r_switcharoo else response.no))
             + (1.0 if r_switcharoo else 2.0) * (io.right ** (response.no if r_switcharoo else response.yes))
             + io.above ** response.no
             + io.below ** response.no
@@ -2591,7 +2591,7 @@ def init_participant_construction_rule_w_abstract(participant):
             + io.start ** response.no
             
             + (1.0 if r_switcharoo else 2.0) * (io.left ** (response.no if r_switcharoo else response.yes))
-            + (2.0 if r_switchharoo else 1.0) * (io.right ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.right ** (response.yes if r_switcharoo else response.no))
             + io.above ** response.no
             + io.below ** response.no
 
@@ -2635,7 +2635,7 @@ def init_participant_construction_rule_w_abstract(participant):
             
             + io.left ** response.no
             + io.right ** response.no
-            + (2.0 if r_switchharoo else 1.0) * (io.above ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.above ** (response.yes if r_switcharoo else response.no))
             + (1.0 if r_switcharoo else 2.0) * (io.below ** (response.no if r_switcharoo else response.yes))
 
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row1"] ** numbers[f"n{row}"]
@@ -2680,7 +2680,7 @@ def init_participant_construction_rule_w_abstract(participant):
             + io.left ** response.no
             + io.right ** response.no
             + (1.0 if r_switcharoo else 2.0) * (io.above ** (response.no if r_switcharoo else response.yes))
-            + (2.0 if r_switchharoo else 1.0) * (io.below ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.below ** (response.yes if r_switcharoo else response.no))
 
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row2"] ** numbers[f"n{row+1}"]
@@ -2720,7 +2720,7 @@ def init_participant_construction_rule_w_abstract(participant):
 
             + io.start ** response.no
             
-            + (2.0 if r_switchharoo else 1.0) * (io.left ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.left ** (response.yes if r_switcharoo else response.no))
             + (1.0 if r_switcharoo else 2.0) * (io.right ** (response.no if r_switcharoo else response.yes))
             + io.above ** response.no
             + io.below ** response.no
@@ -2764,7 +2764,7 @@ def init_participant_construction_rule_w_abstract(participant):
             + io.start ** response.no
             
             + (1.0 if r_switcharoo else 2.0) * (io.left ** (response.no if r_switcharoo else response.yes))
-            + (2.0 if r_switchharoo else 1.0) * (io.right ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.right ** (response.yes if r_switcharoo else response.no))
             + io.above ** response.no
             + io.below ** response.no
 
@@ -2808,7 +2808,7 @@ def init_participant_construction_rule_w_abstract(participant):
             
             + io.left ** response.no
             + io.right ** response.no
-            + (2.0 if r_switchharoo else 1.0) * (io.above ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.above ** (response.yes if r_switcharoo else response.no))
             + (1.0 if r_switcharoo else 2.0) * (io.below ** (response.no if r_switcharoo else response.yes))
 
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row1"] ** numbers[f"n{row}"]
@@ -2852,7 +2852,7 @@ def init_participant_construction_rule_w_abstract(participant):
             + io.left ** response.no
             + io.right ** response.no
             + (1.0 if r_switcharoo else 2.0) * (io.above ** (response.no if r_switcharoo else response.yes))
-            + (2.0 if r_switchharoo else 1.0) * (io.below ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.below ** (response.yes if r_switcharoo else response.no))
 
            + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_mirror_L_row2"] ** numbers[f"n{row+1}"]
@@ -2892,7 +2892,7 @@ def init_participant_construction_rule_w_abstract(participant):
 
             + io.start ** response.no
             
-            + (2.0 if r_switchharoo else 1.0) * (io.left ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.left ** (response.yes if r_switcharoo else response.no))
             + (1.0 if r_switcharoo else 2.0) * (io.right ** (response.no if r_switcharoo else response.yes))
             + io.above ** response.no
             + io.below ** response.no
@@ -2937,7 +2937,7 @@ def init_participant_construction_rule_w_abstract(participant):
             + io.start ** response.no
             
             + (1.0 if r_switcharoo else 2.0) * (io.left ** (response.no if r_switcharoo else response.yes))
-            + (2.0 if r_switchharoo else 1.0) * (io.right ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.right ** (response.yes if r_switcharoo else response.no))
             + io.above ** response.no
             + io.below ** response.no
 
@@ -2981,7 +2981,7 @@ def init_participant_construction_rule_w_abstract(participant):
             
             + io.left ** response.no
             + io.right ** response.no
-            + (2.0 if r_switchharoo else 1.0) * (io.above ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.above ** (response.yes if r_switcharoo else response.no))
             + (1.0 if r_switcharoo else 2.0) * (io.below ** (response.no if r_switcharoo else response.yes))
 
             + io1[f"{'target' if switcharoo else 'input'}_horizontal_row1"] ** numbers[f"n{row}"]
@@ -3025,7 +3025,7 @@ def init_participant_construction_rule_w_abstract(participant):
             + io.left ** response.no
             + io.right ** response.no
             + (1.0 if r_switcharoo else 2.0) * (io.above ** (response.no if r_switcharoo else response.yes))
-            + (2.0 if r_switchharoo else 1.0) * (io.below ** (response.yes if r_switcharoo else response.no))
+            + (2.0 if r_switcharoo else 1.0) * (io.below ** (response.yes if r_switcharoo else response.no))
 
             + io1[f"{'target' if switcharoo else 'input'}_horizontal_row1"] ** numbers[f"n{row}"]
             + io1[f"{'target' if switcharoo else 'input'}_horizontal_row2"]** numbers[f"n{row}"]

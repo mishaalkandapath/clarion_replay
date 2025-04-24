@@ -31,7 +31,7 @@ handler = logging.StreamHandler(sys.stdout)
 logger.addHandler(handler)
 
 
-def present_stimulus(d:BrickConstructionTask, stim_grid: np.ndarray):
+def present_stimulus(d:BrickConstructionTask, stim_grid: np.ndarray, mlp_space_1: MLPConstructionIO, mlp_space_2: Numbers):
     stim_bricks = np.unique(stim_grid)
     stim_bricks = stim_bricks[stim_bricks != 0]
     
@@ -54,6 +54,13 @@ def present_stimulus(d:BrickConstructionTask, stim_grid: np.ndarray):
                            + d.io[brick_col_map[brick][1]] ** d.numbers[f"n{col_indices[0]}"]
                            + d.io[brick_col_map[brick][2]] ** d.numbers[f"n{col_indices[1]}"]
                            + d.io[brick_col_map[brick][3]] ** d.numbers[f"n{col_indices[2]}"])
+            mlp_send_val = (
+                           + mlp_space_1[brick_row_map[brick][1]] ** mlp_space_2[f"n{row_indices[0]}"]
+                           + mlp_space_1[brick_row_map[brick][2]] ** mlp_space_2[f"n{row_indices[1]}"]
+                           + mlp_space_1[brick_row_map[brick][3]] ** mlp_space_2[f"n{row_indices[2]}"]
+                           + mlp_space_1[brick_col_map[brick][1]] ** mlp_space_2[f"n{col_indices[0]}"]
+                           + mlp_space_1[brick_col_map[brick][2]] ** mlp_space_2[f"n{col_indices[1]}"]
+                           + mlp_space_1[brick_col_map[brick][3]] ** mlp_space_2[f"n{col_indices[2]}"])
         else:
             in_send_val = (in_send_val
                             + d.io[shape_brick_map[brick]] ** d.response.yes
@@ -63,6 +70,15 @@ def present_stimulus(d:BrickConstructionTask, stim_grid: np.ndarray):
                             + d.io[brick_col_map[brick][1]] ** d.numbers[f"n{col_indices[0]}"]
                             + d.io[brick_col_map[brick][2]] ** d.numbers[f"n{col_indices[1]}"]
                             + d.io[brick_col_map[brick][3]] ** d.numbers[f"n{col_indices[2]}"])
+            
+            mlp_send_val = (mlp_send_val
+                            + mlp_space_1[brick_row_map[brick][1]] ** mlp_space_2[f"n{row_indices[0]}"]
+                            + mlp_space_1[brick_row_map[brick][2]] ** mlp_space_2[f"n{row_indices[1]}"]
+                            + mlp_space_1[brick_row_map[brick][3]] ** mlp_space_2[f"n{row_indices[2]}"]
+                            + mlp_space_1[brick_col_map[brick][1]] ** mlp_space_2[f"n{col_indices[0]}"]
+                            + mlp_space_1[brick_col_map[brick][2]] ** mlp_space_2[f"n{col_indices[1]}"]
+                            + mlp_space_1[brick_col_map[brick][3]] ** mlp_space_2[f"n{col_indices[2]}"])
+            
     in_send_val = (in_send_val
                    + d.io.target_half_T ** d.response.no
                    + d.io.target_mirror_L ** d.response.no
@@ -78,13 +94,14 @@ def present_stimulus(d:BrickConstructionTask, stim_grid: np.ndarray):
     return in_send_val, mlp_send_val
 
 def load_trial(construction_space: BrickConstructionTask | BrickConstructionTaskAbstractParticipant, response_space: BrickResponseTask,
+               mlp_space_1: MLPConstructionIO, mlp_space_2: Numbers,
                 trial: pd.Series, t_type="test", q_type="query"):
     d = response_space
     
     grid_name = trial["Grid_Name"]
     
     stim_grid = np.load(f"/Users/mishaal/personalproj/clarion_replay/processed/{t_type}_data/{t_type}_stims/{grid_name}.npy")         
-    chunk_grid, chunk_grid_mlp = present_stimulus(construction_space, stim_grid)
+    chunk_grid, chunk_grid_mlp = present_stimulus(construction_space, stim_grid, mlp_space_1, mlp_space_2)
     
     query_map = {1: d.query_rel.left, 2: d.query_rel.above, 3: d.query_rel.right, 4: d.query_rel.below}
     query_col_map = {1: "left_element", 2: "ontop_element", 3: "right_element", 4: "below_element"}
@@ -131,7 +148,10 @@ def load_trial(construction_space: BrickConstructionTask | BrickConstructionTask
 
 def run_participant_session(participant: BaseParticipant, session_df: pd.DataFrame, session_type="train", q_type="query"):
     global rule_defs
+    # some results
     results, construction_correctness, all_rule_history, all_rule_lhs_history = [], [], [], []
+    # neural network training stats:
+    construction_reward_vals, construction_q_vals, construction_action_vals = [], [], []   
     trials = []
     # Knowledge initialization
     init_participant_response_rules(participant)
@@ -152,7 +172,9 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             if not trials: break
             #load the next trial
             trial = trials.pop(0)
-            grid_stimulus_np, grid_stimulus, grid_stimulus_mlp, test_query, choice_is_yes = load_trial(participant.construction_space, participant.response_space, trial, t_type=session_type, q_type=q_type)
+            grid_stimulus_np, grid_stimulus, grid_stimulus_mlp, test_query, choice_is_yes = load_trial(participant.construction_space, participant.response_space,
+                                                                                                       participant.mlp_space_1, participant.mlp_space_2,
+                                                                                                       trial, t_type=session_type, q_type=q_type,)
             participant.mlp_construction_input.send(grid_stimulus_mlp)
             participant.construction_input.send(grid_stimulus) # TODO: have a timeout somehow: but how to do timeout wihout proper timinmg constraints for the various events in the queue?
         elif event.source == participant.end_construction:
@@ -164,6 +186,10 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
                 participant.end_construction_feedback()
             else:
                 participant.start_response_trial(timedelta()) #TODO: checkout the actual time delays
+        elif event.source == participant.goal_net.error.update:
+            #plot the current bit:        
+            plt.plot(participant.construction_net_training_results)
+            plt.savefig("figures/construction_net_training.png")
         elif event.source == participant.end_construction_feedback:
             participant.start_response_trial(timedelta())
         elif event.source == participant.start_response_trial:

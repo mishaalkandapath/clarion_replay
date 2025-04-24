@@ -64,46 +64,6 @@ class FlippableInput(Input):
             #update
             d[index].update(data.d)
 
-
-class DelayedTDError(TDError):
-    @override 
-    def resolve(self, event: Event) -> None:
-        return
-    
-class ChoiceDelayIDN(MLP):
-    """
-    An implicit decision network (IDN).
-    
-    Learns to make action decisions in the bottom level via temporal difference 
-    learning.
-    """
-
-    error: DelayedTDError
-
-    def __init__(self, 
-        name: str, 
-        p: Family,
-        h: Family,
-        r: D | DV, 
-        s1: V | DV,
-        s2: V | DV | None = None,
-        layers: Sequence[int] = (),
-        optimizer: Type[Optimizer] = Adam,
-        afunc: Activation | None = None,
-        func: Callable[[TDError], NumDict] = TDError.max_Q,
-        gamma: float = .3,
-        l: int = 1,
-        train: Train = Train.ALL,
-        init_sd: float = 1e-2,
-        **kwargs: Any
-    ) -> None:
-        super().__init__(
-            name, p, h, s1, s2, layers, optimizer, afunc, l + 1, train, init_sd, 
-            **kwargs)
-        self.error = self >> DelayedTDError(f"{name}.error", 
-            p, r, func=func, gamma=gamma, l=l)
-
-
 def numpify_grid(grid: NumDict) -> np.ndarray:
     data = grid._d
     data_dict = {}
@@ -173,20 +133,18 @@ def mlpify(cur_working_space: NumDict, index: Index) -> NumDict:
     ignore other keys
     """
 
-    data = cur_working_space
+    data = cur_working_space.d
     data_dict = {}
     for k_ in data:
         k = str(k_).split(":")[-1]
         a, b = k.split(",")
         a, b = a[1:], b[:-1]
-        if re.match(r".*input_shape\d+_row\d+", a):
-            shape_num = int(re.match(r".*input_shape(\d+)_row\d+", a).group(1))
-            row_num = int(re.match(r".*row(\d+)", a).group(1))
-            data_dict[f"(mlp_space_1, mlp_space_2):(input_shape{shape_num}_row{row_num})"] = data[k_]
-        elif re.match(r".*input_shape\d+_col\d+", a):
-            shape_num = int(re.match(r".*input_shape(\d+)_col\d+", a).group(1))
-            col_num = int(re.match(r".*col(\d+)", a).group(1))
-            data_dict[f"(mlp_space_1, mlp_space_2):(input_shape{shape_num}_col{col_num})"] = data[k_]
+        if re.match(r".*input_(mirror_L|half_T|horizontal|vertical)_(row|col)(\d+)", a):
+            keyname = re.match(r".*input_(mirror_L|half_T|horizontal|vertical)_(row|col)(\d+)", a).group(0)
+            data_dict[f"(mlp_space_1,mlp_space_2):({keyname},{b})"] = data[k_]
+        if re.match(r".*target_(mirror_L|half_T|horizontal|vertical)_(row|col)(\d+)", a):
+            keyname = re.match(r".*target_(mirror_L|half_T|horizontal|vertical)_(row|col)(\d+)", a).group(0)
+            data_dict[f"(mlp_space_1,mlp_space_2):({keyname},{b})"] = data[k_]
     
 
     return numdict(index ,data_dict, c=0.0)
