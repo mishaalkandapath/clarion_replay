@@ -288,7 +288,7 @@ class AbstractParticipant(BaseParticipant):
 
         with self:
 
-            self.mlp_construction_input = Input("mlp_construction_input", (mlp_space_1, mlp_space_2), reset=True)
+            self.mlp_construction_input = FlippableInput("mlp_construction_input", (mlp_space_1, mlp_space_2), reset=False)
             self.abstract_goal_choice = Choice("abstract_goal_choice", self.p, (mlp_output_space_2, mlp_output_space_1), sd=1e-2)
             # setup goal direction network:
             with self.abstract_goal_choice:
@@ -298,7 +298,7 @@ class AbstractParticipant(BaseParticipant):
                                                                    r=self.mlp_output_space_2,
                                                                    s1=(mlp_space_1, mlp_space_2),
                                                                    s2=(mlp_output_space_2, mlp_output_space_1),
-                                                                   layers=(256,512,256),
+                                                                   layers=(),
                                                                    train=Train.WEIGHTS,
                                                                    gamma=.9,
                                                                    lr=1e-2)
@@ -325,14 +325,6 @@ class AbstractParticipant(BaseParticipant):
         # ABSTRACT SEARCH PROCESSING    
         if event.source == self.mlp_construction_input.send:
             self.shift_goal()
-        elif event.source == self.goal_net.error.send:
-            self.goal_net.error.update()
-        elif event.source == self.goal_net.optimizer.update \
-            and all(e.source != self.end_construction_feedback for e in self.system.queue):
-            # goal set, redo
-            last_construction = self.past_constructions.pop()
-            self.mlp_construction_input.send(mlpify(last_construction, self.mlp_construction_input.main[0].i), flip=True)
-            self.construction_input.send(last_construction, flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
         elif event.source == self.shift_goal:
             self.abstract_goal_choice.trigger() # at this point olayer.forward has been applied
         elif event.source == self.abstract_goal_choice.select:
@@ -361,6 +353,9 @@ class AbstractParticipant(BaseParticipant):
 
             self.search_space_matchstats.increment() # TODO: apt timedelta?
             self.past_chosen_rule_lhs_history.pop()
+            last_construction = self.past_constructions.pop()
+            self.mlp_construction_input.send(mlpify(last_construction, self.mlp_construction_input.main[0].i), flip=True)
+            self.construction_input.send(last_construction, flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
 
             #-- MLP ACTIONS --
             # one bad reward for the last choice
@@ -379,6 +374,10 @@ class AbstractParticipant(BaseParticipant):
                 self.past_chosen_goals = []
                 self.all_goal_history = []
                 self.past_constructions = [self.past_constructions[0]]
+
+                last_construction = self.past_constructions.pop()
+                self.mlp_construction_input.send(mlpify(last_construction, self.mlp_construction_input.main[0].i), flip=True)
+                self.construction_input.send(last_construction, flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
 
                 self.goal_net.error.send({self.mlp_output_space_2.yes: -1.0})
                 self.construction_reward_vals.append(-1.0)

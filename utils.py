@@ -133,7 +133,7 @@ def mlpify(cur_working_space: NumDict, index: Index) -> NumDict:
     ignore other keys
     """
 
-    data = cur_working_space.d
+    data = cur_working_space.d if type(cur_working_space) is NumDict else cur_working_space
     data_dict = {}
     for k_ in data:
         k = str(k_).split(":")[-1]
@@ -147,7 +147,7 @@ def mlpify(cur_working_space: NumDict, index: Index) -> NumDict:
             data_dict[f"(mlp_space_1,mlp_space_2):({keyname},{b})"] = data[k_]
     
 
-    return numdict(index ,data_dict, c=0.0)
+    return data_dict
 
 def filter_keys_by_rule_chunk(rule_rhs_chunk: Chunk, choice_main: dict, space_descr="construction_space") -> dict:
     key_filter = []
