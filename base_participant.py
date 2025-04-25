@@ -123,7 +123,7 @@ class BaseParticipant(Agent):
             self.trigger_response = False
         elif event.source == self.construction_input.send \
             and all(e.source not in self.construction_input_wait for e in self.system.queue):
-            self.past_constructions.append(self.construction_input.main[0]) # add the current construction to the past constructions    
+            self.past_constructions.append(self.construction_input.main[0].d.copy()) # add the current construction to the past constructions    
         
         elif event.source == self.search_space_rules.rules.update:
             self.search_space_matchstats.update() # update the match stats

@@ -2186,6 +2186,7 @@ def init_participant_construction_rule_w_abstract(participant):
             + io[f"target_{'horizontal' if switcharoo else 'half_T'}_col1"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col-2+i}"])
             + io[f"target_{'horizontal' if switcharoo else 'half_T'}_col2"] ** (numbers[f"n{col+1}"] if not switcharoo else numbers[f"n{col-1+i}"])
             + io[f"target_{'horizontal' if switcharoo else 'half_T'}_col3"] ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col+i}"])
+            + io.construction_signal ** con_signal.continue_construction
         ) 
         for r_switcharoo in (True, False) for switcharoo in (True, False) for i in range(3) for row in range(1, 5) for col in range(3-i, 6-(i==2))
 ]
@@ -3148,6 +3149,7 @@ def init_participant_construction_rule_w_abstract(participant):
     )
 
 def init_abstract_participant_construction_rules(participant):
+    
     global SHAPES
 
     d1 = participant.abstract_space
