@@ -7,7 +7,7 @@ from knowledge_init import *
 
 from datetime import timedelta
 import math
-
+import random
 
 class BaseParticipant(Agent):  
     construction_space: BrickConstructionTask
@@ -310,6 +310,8 @@ class AbstractParticipant(BaseParticipant):
         self.past_chosen_goals = []
         self.all_goal_history = []
 
+        self.past_chosen_rule_choices = []
+
         #RL stats
         self.construction_reward_vals = []
         self.construction_qvals = []
@@ -335,6 +337,7 @@ class AbstractParticipant(BaseParticipant):
         elif event.source == self.goal_net.error.update:
             self.construction_net_training_results.append(self.goal_net.error.main[0].max().pow(x=2.0).c)
 
+
     def resolve_lowlevel_search_choice(self, event):
         #check if indeed we need to stop construction, if triggered the STOP rule
         cur_rule_choice = self.search_space_rules.choice.poll()
@@ -343,26 +346,33 @@ class AbstractParticipant(BaseParticipant):
         cur_choice = self.search_space_choice.poll()
 
         if cur_choice[~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens] == ~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens.backtrack_construction: #backtrack
-            new_rule_mask = self.search_space_matchstats.cond.new({list(cur_rule_choice.values())[0]: 1.0}).with_default(c=0.0)
-            new_crit_score = self.search_space_matchstats.crit.new({}).with_default(c=0.0)#we want to increment the negativity count
             
-            self.search_space_matchstats.cond.data.pop()
-            self.search_space_matchstats.crit.data.pop()
+            if self.past_chosen_rule_lhs_history: # this rule is not to blame, but the previous is
+                past_rule_choice = self.past_chosen_rule_choices.pop()
 
-            self.search_space_matchstats.cond.data.append(new_rule_mask) # update the condition ot only change scores for this rule
-            self.search_space_matchstats.crit.data.append(new_crit_score) 
+                new_rule_mask = self.search_space_matchstats.cond.new({list(past_rule_choice.values())[0]: 1.0}).with_default(c=0.0)
+                new_crit_score = self.search_space_matchstats.crit.new({}).with_default(c=0.0)#we want to increment the negativity count
+                
+                self.search_space_matchstats.cond.data.pop()
+                self.search_space_matchstats.crit.data.pop()
 
-            self.search_space_matchstats.increment() # TODO: apt timedelta?
-            self.past_chosen_rule_lhs_history.pop()
-            last_construction = self.past_constructions.pop()
-            self.mlp_construction_input.send(mlpify(last_construction, self.mlp_construction_input.main[0].i), flip=True)
-            self.construction_input.send(clean_construction_input(last_construction), flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
+                self.search_space_matchstats.cond.data.append(new_rule_mask) # update the condition ot only change scores for this rule
+                self.search_space_matchstats.crit.data.append(new_crit_score) 
+
+                self.search_space_matchstats.increment() # TODO: apt timedelta?
+
+                self.past_chosen_rule_lhs_history.pop()
+                self.past_chosen_rules.pop()
 
             #-- MLP ACTIONS --
             # one bad reward for the last choice
             self.goal_net.error.send({self.mlp_output_space_2.yes: -1.0})
             self.construction_reward_vals.append(-1.0)
             self.construction_qvals.append(self.abstract_goal_choice.input[0].max().c)
+
+            last_construction = self.past_constructions.pop()
+            self.mlp_construction_input.send(mlpify(last_construction, self.mlp_construction_input.main[0].i), flip=True)
+            self.construction_input.send(clean_construction_input(last_construction), flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
 
         elif cur_choice[~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens] == ~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens.stop_construction:
             self.end_construction() # TODO: consider adding stop construction rules to rule history for matchstats
@@ -372,6 +382,7 @@ class AbstractParticipant(BaseParticipant):
                 self.all_rule_history = []
                 self.all_rule_lhs_history = []
                 self.past_chosen_rule_lhs_history = []
+                self.past_chosen_rule_choices = []
                 self.past_chosen_goals = []
                 self.all_goal_history = []
                 self.past_constructions = [self.past_constructions[0]]
@@ -391,6 +402,7 @@ class AbstractParticipant(BaseParticipant):
             self.all_rule_history.append(cur_additions)
             self.all_rule_lhs_history.append(self.search_space_rules.rules.lhs.chunks._members_[Key(f"{cur_rule_number}")])
             self.past_chosen_rule_lhs_history.append(self.search_space_rules.rules.lhs.chunks._members_[Key(f"{cur_rule_number}")])
+            self.past_chosen_rule_choices.append(cur_rule_choice)
             
             self.mlp_construction_input.send(mlpify(cur_additions, self.mlp_construction_input.main[0].i)) 
             self.construction_input.send(cur_additions) # loop it back in --for more selections

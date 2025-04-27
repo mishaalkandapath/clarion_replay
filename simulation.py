@@ -172,12 +172,14 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
         break # testing
 
     viz = SimulationVisualizer()
-    
     participant.start_construct_trial(timedelta())
     last_end_construction_time = None
     start_time = datetime.timedelta(0)
     while participant.system.queue:
         event = participant.system.advance()
+
+        viz.update_time(event.time)
+
         if event.source == participant.start_construct_trial:
             if not trials: break
             #load the next trial
@@ -198,8 +200,12 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             if participant.past_chosen_goals:
                 chosen_goal = participant.past_chosen_goals[-1]
                 chosen_goal = str(chosen_goal).split(":")[-1].split(",")[-1]
-                chosen_goal = re.match(r"(half_T|mirror_L|vertical|horizontal)_(half_T|mirror_L|vertical|horizontal)_(left|right|above|below)", chosen_goal)
-                viz.update_status(chosen_goal.group(3), chosen_goal.group(1), chosen_goal.group(2), 0 if not len(participant.goal_net.error.reward[0].d) else list(participant.goal_net.error.reward[0].d.values())[0]) # TODO:
+                if re.match(r"(half_T|mirror_L|vertical|horizontal)_(half_T|mirror_L|vertical|horizontal)_(left|right|above|below)", chosen_goal):
+                    chosen_goal = re.match(r"(half_T|mirror_L|vertical|horizontal)_(half_T|mirror_L|vertical|horizontal)_(left|right|above|below)", chosen_goal)
+                    viz.update_status(chosen_goal.group(3), chosen_goal.group(1), chosen_goal.group(2), 0 if not len(participant.goal_net.error.reward[0].d) else list(participant.goal_net.error.reward[0].d.values())[0]) 
+                else:
+                    chosen_goal = re.match(r"(half_T|mirror_L|vertical|horizontal)_start", chosen_goal)
+                    viz.update_status("start", "", chosen_goal.group(1), 0 if not len(participant.goal_net.error.reward[0].d) else list(participant.goal_net.error.reward[0].d.values())[0])
             
         elif event.source == participant.end_construction:
             correctness = np.all(grid_stimulus_np == numpify_grid(participant.construction_input.main[0]))
@@ -212,9 +218,13 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
                 participant.start_response_trial(timedelta()) #TODO: checkout the actual time delays
 
         elif event.source == participant.goal_net.error.update:
-            #plot the current bit:        
+            #plot the current bit:    
+            plt.figure()    
             plt.plot(participant.construction_net_training_results)
+            plt.xlabel("Steps")
+            plt.ylabel("TD-error")
             plt.savefig("figures/construction_net_training.png")
+            plt.figure(viz.fig.number)
 
         elif event.source == participant.end_construction_feedback:
             participant.start_response_trial(timedelta())

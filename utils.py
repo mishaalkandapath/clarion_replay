@@ -64,6 +64,45 @@ class FlippableInput(Input):
             #update
             d[index].update(data.d)
 
+class DelayedTDError(TDError):
+    @override 
+    def resolve(self, event: Event) -> None:
+        return
+    
+class ChoiceDelayIDN(MLP):
+    """
+    An implicit decision network (IDN).
+    
+    Learns to make action decisions in the bottom level via temporal difference 
+    learning.
+    """
+
+    error: DelayedTDError
+
+    def __init__(self, 
+        name: str, 
+        p: Family,
+        h: Family,
+        r: D | DV, 
+        s1: V | DV,
+        s2: V | DV | None = None,
+        layers: Sequence[int] = (),
+        optimizer: Type[Optimizer] = Adam,
+        afunc: Activation | None = None,
+        func: Callable[[TDError], NumDict] = TDError.max_Q,
+        gamma: float = .3,
+        l: int = 1,
+        train: Train = Train.ALL,
+        init_sd: float = 1e-2,
+        **kwargs: Any
+    ) -> None:
+        super().__init__(
+            name, p, h, s1, s2, layers, optimizer, afunc, l + 1, train, init_sd, 
+            **kwargs)
+        self.error = self >> DelayedTDError(f"{name}.error", 
+            p, r, func=func, gamma=gamma, l=l)
+
+
 def numpify_grid(grid: NumDict) -> np.ndarray:
     data = grid._d
     data_dict = {}
@@ -251,16 +290,16 @@ def make_goal_outputs_construction_input(cur_working_space: NumDict, goal_output
     return new_working_space
 
 def clean_construction_input(data_dict,leave_only_inputs=False):
-    yes_key_lambda = lambda shape: Key(f"(construction_space,construction_space):(io,response):({shape},no)")
-    no_key_lambda = lambda shape: Key(f"(construction_space,construction_space):(io,response):({shape},yes)")
+    yes_key_lambda = lambda shape: Key(f"(construction_space,construction_space):(io,response):({shape},yes)")
+    no_key_lambda = lambda shape: Key(f"(construction_space,construction_space):(io,response):({shape},no)")
     if leave_only_inputs:
         # leave only keys with "input" in them
         data_dict = {k: v for k, v in data_dict.items() if "input" in str(k)}
         # add target_block, no keys
         
 
-        for shape in ["half_T", "mirror_L", "vertical", "horizontal"]:
-            data_dict[Key(f"target_{no_key_lambda(shape)}")] = 1.0
+        for shape in ["target_half_T", "target_mirror_L", "target_vertical", "target_horizontal"]:
+            data_dict[Key(f"{no_key_lambda(shape)}")] = 1.0
     else:
         new_data_dict = {k: v for k, v in data_dict.items() if "input" in str(k)}
 
@@ -276,9 +315,9 @@ def clean_construction_input(data_dict,leave_only_inputs=False):
                     new_data_dict[Key(f"target_{yes_key_lambda(shape)}")] = 1.0
                     reserve_set.add(shape)
         
-        for shape in ["half_T", "mirror_L", "vertical", "horizontal"]:
+        for shape in ["target_half_T", "target_mirror_L", "target_vertical", "target_horizontal"]:
             if shape not in reserve_set:
-                data_dict[Key(f"target_{no_key_lambda(shape)}")] = 1.0
+                data_dict[Key(f"{no_key_lambda(shape)}")] = 1.0
                 reserve_set.add(shape)
 
         data_dict = new_data_dict

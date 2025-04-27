@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 from matplotlib.patches import Rectangle
+from datetime import timedelta
 
 class SimulationVisualizer:
     def __init__(self):
@@ -68,6 +69,28 @@ class SimulationVisualizer:
             3: [(0,0),(0,1),(0,2)],  # horizontal
             4: [(0,1),(1,1),(2,1)],  # vertical
         }
+
+        self.time_text = self.fig.text(
+            0.98, 0.98,            # near top-right corner in figure coords
+            "",                    # initially blank
+            ha='right', va='top',
+            fontsize='small'
+        )
+
+    def update_time(self, elapsed: timedelta):
+        """
+        elapsed: total simulation time so far
+        Displays in s (>=1 s) or ms (<1 s).
+        """
+        secs = elapsed.total_seconds()
+        if secs >= 1.0:
+            text = f"{secs:.2f} s"
+        else:
+            text = f"{secs * 1000:.0f} ms"
+
+        self.time_text.set_text(text)
+        self.fig.canvas.draw()
+        # no auto-pause; time updates are instantaneous
 
     def start_trial(self, lag=0.5):
         """Show empty trial screen, with optional lag."""
