@@ -250,9 +250,37 @@ def make_goal_outputs_construction_input(cur_working_space: NumDict, goal_output
 
     return new_working_space
 
-def clean_construction_input():
-    pass 
-"""
-Note issue when backtracking or starting from scratch: target related keys are awry. 
-clean everything when scratching, but harder to figure out what shud be scratched when backtracking
-"""
+def clean_construction_input(data_dict,leave_only_inputs=False):
+    yes_key_lambda = lambda shape: Key(f"(construction_space,construction_space):(io,response):({shape},no)")
+    no_key_lambda = lambda shape: Key(f"(construction_space,construction_space):(io,response):({shape},yes)")
+    if leave_only_inputs:
+        # leave only keys with "input" in them
+        data_dict = {k: v for k, v in data_dict.items() if "input" in str(k)}
+        # add target_block, no keys
+        
+
+        for shape in ["half_T", "mirror_L", "vertical", "horizontal"]:
+            data_dict[Key(f"target_{no_key_lambda(shape)}")] = 1.0
+    else:
+        new_data_dict = {k: v for k, v in data_dict.items() if "input" in str(k)}
+
+        # add target_block, yes if there is target_block_row etc keys:
+        
+        key_matcher = r".*target_(mirror_L|half_T|horizontal|vertical)_(row|col)(\d+)"
+
+        reserve_set = set()
+        for k in data_dict:
+            if re.match(key_matcher, str(k)):
+                shape = re.match(key_matcher, str(k)).group(1)
+                if shape not in reserve_set:
+                    new_data_dict[Key(f"target_{yes_key_lambda(shape)}")] = 1.0
+                    reserve_set.add(shape)
+        
+        for shape in ["half_T", "mirror_L", "vertical", "horizontal"]:
+            if shape not in reserve_set:
+                data_dict[Key(f"target_{no_key_lambda(shape)}")] = 1.0
+                reserve_set.add(shape)
+
+        data_dict = new_data_dict
+    
+    return data_dict

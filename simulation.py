@@ -192,14 +192,14 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             viz.update_input(grid_stimulus_np)
             start_time = event.time
 
-        elif event.source == participant.construction_input.update:
+        elif event.source == participant.construction_input.send:
+            print(numpify_grid(participant.construction_input.main[0]))
             viz.update_work(numpify_grid(participant.construction_input.main[0]))
-            
             if participant.past_chosen_goals:
                 chosen_goal = participant.past_chosen_goals[-1]
                 chosen_goal = str(chosen_goal).split(":")[-1].split(",")[-1]
                 chosen_goal = re.match(r"(half_T|mirror_L|vertical|horizontal)_(half_T|mirror_L|vertical|horizontal)_(left|right|above|below)", chosen_goal)
-                viz.update_status(chosen_goal.group(3), chosen_goal.group(1), chosen_goal.group(2), list(participant.goal_net.error.reward[0].values())[0]) # TODO:
+                viz.update_status(chosen_goal.group(3), chosen_goal.group(1), chosen_goal.group(2), 0 if not len(participant.goal_net.error.reward[0].d) else list(participant.goal_net.error.reward[0].d.values())[0]) # TODO:
             
         elif event.source == participant.end_construction:
             correctness = np.all(grid_stimulus_np == numpify_grid(participant.construction_input.main[0]))

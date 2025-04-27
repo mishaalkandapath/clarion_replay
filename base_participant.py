@@ -331,7 +331,7 @@ class AbstractParticipant(BaseParticipant):
             cur_sample = self.abstract_goal_choice.sample
             cur_choice = self.abstract_goal_choice.poll()
             self.past_chosen_goals.append(cur_choice)
-            self.construction_input.send(make_goal_outputs_construction_input(self.construction_input.main[0], cur_choice))
+            self.construction_input.send(make_goal_outputs_construction_input(self.construction_input.main[0], cur_choice), flip=True)
         elif event.source == self.goal_net.error.update:
             self.construction_net_training_results.append(self.goal_net.error.main[0].max().pow(x=2.0).c)
 
@@ -356,7 +356,7 @@ class AbstractParticipant(BaseParticipant):
             self.past_chosen_rule_lhs_history.pop()
             last_construction = self.past_constructions.pop()
             self.mlp_construction_input.send(mlpify(last_construction, self.mlp_construction_input.main[0].i), flip=True)
-            self.construction_input.send(last_construction, flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
+            self.construction_input.send(clean_construction_input(last_construction), flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
 
             #-- MLP ACTIONS --
             # one bad reward for the last choice
@@ -378,7 +378,7 @@ class AbstractParticipant(BaseParticipant):
 
                 last_construction = self.past_constructions.pop()
                 self.mlp_construction_input.send(mlpify(last_construction, self.mlp_construction_input.main[0].i), flip=True)
-                self.construction_input.send(last_construction, flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
+                self.construction_input.send(clean_construction_input(last_construction, leave_only_inputs=True), flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
 
                 self.goal_net.error.send({self.mlp_output_space_2.yes: -1.0})
                 self.construction_reward_vals.append(-1.0)
