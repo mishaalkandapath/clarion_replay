@@ -249,4 +249,10 @@ def make_goal_outputs_construction_input(cur_working_space: NumDict, goal_output
             new_working_space.update({Key(rel_key_template(rel, "no")): 1.0})
 
     return new_working_space
-            
+
+def clean_construction_input():
+    pass 
+"""
+Note issue when backtracking or starting from scratch: target related keys are awry. 
+clean everything when scratching, but harder to figure out what shud be scratched when backtracking
+"""

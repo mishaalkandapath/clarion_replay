@@ -2,6 +2,7 @@ from pyClarion import (Agent, Input, Choice, ChunkStore, FixedRules,
     Family, Atoms, Atom, BaseLevel, Pool, NumDict, Event, Priority, Site, IDN, Train)
 from pyClarion.components.stats import MatchStats
 from datetime import timedelta
+import datetime
 
 import logging
 import sys, os, random
@@ -148,6 +149,8 @@ def load_trial(construction_space: BrickConstructionTask | BrickConstructionTask
 
 def run_participant_session(participant: BaseParticipant, session_df: pd.DataFrame, session_type="train", q_type="query"):
     global rule_defs
+
+    per_trial_time = 3.5 if session_type != "train" else 6
     # some results
     results, construction_correctness, all_rule_history, all_rule_lhs_history = [], [], [], []
     # neural network training stats:
@@ -164,8 +167,9 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
         trials.append(trial)
         break # testing
     
-    participant.start_construct_trial(timedelta(seconds=1))
+    participant.start_construct_trial(timedelta())
     last_end_construction_time = None
+    start_time = datetime.timedelta(0)
     while participant.system.queue:
         event = participant.system.advance()
         if event.source == participant.start_construct_trial:
@@ -177,6 +181,7 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
                                                                                                        trial, t_type=session_type, q_type=q_type,)
             participant.mlp_construction_input.send(grid_stimulus_mlp, flip=True)
             participant.construction_input.send(grid_stimulus, flip=True) # TODO: have a timeout somehow: but how to do timeout wihout proper timinmg constraints for the various events in the queue?
+            start_time = event.time
         elif event.source == participant.end_construction:
             correctness = np.all(grid_stimulus_np == numpify_grid(participant.construction_input.main[0]))
             construction_correctness.append(correctness)
@@ -206,6 +211,10 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             all_rule_history.append(participant.all_rule_history)
             all_rule_lhs_history.append(participant.all_rule_lhs_history)
             participant.start_construct_trial(timedelta())
+        if (event.time - start_time) > datetime.timedelta(seconds=per_trial_time) \
+        and not participant.trigger_response:
+            print("premature end of trial")
+            participant.end_construction()
     return results, construction_correctness, all_rule_history, all_rule_lhs_history
 
 # trials_df = pd.read_csv("~/personalproj/clarion_replay/processed/test_data/all_test_data.csv")

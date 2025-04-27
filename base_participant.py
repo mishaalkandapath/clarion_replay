@@ -298,7 +298,7 @@ class AbstractParticipant(BaseParticipant):
                                                                    r=self.mlp_output_space_2,
                                                                    s1=(mlp_space_1, mlp_space_2),
                                                                    s2=(mlp_output_space_2, mlp_output_space_1),
-                                                                   layers=(),
+                                                                   layers=(256,512,256),
                                                                    train=Train.WEIGHTS,
                                                                    gamma=.9,
                                                                    lr=1e-2)
@@ -361,7 +361,7 @@ class AbstractParticipant(BaseParticipant):
             # one bad reward for the last choice
             self.goal_net.error.send({self.mlp_output_space_2.yes: -1.0})
             self.construction_reward_vals.append(-1.0)
-            self.construction_qvals.append(self.goal_net.main[0].max().c)
+            self.construction_qvals.append(self.abstract_goal_choice.input[0].max().c)
 
         elif cur_choice[~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens] == ~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens.stop_construction:
             self.end_construction() # TODO: consider adding stop construction rules to rule history for matchstats
@@ -400,7 +400,7 @@ class AbstractParticipant(BaseParticipant):
         # feedback for the MLP
         self.goal_net.error.send({self.mlp_output_space_2.yes: 1.0 if correct else -1.0})
         self.construction_reward_vals.append(1.0 if correct else -1.0)
-        self.construction_qvals.append(self.goal_net.main[0].max().c)
+        self.construction_qvals.append(self.abstract_goal_choice.input[0].max().c)
 
         #update twice to delay
         self.goal_net.error.update()
