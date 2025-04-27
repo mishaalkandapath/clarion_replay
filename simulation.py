@@ -16,6 +16,7 @@ from knowledge_init import *
 from rule_defs import * 
 from base_participant import *
 from evaluation import * 
+from simulation_viz import *
 import math
 
 # plotting 
@@ -150,6 +151,9 @@ def load_trial(construction_space: BrickConstructionTask | BrickConstructionTask
 def run_participant_session(participant: BaseParticipant, session_df: pd.DataFrame, session_type="train", q_type="query"):
     global rule_defs
 
+    d= participant.response_space  
+
+
     per_trial_time = 3.5 if session_type != "train" else 6
     # some results
     results, construction_correctness, all_rule_history, all_rule_lhs_history = [], [], [], []
@@ -166,6 +170,8 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
     for _, trial in session_df.iterrows():
         trials.append(trial)
         break # testing
+
+    viz = SimulationVisualizer()
     
     participant.start_construct_trial(timedelta())
     last_end_construction_time = None
@@ -180,8 +186,21 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
                                                                                                        participant.mlp_space_1, participant.mlp_space_2,
                                                                                                        trial, t_type=session_type, q_type=q_type,)
             participant.mlp_construction_input.send(grid_stimulus_mlp, flip=True)
-            participant.construction_input.send(grid_stimulus, flip=True) # TODO: have a timeout somehow: but how to do timeout wihout proper timinmg constraints for the various events in the queue?
+            participant.construction_input.send(grid_stimulus, flip=True) # TODO: have a timeout somehow: but how to do timeout wihout proper timinmg constraints for the various events in the queue?\
+
+            viz.start_trial()
+            viz.update_input(grid_stimulus_np)
             start_time = event.time
+
+        elif event.source == participant.construction_input.update:
+            viz.update_work(numpify_grid(participant.construction_input.main[0]))
+            
+            if participant.past_chosen_goals:
+                chosen_goal = participant.past_chosen_goals[-1]
+                chosen_goal = str(chosen_goal).split(":")[-1].split(",")[-1]
+                chosen_goal = re.match(r"(half_T|mirror_L|vertical|horizontal)_(half_T|mirror_L|vertical|horizontal)_(left|right|above|below)", chosen_goal)
+                viz.update_status(chosen_goal.group(3), chosen_goal.group(1), chosen_goal.group(2), list(participant.goal_net.error.reward[0].values())[0]) # TODO:
+            
         elif event.source == participant.end_construction:
             correctness = np.all(grid_stimulus_np == numpify_grid(participant.construction_input.main[0]))
             construction_correctness.append(correctness)
@@ -191,26 +210,40 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
                 participant.end_construction_feedback()
             else:
                 participant.start_response_trial(timedelta()) #TODO: checkout the actual time delays
+
         elif event.source == participant.goal_net.error.update:
             #plot the current bit:        
             plt.plot(participant.construction_net_training_results)
             plt.savefig("figures/construction_net_training.png")
+
         elif event.source == participant.end_construction_feedback:
             participant.start_response_trial(timedelta())
+            
         elif event.source == participant.start_response_trial:
             participant.response_input.send(test_query, flip=True) # dont reset, just add
             last_end_construction_time = event.time
+            viz.start_response((test_query[~participant.d.io.query_relation * ~ participant.d.query_rel]).split(":")[-1],
+                               (test_query[~participant.d.io.query_block * ~ participant.d.query_block]).split(":")[-1].replace("_","-"),
+                                 (test_query[~participant.d.io.query_block_reference * ~ participant.d.query_block_reference]).split(":")[-1].replace("_","-"))
+
         elif event.source == participant.response_rules.rules.rhs.td.update:
             participant.response_choice.select()
+
         elif event.source == participant.response_choice.select:
             results.append(((event.time - last_end_construction_time).total_seconds(), 
                             (participant.response_choice.poll()[~participant.response_space.io.output * ~participant.response_space.response] == ~participant.response_space.io.output * ~participant.response_space.response.yes) == choice_is_yes)) #TODO: come up with a way to save the sequences of search space rules that were activated -- is there in sample attribute of the choice in a rule i believe?
             last_end_construction_time = None
+            viz.choose_response("yes" 
+                                if (participant.response_choice.poll()[~participant.response_space.io.output * ~participant.response_space.response] == ~participant.response_space.io.output * ~participant.response_space.response.yes) 
+                                else "no")
+
             participant.finish_response_trial(timedelta())
+
         elif event.source == participant.finish_response_trial:
             all_rule_history.append(participant.all_rule_history)
             all_rule_lhs_history.append(participant.all_rule_lhs_history)
             participant.start_construct_trial(timedelta())
+
         if (event.time - start_time) > datetime.timedelta(seconds=per_trial_time) \
         and not participant.trigger_response:
             print("premature end of trial")

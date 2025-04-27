@@ -330,6 +330,7 @@ class AbstractParticipant(BaseParticipant):
         elif event.source == self.abstract_goal_choice.select:
             cur_sample = self.abstract_goal_choice.sample
             cur_choice = self.abstract_goal_choice.poll()
+            self.past_chosen_goals.append(cur_choice)
             self.construction_input.send(make_goal_outputs_construction_input(self.construction_input.main[0], cur_choice))
         elif event.source == self.goal_net.error.update:
             self.construction_net_training_results.append(self.goal_net.error.main[0].max().pow(x=2.0).c)
