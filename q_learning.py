@@ -81,9 +81,6 @@ class DQN(nn.Module):
 
 BATCH_SIZE = 64
 GAMMA = 0.99
-EPS_START = 0.9
-EPS_END = 0.05
-EPS_DECAY = 1000
 TAU = 0.005
 LR = 1e-4
 ACTIONS = list(range(52))
@@ -125,7 +122,7 @@ def external_mlp_handle(state_keys, action_keys):
         else:
             assert state is not None and action is not None and reward is not None
             batch_size = 1
-            
+
             state = pyc_to_torch(state, state_keys)
             action = [action_keys.index(action)]
             next_state = pyc_to_torch(next_state, state_keys) if next_state is not None else None

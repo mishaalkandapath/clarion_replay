@@ -48,8 +48,8 @@ class SimulationVisualizer:
 
 
         # 5) Status + reward text (in figure coords)
-        self.status_text = self.fig.text(0.5, 0.95, "", ha='center')
-        self.reward_text = self.fig.text(0.5, 0.45, "", ha='center')  # lowered
+        self.status_text = self.fig.text(0.5, 0.90, "", ha='center')
+        self.reward_text = self.fig.text(0.5, 0.40, "", ha='center')
 
         # 6) Response question + choices (hidden initially)
         self.question_text = self.fig.text(
@@ -76,6 +76,25 @@ class SimulationVisualizer:
             ha='right', va='top',
             fontsize='small'
         )
+
+        #rogress bar
+        self.progress_ax = self.fig.add_axes([0.05, 0.94, 0.9, 0.02])
+        self.progress_ax.axis('off')
+        self.progress_bar = Rectangle(
+            (0, 0), 0, 1,
+            transform=self.progress_ax.transAxes,
+            facecolor='lightblue', edgecolor=None
+        )
+        self.progress_ax.add_patch(self.progress_bar)
+
+        self.progress_pct_text = self.fig.text(
+            0.05, 0.96, '0%', ha='left', va='bottom', fontsize='small'
+        )
+        self.time_left_text = self.fig.text(
+            0.95, 0.96, '',   ha='right',va='bottom',fontsize='small'
+        )
+        # store total when init_progress() is called
+        self._total_trials = None
 
     def update_time(self, elapsed: timedelta):
         """
@@ -120,13 +139,31 @@ class SimulationVisualizer:
         self.fig.canvas.draw(); plt.pause(lag)
 
     def update_status(self, relation, reference, target, reward, lag=0.5):
-        """Update top text and reward text below."""
-        self.status_text.set_text(
-            f"Relation: {relation}    Reference: {reference}    Target: {target}"
+        # """Update top text and reward text below."""
+        # self.status_text.set_text(
+        #     f"Relation: {relation}    Reference: {reference}    Target: {target}"
+        # )
+        # self.reward_text.set_text(f"Reward: {reward}")
+        # self.fig.canvas.draw(); plt.pause(lag)
+        """
+        relation, reference, target: strings
+        reward: number or string
+        """
+        # Build a single math‐mode string: bold labels, \quad adds padding
+        status_str = (
+            f"$\\mathbf{{Relation:}}\\,\\text{{{relation}}}\\quad"
+            f"\\mathbf{{Reference:}}\\,\\text{{{reference}}}\\quad"
+            f"\\mathbf{{Target:}}\\,\\text{{{target}}}$"
         )
-        self.reward_text.set_text(f"Reward: {reward}")
-        self.fig.canvas.draw(); plt.pause(lag)
-        
+        self.status_text.set_text(status_str)
+
+        # Reward label bold, value normal
+        reward_str = f"$\\mathbf{{Reward:}}\\,\\text{{{reward}}}$"
+        self.reward_text.set_text(reward_str)
+
+        self.fig.canvas.draw()
+        plt.pause(lag)
+            
     def _draw_brick(self, ax, shape_id, scale=0.8):
         ax.clear()
         # 3×3 data coords
@@ -184,6 +221,52 @@ class SimulationVisualizer:
         else:
             self.no_text.set_fontweight('bold')
         self.fig.canvas.draw(); plt.pause(choice_lag)
+
+    def init_progress(self, total_trials):
+        """
+        Call once at the very start with the number of trials your run will have.
+        """
+        self._total_trials = total_trials
+        # reset bar & texts
+        self.progress_bar.set_width(0)
+        self.progress_pct_text.set_text("0%")
+        self.time_left_text.set_text("")
+        self.fig.canvas.draw()
+
+    def update_progress(self, completed_trials, elapsed):
+        """
+        completed_trials : int
+            how many trials have finished so far
+        elapsed : datetime.timedelta
+            total elapsed time so far
+        """
+        if self._total_trials is None:
+            raise RuntimeError("You must call init_progress() first")
+
+        # compute fraction
+        frac = completed_trials / self._total_trials
+        # resize bar (in Axes coordinates)
+        self.progress_bar.set_width(frac)
+        # update percentage text
+        pct = int(frac * 100)
+        self.progress_pct_text.set_text(f"{pct}%")
+
+        # estimate time left
+        secs = elapsed.total_seconds()
+        if completed_trials > 0:
+            sec_per = secs / completed_trials
+            secs_left = sec_per * (self._total_trials - completed_trials)
+        else:
+            secs_left = 0.0
+
+        if secs_left >= 1.0:
+            tl = f"{secs_left:.1f}s left"
+        else:
+            tl = f"{secs_left*1000:.0f}ms left"
+        self.time_left_text.set_text(tl)
+
+        # redraw
+        self.fig.canvas.draw()
 
 
 if __name__ == "__main__":

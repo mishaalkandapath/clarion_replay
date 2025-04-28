@@ -171,11 +171,14 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
         trials.append(trial)
         break # testing
     original_length = len(trials)
-
+    done_count = 0
     viz = SimulationVisualizer()
+    viz.init_progress(original_length)
     participant.start_construct_trial(timedelta())
     last_end_construction_time = None
     start_time = datetime.timedelta(0)
+
+    real_start_time = datetime.datetime.now()
     while participant.system.queue:
         event = participant.system.advance()
 
@@ -260,6 +263,8 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
                 participant.replay_optimize_qnet()
             else:
                 participant.start_construct_trial(timedelta())
+                done_count += 1
+                viz.update_progress(done_count, datetime.datetime.now() - real_start_time)
         
         elif event.source == participant.replay_optimize_qnet:
             plt.figure()    
@@ -270,6 +275,8 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             plt.figure(viz.fig.number)
 
             participant.start_construct_trial(timedelta())
+            done_count += 1
+            viz.update_progress(done_count, datetime.datetime.now() - real_start_time)
 
         if (event.time - start_time) > datetime.timedelta(seconds=per_trial_time) \
         and not participant.trigger_response:

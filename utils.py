@@ -312,7 +312,7 @@ def clean_construction_input(data_dict,leave_only_inputs=False):
             if re.match(key_matcher, str(k)):
                 shape = re.match(key_matcher, str(k)).group(1)
                 if shape not in reserve_set:
-                    new_data_dict[Key(f"target_{yes_key_lambda(shape)}")] = 1.0
+                    new_data_dict[Key(f"{yes_key_lambda(shape)}")] = 1.0
                     reserve_set.add(shape)
         
         for shape in ["target_half_T", "target_mirror_L", "target_vertical", "target_horizontal"]:

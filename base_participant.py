@@ -10,6 +10,10 @@ from datetime import timedelta
 import math
 import random
 
+EPS_START = 0.9
+EPS_END = 0.05
+EPS_DECAY = 1000
+
 class BaseParticipant(Agent):  
     construction_space: BrickConstructionTask
     search_space_rules: RuleWBLA
@@ -336,8 +340,12 @@ class AbstractParticipant(BaseParticipant):
         elif event.source == self.forward_qnet:
             self.abstract_goal_choice.trigger() # at this point olayer.forward has been applied
         elif event.source == self.abstract_goal_choice.select:
-            cur_sample = self.abstract_goal_choice.sample
             cur_choice = self.abstract_goal_choice.poll()
+
+            greedy_move = self.select_action()
+            if not greedy_move:
+                cur_choice = {c: random.choice([k for k in self.abstract_goal_choice.main[0]]) for c in cur_choice} 
+                
             self.past_chosen_goals.append(cur_choice)
             self.transition_store.append(list(cur_choice.values())[0])
             self.construction_input.send(make_goal_outputs_construction_input(self.construction_input.main[0], cur_choice), flip=True)
@@ -468,6 +476,16 @@ class AbstractParticipant(BaseParticipant):
             loss = self.goal_net_optimize(use_memory=True)
             self.construction_net_training_results.append(loss)
             self.goal_net_update()
+
+    def select_action(self):
+        steps_done = len(self.construction_net_training_results)
+        sample = random.random()
+        eps_threshold = EPS_END + (EPS_START - EPS_END) * \
+            math.exp(-1. * steps_done / EPS_DECAY)
+        steps_done += 1
+
+        return sample > eps_threshold
+
 
 
 """
