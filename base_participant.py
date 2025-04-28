@@ -4,6 +4,7 @@ from pyClarion.components.stats import MatchStats
 
 from utils import *
 from knowledge_init import *
+from q_learning import *
 
 from datetime import timedelta
 import math
@@ -291,21 +292,12 @@ class AbstractParticipant(BaseParticipant):
 
             self.mlp_construction_input = FlippableInput("mlp_construction_input", (mlp_space_1, mlp_space_2), reset=False)
             self.abstract_goal_choice = Choice("abstract_goal_choice", self.p, (mlp_output_space_2, mlp_output_space_1), sd=1e-2)
-            # setup goal direction network:
-            with self.abstract_goal_choice:
-                self.goal_net = self.mlp_construction_input >> IDN("goal_net",
-                                                                   p=self.p,
-                                                                   h=h,
-                                                                   r=self.mlp_output_space_2,
-                                                                   s1=(mlp_space_1, mlp_space_2),
-                                                                   s2=(mlp_output_space_2, mlp_output_space_1),
-                                                                   layers=(256,512,256),
-                                                                   train=Train.WEIGHTS,
-                                                                   gamma=.9,
-                                                                   lr=1e-2)
-                
-        # goal setup:
-        self.abstract_goal_choice.input = self.goal_net.olayer.main
+
+        # MLP SETUP:
+        self.goal_net, self.goal_net_memory, self.goal_net_update, self.goal_net_optimize = external_mlp_handle(
+            observation_keys = [k for k in self.mlp_construction_input.main[0]],
+            action_keys = [k for k in self.abstracr_goal_choice.main[0]]
+        )
         
         #extra backtracking queues: #TODO: better way to do this is probably with Sites, adn their inbuilt deque
         self.past_chosen_goals = []
@@ -317,6 +309,8 @@ class AbstractParticipant(BaseParticipant):
         self.construction_reward_vals = []
         self.construction_qvals = []
         self.construction_net_training_results = []
+        
+        self.transition_store = []
 
         self.search_space_trigger_wait = [self.search_space_pool.update, self.shift_goal]
         self.response_trigger_wait = [self.response_rules.rules.update]
@@ -328,15 +322,22 @@ class AbstractParticipant(BaseParticipant):
         # ABSTRACT SEARCH PROCESSING    
         if event.source == self.mlp_construction_input.send:
             self.shift_goal()
-        elif event.source == self.shift_goal:
+        elif event.source == self.shift_goal and  len(self.transition_store) > 0:
+                self.transition_store.insert(2, self.mlp_construction_input.main[0].d.copy())
+                self.backward_qnet()
+
+        elif event.source == self.backward_qnet and all(e.source == self.end_construction_feedback for e in self.system.queue):
+            # run the q_net on the new stuff
+            self.forward_qnet()
+            self.transition_store = [self.mlp_construction_input.main[0].d.copy()] 
+        elif event.source == self.forward_qnet:
             self.abstract_goal_choice.trigger() # at this point olayer.forward has been applied
         elif event.source == self.abstract_goal_choice.select:
             cur_sample = self.abstract_goal_choice.sample
             cur_choice = self.abstract_goal_choice.poll()
             self.past_chosen_goals.append(cur_choice)
+            self.transition_store.append(cur_choice)
             self.construction_input.send(make_goal_outputs_construction_input(self.construction_input.main[0], cur_choice), flip=True)
-        elif event.source == self.goal_net.error.update:
-            self.construction_net_training_results.append(self.goal_net.error.main[0].max().pow(x=2.0).c)
 
 
     def resolve_lowlevel_search_choice(self, event):
@@ -367,11 +368,13 @@ class AbstractParticipant(BaseParticipant):
 
             #-- MLP ACTIONS --
             # one bad reward for the last choice
-            self.goal_net.error.send({self.mlp_output_space_2.yes: -1.0})
             self.construction_reward_vals.append(-1.0)
             self.construction_qvals.append(self.abstract_goal_choice.input[0].max().c)
 
             last_construction = self.past_constructions.pop()
+
+            self.tranisition_store.append(-1.0)
+
             self.mlp_construction_input.send(mlpify(last_construction, self.mlp_construction_input.main[0].i), flip=True)
             self.construction_input.send(clean_construction_input(last_construction), flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
 
@@ -392,7 +395,8 @@ class AbstractParticipant(BaseParticipant):
                 self.mlp_construction_input.send(mlpify(last_construction, self.mlp_construction_input.main[0].i), flip=True)
                 self.construction_input.send(clean_construction_input(last_construction, leave_only_inputs=True), flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
 
-                self.goal_net.error.send({self.mlp_output_space_2.yes: -1.0})
+                self.transition_store.append(-1.0)
+
                 self.construction_reward_vals.append(-1.0)
                 self.construction_qvals.append(self.abstract_goal_choice.input[0].max().c)
 
@@ -408,23 +412,56 @@ class AbstractParticipant(BaseParticipant):
             self.mlp_construction_input.send(mlpify(cur_additions, self.mlp_construction_input.main[0].i)) 
             self.construction_input.send(cur_additions) # loop it back in --for more selections
 
+            self.transition_store.append(0.0)
+
     @override
     def propagate_feedback(self, correct = 0):
         self.feedback(correct)
         # feedback for the MLP
-        self.goal_net.error.send({self.mlp_output_space_2.yes: 1.0 if correct else -1.0})
+        self.transition_store.append(None)
+        self.transition_store.append(-1.0 if not correct else 1.0)
+        self.backward_qnet()
+
         self.construction_reward_vals.append(1.0 if correct else -1.0)
         self.construction_qvals.append(self.abstract_goal_choice.input[0].max().c)
-
-        #update twice to delay
-        self.goal_net.error.update()
-
     
     def shift_goal(self, 
         dt: timedelta = timedelta(seconds=0),
         priority: Priority = Priority.DEFERRED
     ) -> None:
         self.system.schedule(self.shift_goal, dt=dt, priority=priority)
+
+
+    # Qnet training
+    def forward_qnet(self, 
+                     dt: timedelta = timedelta(seconds=0),
+        priority: Priority = Priority.PROPAGATION
+    ) -> None:
+        out_actions = self.goal_net.forward(self.mlp_construction_input.main[0].d)
+        self.system.schedule(self.forward_qnet,
+                             self.abstract_goal_choice.input.update(out_actions),
+                             dt=dt, priority=priority)
+
+    def backward_qnet(self, 
+                     dt: timedelta = timedelta(seconds=0),
+        priority: Priority = Priority.LEARNING
+    ) -> None:
+        self.goal_net_optimize(use_memory=False,
+                               *self.transition_store)
+        
+        #push into memory buffer
+        self.goal_net_memory.push(*self.transition_store)
+        self.goal_net_update()
+        self.system.schedule(self.backward_qnet,
+                             dt=dt, priority=priority)
+
+    def replay_optimize_qnet(self, 
+        dt: timedelta = timedelta(seconds=0),
+        priority: Priority = Priority.PROPAGATION
+    ) -> None:
+        for _ in range(5):
+            self.goal_net_optimize(use_memory=True)
+            self.goal_net_update()
 
 
 """

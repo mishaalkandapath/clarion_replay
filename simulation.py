@@ -170,6 +170,7 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
     for _, trial in session_df.iterrows():
         trials.append(trial)
         break # testing
+    original_length = len(trials)
 
     viz = SimulationVisualizer()
     participant.start_construct_trial(timedelta())
@@ -253,6 +254,14 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             all_rule_history.append(participant.all_rule_history)
             all_rule_lhs_history.append(participant.all_rule_lhs_history)
             all_constructions.append(participant.all_constructions)
+
+            if original_length - len(trials) == 50:
+                original_length = len(trials)
+                participant.replay_optimize_qnet()
+            else:
+                participant.start_construct_trial(timedelta())
+        
+        elif event.source == participant.replay_optimize_qnet:
             participant.start_construct_trial(timedelta())
 
         if (event.time - start_time) > datetime.timedelta(seconds=per_trial_time) \
@@ -294,15 +303,15 @@ def run_theoretical_participant(participant, constructions):
 # trials_df = pd.read_csv("~/personalproj/clarion_replay/processed/test_data/all_test_data.csv")
 # run_participant_session(LowLevelParticipant("p1"), trials_df)
 
-def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=False):
+def run_experiment(num_train_sessions=100, num_test_sessions=20, run_train_only=False):
 
     grid_names = os.listdir("processed/train_data/train_stims/")
     test_trials = pd.read_csv("processed/test_data/all_test_data.csv")
     participant = AbstractParticipant("p1")
     theoretical_participant = LowLevelParticipant("p2")
 
-    if num_train_trials:
-        train_grids = random.choices(grid_names, k=num_train_trials)
+    if num_train_sessions:
+        train_grids = random.choices(grid_names, k=num_train_sessions*50)
         train_grids = [grid_name.split(".")[0] for grid_name in train_grids]
         #make this list a pandas dataframe
         train_trials = pd.DataFrame(train_grids, columns=["Grid_Name"])
@@ -328,7 +337,7 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
 
     if run_train_only: return
 
-    test_trial_indices = random.sample(test_trials['PID'].unique().tolist(), num_test_trials)
+    test_trial_indices = random.sample(test_trials['PID'].unique().tolist(), num_test_sessions)
     test_trials = test_trials[test_trials["PID"].isin(test_trial_indices)]
 
     test_grid_names = test_trials["Grid_Name"].tolist()
@@ -413,4 +422,4 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
     plt.show()
 
 if __name__ == "__main__":
-    run_experiment(num_train_trials=10, num_test_trials=2)
+    run_experiment(num_train_sessions=10, num_test_sessions=2)
