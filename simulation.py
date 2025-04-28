@@ -151,12 +151,12 @@ def load_trial(construction_space: BrickConstructionTask | BrickConstructionTask
 def run_participant_session(participant: BaseParticipant, session_df: pd.DataFrame, session_type="train", q_type="query"):
     global rule_defs
 
-    d= participant.response_space  
+    d = participant.response_space  
 
 
     per_trial_time = 3.5 if session_type != "train" else 6
     # some results
-    results, construction_correctness, all_rule_history, all_rule_lhs_history = [], [], [], []
+    results, construction_correctness, all_constructions, all_rule_history, all_rule_lhs_history = [], [], [], [], []
     # neural network training stats:
     construction_reward_vals, construction_q_vals, construction_action_vals = [], [], []   
     trials = []
@@ -252,13 +252,44 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
         elif event.source == participant.finish_response_trial:
             all_rule_history.append(participant.all_rule_history)
             all_rule_lhs_history.append(participant.all_rule_lhs_history)
+            all_constructions.append(participant.all_constructions)
             participant.start_construct_trial(timedelta())
 
         if (event.time - start_time) > datetime.timedelta(seconds=per_trial_time) \
         and not participant.trigger_response:
             print("premature end of trial")
             participant.end_construction()
-    return results, construction_correctness, all_rule_history, all_rule_lhs_history
+    return results, construction_correctness, all_rule_history, all_rule_lhs_history, all_constructions
+
+def run_theoretical_participant(participant, constructions):
+
+    all_rule_history, all_rule_lhs_history = [], []
+
+    init_participant_construction_rules(participant)
+    participant.start_construct_trial(timedelta())
+
+    past_length = 0
+    cur_trial_index = 0
+
+    while participant.system.queue:
+        event = participant.system.advance()
+
+        if event.source == participant.start_construct_trial:
+            trial = constructions[cur_trial_index]
+            participant.past_constructions = [remove_high_level(c) for c in constructions]
+            participant.past_chosen_rule_lhs_history = [None] * len(participant.past_constructions) #dummy, just to prevent errors
+            participant.construction_input.send(remove_high_level(trial), flip=True)
+        
+        if past_length < len(participant.all_rule_lhs_history):
+            assert len(participant.all_rule_lhs_history) == past_length + 1
+            past_length += 1
+            participant.end_construction()
+        
+        if event.source == participant.end_construction:
+            participant.start_response_trial(timedelta())
+    
+    return all_rule_history, all_rule_lhs_history
+
 
 # trials_df = pd.read_csv("~/personalproj/clarion_replay/processed/test_data/all_test_data.csv")
 # run_participant_session(LowLevelParticipant("p1"), trials_df)
@@ -268,13 +299,14 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
     grid_names = os.listdir("processed/train_data/train_stims/")
     test_trials = pd.read_csv("processed/test_data/all_test_data.csv")
     participant = AbstractParticipant("p1")
+    theoretical_participant = LowLevelParticipant("p2")
 
     if num_train_trials:
         train_grids = random.choices(grid_names, k=num_train_trials)
         train_grids = [grid_name.split(".")[0] for grid_name in train_grids]
         #make this list a pandas dataframe
         train_trials = pd.DataFrame(train_grids, columns=["Grid_Name"])
-        train_results, train_construction_correctness, _, _ = run_participant_session(participant, train_trials)
+        train_results, train_construction_correctness, _, _, _ = run_participant_session(participant, train_trials)
 
         train_results_df = pd.DataFrame(train_results, columns=["rt", "response_correctness"])
         train_results_df["construction_correctness"] = train_construction_correctness
@@ -302,7 +334,7 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
     test_grid_names = test_trials["Grid_Name"].tolist()
     test_grids = [np.load(f"processed/test_data/test_stims/{grid_name}.npy") for grid_name in test_grid_names]
 
-    test_results, test_construction_correctness, test_rule_choices, test_rule_lhs_information = run_participant_session(participant, test_trials, session_type="test", q_type="query")
+    test_results, test_construction_correctness, test_rule_choices, test_rule_lhs_information, test_constructions = run_participant_session(participant, test_trials, session_type="test", q_type="query")
 
     test_results_df = pd.DataFrame(test_results, columns=["rt", "response_correctness"])
     test_results_df["construction_correctness"] = test_construction_correctness
@@ -323,7 +355,7 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
     plt.savefig("figures/test_response_correctness.png")
     plt.clf()
 
-    # delayed effects data:
+
     n_stable_to_present, n_present_to_stable, n_distant_to_stable, n_stable_to_distant, n_present_to_present = simple_sequenceness(test_rule_choices, test_rule_lhs_information, test_grids)
     n_stable_to_present = n_stable_to_present.mean(axis=0)
     n_present_to_stable = n_present_to_stable.mean(axis=0)
@@ -343,23 +375,42 @@ def run_experiment(num_train_trials=100, num_test_trials=20, run_train_only=Fals
     plt.legend()
     plt.savefig("figures/sequences_simple.png")
 
-    # n_lags, betas, pvals = calculate_delayed_effects(test_rule_choices, max_lag=10)
-    # time_ms = np.arange(n_lags) * 10  # adjust if your step ≠10ms
+    # delayed effects modeling
+    theoretical_rule_histories, theoretical_rule_lhs_histories = [], []
+    for construction in test_constructions:
+        theoretical_rule_history, theoretical_rule_lhs_history = run_theoretical_participant(theoretical_participant, construction)
+        theoretical_rule_histories.append(theoretical_rule_history)
+        theoretical_rule_lhs_histories.append(theoretical_rule_lhs_history)
 
-    # plt.figure(figsize=(8, 4))
-    # plt.plot(time_ms, betas, label='GLM β (data ← theory)', color='C2')
-    # plt.axhline(0, color='k', linestyle='--', linewidth=0.8)
+    
+    m_stable_to_present, m_present_to_stable, m_distant_to_stable, m_stable_to_distant, m_present_to_present = simple_sequenceness(theoretical_rule_histories, theoretical_rule_lhs_histories, test_grids)
+    m_stable_to_present = m_stable_to_present.mean(axis=0)
+    m_present_to_stable = m_present_to_stable.mean(axis=0)
+    m_distant_to_stable = m_distant_to_stable.mean(axis=0)
+    m_stable_to_distant = m_stable_to_distant.mean(axis=0)
+    m_present_to_present = m_present_to_present.mean(axis=0)
+    
 
-    # # Optionally, mark timepoints with p<0.05
-    # sig = pvals < 0.05
-    # plt.scatter(time_ms[sig], betas[sig], color='red', s=20, label='p < 0.05')
 
-    # plt.xlabel('Time lag (ms)')
-    # plt.ylabel('Regression β')
-    # plt.title('Sequenceness β‑weights (empirical vs. theoretical)')
-    # plt.legend()
-    # plt.tight_layout()
-    # plt.show()
+    n_lags, betas, pvals = calculate_delayed_effects((m_stable_to_present, m_present_to_stable, m_distant_to_stable, m_stable_to_distant, m_present_to_present), 
+                                                     (n_stable_to_present, n_present_to_stable, n_distant_to_stable, n_stable_to_distant, n_present_to_present))
+                                                     
+    time_ms = np.arange(n_lags) * 50  # adjust if your step ≠10ms
+
+    plt.figure(figsize=(8, 4))
+    plt.plot(time_ms, betas, label='GLM β (data ← theory)', color='C2')
+    plt.axhline(0, color='k', linestyle='--', linewidth=0.8)
+
+    # Optionally, mark timepoints with p<0.05
+    sig = pvals < 0.05
+    plt.scatter(time_ms[sig], betas[sig], color='red', s=20, label='p < 0.05')
+
+    plt.xlabel('Time lag (ms)')
+    plt.ylabel('Regression β')
+    plt.title('Sequenceness β‑weights (empirical vs. theoretical)')
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
 if __name__ == "__main__":
     run_experiment(num_train_trials=10, num_test_trials=2)

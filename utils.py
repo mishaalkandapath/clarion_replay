@@ -323,3 +323,15 @@ def clean_construction_input(data_dict,leave_only_inputs=False):
         data_dict = new_data_dict
     
     return data_dict
+
+def remove_high_level(data_dict: dict):
+    new_data_dict = {}
+    for k in data_dict:
+        if re.match(r".*input_(mirror_L|half_T|horizontal|vertical)_(row|col)(\d+)", str(k)):
+            new_data_dict[k] = data_dict[k]
+        elif re.match(r".*target_(mirror_L|half_T|horizontal|vertical).*", str(k)):
+            new_data_dict[k] = data_dict[k]
+        elif re.match(r".*construction_signal.*", str(k)):
+            new_data_dict[k] = data_dict[k]
+
+    return new_data_dict

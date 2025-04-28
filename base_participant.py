@@ -96,6 +96,7 @@ class BaseParticipant(Agent):
         self.past_chosen_rules = []
         self.all_rule_history = []
         self.all_rule_lhs_history = []
+        self.all_constructions = []
         self.past_chosen_rule_lhs_history = []
 
         #wait events for low level pool update;
@@ -124,7 +125,7 @@ class BaseParticipant(Agent):
         elif event.source == self.construction_input.send \
             and all(e.source not in self.construction_input_wait for e in self.system.queue):
             self.past_constructions.append(self.construction_input.main[0].d.copy()) # add the current construction to the past constructions    
-        
+            self.all_constructions.append(self.construction_input.main[0].d.copy()) # add the current construction to the all constructions
         elif event.source == self.search_space_rules.rules.update:
             self.search_space_matchstats.update() # update the match stats
         
