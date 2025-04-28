@@ -203,10 +203,10 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
                 chosen_goal = str(chosen_goal).split(":")[-1].split(",")[-1]
                 if re.match(r"(half_T|mirror_L|vertical|horizontal)_(half_T|mirror_L|vertical|horizontal)_(left|right|above|below)", chosen_goal):
                     chosen_goal = re.match(r"(half_T|mirror_L|vertical|horizontal)_(half_T|mirror_L|vertical|horizontal)_(left|right|above|below)", chosen_goal)
-                    viz.update_status(chosen_goal.group(3), chosen_goal.group(1), chosen_goal.group(2), 0 if not len(participant.goal_net.error.reward[0].d) else list(participant.goal_net.error.reward[0].d.values())[0]) 
+                    viz.update_status(chosen_goal.group(3), chosen_goal.group(1), chosen_goal.group(2), "TBD" if not len(participant.transition_store) or type(participant.transition_store[-1]) is not float else participant.transition_store[-1]) 
                 else:
                     chosen_goal = re.match(r"(half_T|mirror_L|vertical|horizontal)_start", chosen_goal)
-                    viz.update_status("start", "", chosen_goal.group(1), 0 if not len(participant.goal_net.error.reward[0].d) else list(participant.goal_net.error.reward[0].d.values())[0])
+                    viz.update_status("start", "", chosen_goal.group(1), "TBD" if not len(participant.transition_store) or type(participant.transition_store[-1]) else list(participant.transition_store[-1]))
             
         elif event.source == participant.end_construction:
             correctness = np.all(grid_stimulus_np == numpify_grid(participant.construction_input.main[0]))
@@ -218,12 +218,12 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             else:
                 participant.start_response_trial(timedelta()) #TODO: checkout the actual time delays
 
-        elif event.source == participant.goal_net.error.update:
+        elif event.source == participant.backward_qnet:
             #plot the current bit:    
             plt.figure()    
             plt.plot(participant.construction_net_training_results)
             plt.xlabel("Steps")
-            plt.ylabel("TD-error")
+            plt.ylabel("Loss")
             plt.savefig("figures/construction_net_training.png")
             plt.figure(viz.fig.number)
 
@@ -262,6 +262,13 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
                 participant.start_construct_trial(timedelta())
         
         elif event.source == participant.replay_optimize_qnet:
+            plt.figure()    
+            plt.plot(participant.construction_net_training_results)
+            plt.xlabel("Steps")
+            plt.ylabel("Loss")
+            plt.savefig("figures/construction_net_training.png")
+            plt.figure(viz.fig.number)
+
             participant.start_construct_trial(timedelta())
 
         if (event.time - start_time) > datetime.timedelta(seconds=per_trial_time) \
@@ -357,7 +364,7 @@ def run_experiment(num_train_sessions=100, num_test_sessions=20, run_train_only=
 
     sns.scatterplot(test_results_df, x="trial #", y="rt")
     sns.lineplot(test_results_df, x="trial #", y="rt", color="red")
-    plt.savefig("figrues/test_rt.png")
+    plt.savefig("figures/test_rt.png")
     plt.clf()
 
     sns.scatterplot(test_results_df, x="trial #", y="response_correctness")

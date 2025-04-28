@@ -295,8 +295,8 @@ class AbstractParticipant(BaseParticipant):
 
         # MLP SETUP:
         self.goal_net, self.goal_net_memory, self.goal_net_update, self.goal_net_optimize = external_mlp_handle(
-            observation_keys = [k for k in self.mlp_construction_input.main[0]],
-            action_keys = [k for k in self.abstracr_goal_choice.main[0]]
+            state_keys= [k for k in self.mlp_construction_input.main[0]],
+            action_keys = [k for k in self.abstract_goal_choice.main[0]]
         )
         
         #extra backtracking queues: #TODO: better way to do this is probably with Sites, adn their inbuilt deque
@@ -322,9 +322,12 @@ class AbstractParticipant(BaseParticipant):
         # ABSTRACT SEARCH PROCESSING    
         if event.source == self.mlp_construction_input.send:
             self.shift_goal()
-        elif event.source == self.shift_goal and  len(self.transition_store) > 0:
+        elif event.source == self.shift_goal and len(self.transition_store) > 0:
                 self.transition_store.insert(2, self.mlp_construction_input.main[0].d.copy())
                 self.backward_qnet()
+        elif event.source == self.shift_goal:
+            self.forward_qnet()
+            self.transition_store = [self.mlp_construction_input.main[0].d.copy()] 
 
         elif event.source == self.backward_qnet and all(e.source == self.end_construction_feedback for e in self.system.queue):
             # run the q_net on the new stuff
@@ -336,7 +339,7 @@ class AbstractParticipant(BaseParticipant):
             cur_sample = self.abstract_goal_choice.sample
             cur_choice = self.abstract_goal_choice.poll()
             self.past_chosen_goals.append(cur_choice)
-            self.transition_store.append(cur_choice)
+            self.transition_store.append(list(cur_choice.values())[0])
             self.construction_input.send(make_goal_outputs_construction_input(self.construction_input.main[0], cur_choice), flip=True)
 
 
@@ -373,7 +376,7 @@ class AbstractParticipant(BaseParticipant):
 
             last_construction = self.past_constructions.pop()
 
-            self.tranisition_store.append(-1.0)
+            self.transition_store.append(-1.0)
 
             self.mlp_construction_input.send(mlpify(last_construction, self.mlp_construction_input.main[0].i), flip=True)
             self.construction_input.send(clean_construction_input(last_construction), flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
@@ -446,9 +449,11 @@ class AbstractParticipant(BaseParticipant):
                      dt: timedelta = timedelta(seconds=0),
         priority: Priority = Priority.LEARNING
     ) -> None:
-        self.goal_net_optimize(use_memory=False,
-                               *self.transition_store)
+        loss = self.goal_net_optimize(use_memory=False,
+                               **{["state", "action", "next_state", "reward"][i]: self.transition_store[i] for i in range(4)})
         
+        self.construction_net_training_results.append(loss)
+
         #push into memory buffer
         self.goal_net_memory.push(*self.transition_store)
         self.goal_net_update()
@@ -460,7 +465,8 @@ class AbstractParticipant(BaseParticipant):
         priority: Priority = Priority.PROPAGATION
     ) -> None:
         for _ in range(5):
-            self.goal_net_optimize(use_memory=True)
+            loss = self.goal_net_optimize(use_memory=True)
+            self.construction_net_training_results.append(loss)
             self.goal_net_update()
 
 
