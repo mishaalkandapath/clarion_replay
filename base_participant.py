@@ -424,7 +424,7 @@ class AbstractParticipant(BaseParticipant):
             self.mlp_construction_input.send(mlpify(cur_additions, self.mlp_construction_input.main[0].i)) 
             self.construction_input.send(cur_additions) # loop it back in --for more selections
 
-            self.transition_store.append(0.0)
+            self.transition_store.append(-0.1) # tiny punishment for timestep
 
     def modify_matchstats(self, past_rule_choice, pm=False):
         if self.select_action():
