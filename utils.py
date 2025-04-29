@@ -233,7 +233,7 @@ def make_goal_outputs_construction_input(cur_working_space: NumDict, goal_output
     SHAPES = ["half_T", "mirror_L", "vertical", "horizontal"]
     RELS = ["start", "left", "right", "above", "below"]
 
-    new_working_space = cur_working_space.d
+    new_working_space = cur_working_space.d.copy()
 
     for shape in SHAPES:
         reference_key = Key(key_template(shape, "reference"))
@@ -310,14 +310,16 @@ def clean_construction_input(data_dict,leave_only_inputs=False):
         reserve_set = set()
         for k in data_dict:
             if re.match(key_matcher, str(k)):
+                new_data_dict[k] = data_dict[k]
                 shape = re.match(key_matcher, str(k)).group(1)
                 if shape not in reserve_set:
-                    new_data_dict[Key(f"{yes_key_lambda(shape)}")] = 1.0
-                    reserve_set.add(shape)
+                    new_data_dict[Key(f"{yes_key_lambda("target_"+shape)}")] = 1.0
+                    reserve_set.add("target_"+shape)
+
         
         for shape in ["target_half_T", "target_mirror_L", "target_vertical", "target_horizontal"]:
             if shape not in reserve_set:
-                data_dict[Key(f"{no_key_lambda(shape)}")] = 1.0
+                new_data_dict[Key(f"{no_key_lambda(shape)}")] = 1.0
                 reserve_set.add(shape)
 
         data_dict = new_data_dict

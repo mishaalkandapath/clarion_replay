@@ -128,7 +128,7 @@ class BaseParticipant(Agent):
         elif event.source == self.start_construct_trial:
             self.trigger_response = False
         elif event.source == self.construction_input.send \
-            and all(e.source not in self.construction_input_wait for e in self.system.queue):
+            and any(e.source in self.construction_input_wait for e in self.system.queue):
             self.past_constructions.append(self.construction_input.main[0].d.copy()) # add the current construction to the past constructions    
             self.all_constructions.append(self.construction_input.main[0].d.copy()) # add the current construction to the all constructions
         elif event.source == self.search_space_rules.rules.update:
@@ -158,6 +158,18 @@ class BaseParticipant(Agent):
             # clear system queue
             self.system.queue.clear() # at this point, you should have a clear target_grid representation built -- correct or incorrect
 
+    def modify_matchstats(self, past_rule_choice, pm=False) -> None:
+        new_rule_mask = self.search_space_matchstats.cond.new({list(past_rule_choice.values())[0]: 1.0}).with_default(c=0.0)
+        new_crit_score = self.search_space_matchstats.crit.new({}).with_default(c=0.0 if not pm else 1.0)#we want to increment the negativity count
+        
+        self.search_space_matchstats.cond.data.pop()
+        self.search_space_matchstats.crit.data.pop()
+
+        self.search_space_matchstats.cond.data.append(new_rule_mask) # update the condition ot only change scores for this rule
+        self.search_space_matchstats.crit.data.append(new_crit_score) 
+
+        self.search_space_matchstats.increment() # TODO: apt timedelta?
+    
     def start_construct_trial(self, 
         dt: timedelta, 
         priority: Priority = Priority.PROPAGATION
@@ -201,16 +213,7 @@ class BaseParticipant(Agent):
         if self.search_space_matchstats.crit[0].c:
             correct = 1.0
 
-        new_rule_mask = self.search_space_matchstats.cond.new({rule: 1.0}).with_default(c=0.0)
-        new_crit_score = self.search_space_matchstats.crit.new({}).with_default(c=correct)
-
-        self.search_space_matchstats.cond.data.pop()
-        self.search_space_matchstats.crit.data.pop()
-
-        self.search_space_matchstats.cond.data.append(new_rule_mask) # update the condition to only change scores for this rule
-        self.search_space_matchstats.crit.data.append(new_crit_score)
-        
-        self.search_space_matchstats.increment() # TODO: apt timedelta?
+        self.modify_matchstats(rule, pm=correct)
 
     def propagate_feedback(self, correct:float = 0) -> None:
         self.feedback(correct)
@@ -344,7 +347,12 @@ class AbstractParticipant(BaseParticipant):
 
             greedy_move = self.select_action()
             if not greedy_move:
-                cur_choice = {c: random.choice([k for k in self.abstract_goal_choice.main[0]]) for c in cur_choice} 
+                if len(self.past_constructions) == 1:
+                    # first move 80% starts 20 % random
+                    cur_choice = {c: random.choices([k for k in self.abstract_goal_choice.main[0]], [0.2]*4 + [0.2/48]*48)[0] for c in cur_choice} 
+                else:
+                    # opposite 80% others 20% start
+                    cur_choice = {c: random.choices([k for k in self.abstract_goal_choice.main[0]], [0.03/4]*4 + [0.97/48]*48)[0] for c in cur_choice} 
                 
             self.past_chosen_goals.append(cur_choice)
             self.transition_store.append(list(cur_choice.values())[0])
@@ -363,16 +371,7 @@ class AbstractParticipant(BaseParticipant):
             if self.past_chosen_rule_lhs_history: # this rule is not to blame, but the previous is
                 past_rule_choice = self.past_chosen_rule_choices.pop()
 
-                new_rule_mask = self.search_space_matchstats.cond.new({list(past_rule_choice.values())[0]: 1.0}).with_default(c=0.0)
-                new_crit_score = self.search_space_matchstats.crit.new({}).with_default(c=0.0)#we want to increment the negativity count
-                
-                self.search_space_matchstats.cond.data.pop()
-                self.search_space_matchstats.crit.data.pop()
-
-                self.search_space_matchstats.cond.data.append(new_rule_mask) # update the condition ot only change scores for this rule
-                self.search_space_matchstats.crit.data.append(new_crit_score) 
-
-                self.search_space_matchstats.increment() # TODO: apt timedelta?
+                self.modify_matchstats(past_rule_choice, pm=False)
 
                 self.past_chosen_rule_lhs_history.pop()
                 self.past_chosen_rules.pop()
@@ -411,6 +410,8 @@ class AbstractParticipant(BaseParticipant):
                 self.construction_reward_vals.append(-1.0)
                 self.construction_qvals.append(self.abstract_goal_choice.input[0].max().c)
 
+                #TODO: matchstat updates?
+
         else:
 
             cur_additions = filter_keys_by_rule_chunk(self.search_space_rules.rules.rhs.chunks._members_[Key(f"{cur_rule_number}")], self.search_space_choice.main[0].d)
@@ -424,6 +425,10 @@ class AbstractParticipant(BaseParticipant):
             self.construction_input.send(cur_additions) # loop it back in --for more selections
 
             self.transition_store.append(0.0)
+
+    def modify_matchstats(self, past_rule_choice, pm=False):
+        if self.select_action():
+            super().modify_matchstats(past_rule_choice, pm)
 
     @override
     def propagate_feedback(self, correct = 0):
@@ -482,7 +487,6 @@ class AbstractParticipant(BaseParticipant):
         sample = random.random()
         eps_threshold = EPS_END + (EPS_START - EPS_END) * \
             math.exp(-1. * steps_done / EPS_DECAY)
-        steps_done += 1
 
         return sample > eps_threshold
 

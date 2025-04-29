@@ -80,9 +80,9 @@ class DQN(nn.Module):
         return x
 
 BATCH_SIZE = 64
-GAMMA = 0.99
+GAMMA = 0.9
 TAU = 0.005
-LR = 1e-4
+LR = 1e-3
 ACTIONS = list(range(52))
 
 def external_mlp_handle(state_keys, action_keys):
@@ -145,7 +145,8 @@ def external_mlp_handle(state_keys, action_keys):
         # state value or 0 in case the state was final.
         next_state_values = torch.zeros(batch_size, device=device)
         with torch.no_grad():
-            next_state_values[non_final_mask] = target_net(non_final_next_states).max(1).values
+            if torch.any(non_final_mask):
+                next_state_values[non_final_mask] = target_net(non_final_next_states).max(1).values
         # Compute the expected Q values
         expected_state_action_values = (next_state_values * GAMMA) + reward_batch
 
