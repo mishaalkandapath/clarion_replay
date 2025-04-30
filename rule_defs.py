@@ -3421,14 +3421,30 @@ def init_participant_construction_rule_w_abstract(participant):
         + io.construction_signal ** con_signal.stop_construction)
     ]
 
+    stop_construction_rule_all_four_reference = [(
+        + (2.0 if i != 0 else 1.0) * (io.target_half_T ** (response.yes if i != 0 else response.reference))
+        + (2.0 if i != 1 else 1.0) * (io.target_mirror_L ** (response.yes if i != 1 else response.reference))
+        + (2.0 if i != 2 else 1.0) * (io.target_vertical ** (response.yes if i != 2 else response.reference))
+        + (2.0 if i != 3 else 1.0) * (io.target_horizontal ** (response.yes if i != 3 else response.reference))
+
+        # - if no
+        - (2.0 if i != 0 else 1.0) * (io.target_half_T ** response.no)
+        - (2.0 if i != 1 else 1.0) * (io.target_mirror_L ** response.no)
+        - (2.0 if i != 2 else 1.0) * (io.target_vertical ** response.no)
+        - (2.0 if i != 3 else 1.0) * (io.target_horizontal ** response.no)
+        >>
+        + io.construction_signal ** con_signal.stop_construction)
+        for i in range(4)
+    ]
+
     stop_construction_input_blocks_used_one = [(
 
-         + io1[f"input_{shape}"] ** response.yes
+            + io1[f"input_{shape}"] ** response.yes
             + io1[f"input_{(SHAPES[:i] + SHAPES[i+1:])[0]}"] ** response.no
             + io1[f"input_{(SHAPES[:i] + SHAPES[i+1:])[1]}"] ** response.no
             + io1[f"input_{(SHAPES[:i] + SHAPES[i+1:])[2]}"] ** response.no
 
-            + io1[f"target_{shape}"] ** response.yes
+            + io1[f"target_{shape}"] ** (response.yes if j else response.reference)
             + io1[f"target_{(SHAPES[:i] + SHAPES[i+1:])[0]}"] ** response.no
             + io1[f"target_{(SHAPES[:i] + SHAPES[i+1:])[1]}"] ** response.no
             + io1[f"target_{(SHAPES[:i] + SHAPES[i+1:])[2]}"] ** response.no
@@ -3436,7 +3452,7 @@ def init_participant_construction_rule_w_abstract(participant):
             >>
             + io.construction_signal ** con_signal.stop_construction
         )
-        for i, shape in enumerate(SHAPES)
+        for j in range(2) for i, shape in enumerate(SHAPES)
     ]
 
     stop_construction_input_blocks_used_two = [
@@ -3456,6 +3472,23 @@ def init_participant_construction_rule_w_abstract(participant):
         for (shape, other_shape) in itertools.combinations(SHAPES, 2)
     ]
 
+    stop_construction_input_blocks_used_two_reference = [
+        (
+            + io1[f"input_{shape}"] ** response.yes
+            + io1[f"input_{other_shape}"] ** response.yes
+            + io1[f"input_{[s for s in SHAPES if s not in (shape, other_shape)][0]}"] ** response.no
+            + io1[f"input_{[s for s in SHAPES if s not in (shape, other_shape)][1]}"] ** response.no
+
+            + io1[f"target_{shape}"] ** (response.yes if j else response.reference)
+            + io1[f"target_{other_shape}"] ** (response.yes if not j else response.reference)
+            + io1[f"target_{[s for s in SHAPES if s not in (shape, other_shape)][0]}"] ** response.no
+            + io1[f"target_{[s for s in SHAPES if s not in (shape, other_shape)][1]}"] ** response.no
+            >>
+            io.construction_signal ** con_signal.stop_construction
+        )
+        for j in range(2) for (shape, other_shape) in itertools.combinations(SHAPES, 2)
+    ]
+
     stop_construction_input_blocks_used_three = [
         (
             + io1[f"input_{shape}"] ** response.yes
@@ -3463,16 +3496,18 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"input_{other_other_shape}"] ** response.yes
             + io1[f"input_{[s for s in SHAPES if s not in (shape, other_shape, other_other_shape)][0]}"] ** response.no
 
-            + io1[f"target_{shape}"] ** response.yes
-            + io1[f"target_{other_shape}"] ** response.yes
-            + io1[f"target_{other_other_shape}"] ** response.yes
+            + io1[f"target_{shape}"] ** (response.yes if j != 0 else response.reference)
+            + io1[f"target_{other_shape}"] ** (response.yes if j != 1 else response.reference)
+            + io1[f"target_{other_other_shape}"] ** (response.yes if j != 2 else response.reference)
             + io1[f"target_{[s for s in SHAPES if s not in (shape, other_shape, other_other_shape)][0]}"] ** response.no
 
             >>
             io.construction_signal ** con_signal.stop_construction
         )
-        for (shape, other_shape, other_other_shape) in itertools.combinations(SHAPES, 3)
+        for j in range(5) for (shape, other_shape, other_other_shape) in itertools.combinations(SHAPES, 3)
     ]
+
+    
 
     participant.search_space_rules.rules.compile(
         *(
@@ -3484,6 +3519,7 @@ def init_participant_construction_rule_w_abstract(participant):
             + mirror_L_left_vertical_placement_rule + mirror_L_right_vertical_placement_rule + mirror_L_above_vertical_placement_rule + mirror_L_below_vertical_placement_rule
             + horizontal_left_vertical_placement_rule + horizontal_right_vertical_placement_rule + horizontal_above_vertical_placement_rule + horizontal_below_vertical_placement_rule 
             + stop_construction_input_blocks_used_one + stop_construction_input_blocks_used_two + stop_construction_input_blocks_used_three + stop_construction_rule_all_four
+            + stop_construction_rule_all_four_reference + stop_construction_input_blocks_used_two_reference
             + bad_brick_backtracking_rule + passive_backtracking_rule_one + passive_backtracking_rule_two + passive_backtracking_rule_three + passive_backtracking_rule_four
         )
     )

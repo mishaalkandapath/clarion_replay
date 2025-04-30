@@ -220,7 +220,8 @@ def make_response_input(cur_working_space: NumDict, response_index: Index) -> Nu
     for k_ in cur_working_space.d:
         k = str(k_)
         k = k.replace("construction_space", "response_space")
-        if "input" in k or "construction_signal" in k:
+        if re.match(r".*(input|construction_signal|latest|reference|left|right|below|above|stop|start).*", k) \
+            and cur_working_space[k_]:
             # this has something to do with an input, not a consideration for repsonses:
             continue
         response_data[Key(k)] = cur_working_space[k_]

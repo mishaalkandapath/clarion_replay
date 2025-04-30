@@ -5,7 +5,7 @@ from datetime import timedelta
 import datetime
 
 import logging
-import sys, os, random
+import sys, os, random, time
 
 import numpy as np
 import pandas as pd
@@ -102,7 +102,7 @@ def load_trial(construction_space: BrickConstructionTask | BrickConstructionTask
     
     grid_name = trial["Grid_Name"]
     
-    stim_grid = np.load(f"/Users/mishaal/personalproj/clarion_replay/processed/{t_type}_data/{t_type}_stims/{grid_name}.npy")         
+    stim_grid = np.load(f"/Users/mishaal/personalproj/clarion_replay/processed/{t_type}_data/{t_type}_stims/{grid_name}.npy")             
     chunk_grid, chunk_grid_mlp = present_stimulus(construction_space, stim_grid, mlp_space_1, mlp_space_2)
     
     query_map = {1: d.query_rel.left, 2: d.query_rel.above, 3: d.query_rel.right, 4: d.query_rel.below}
@@ -148,7 +148,7 @@ def load_trial(construction_space: BrickConstructionTask | BrickConstructionTask
 
     return stim_grid, chunk_grid, chunk_grid_mlp, chunk_test, choice_is_yes
 
-def run_participant_session(participant: BaseParticipant, session_df: pd.DataFrame, session_type="train", q_type="query"):
+def run_participant_session(participant: BaseParticipant, session_df: pd.DataFrame, session_type="train", q_type="query", init_rules=True):
     global rule_defs
 
     d = participant.response_space  
@@ -161,11 +161,12 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
     construction_reward_vals, construction_q_vals, construction_action_vals = [], [], []   
     trials = []
     # Knowledge initialization
-    init_participant_response_rules(participant)
-    if type(participant) is LowLevelParticipant:
-        init_participant_construction_rules(participant)
-    elif type(participant) is AbstractParticipant:
-        init_participant_construction_rule_w_abstract(participant)
+    if init_rules:
+        init_participant_response_rules(participant)
+        if type(participant) is LowLevelParticipant:
+            init_participant_construction_rules(participant)
+        elif type(participant) is AbstractParticipant:
+            init_participant_construction_rule_w_abstract(participant)
     
     for _, trial in session_df.iterrows():
         trials.append(trial)
@@ -199,7 +200,6 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             start_time = event.time
 
         elif event.source == participant.construction_input.send:
-            print(numpify_grid(participant.construction_input.main[0]))
             viz.update_work(numpify_grid(participant.construction_input.main[0]))
             if participant.past_chosen_goals:
                 chosen_goal = participant.past_chosen_goals[-1]
@@ -228,6 +228,7 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             plt.xlabel("Steps")
             plt.ylabel("Loss")
             plt.savefig("figures/construction_net_training.png")
+            plt.close()
             plt.figure(viz.fig.number)
 
         elif event.source == participant.end_construction_feedback:
@@ -235,13 +236,11 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             
         elif event.source == participant.start_response_trial:
             participant.response_input.send(test_query, flip=True) # dont reset, just add
+            shape_dict = {"half_T":1, "mirror_L":2, "vertical":4, "horizontal":3}
             last_end_construction_time = event.time
-            viz.start_response((test_query[~participant.d.io.query_relation * ~ participant.d.query_rel]).split(":")[-1],
-                               (test_query[~participant.d.io.query_block * ~ participant.d.query_block]).split(":")[-1].replace("_","-"),
-                                 (test_query[~participant.d.io.query_block_reference * ~ participant.d.query_block_reference]).split(":")[-1].replace("_","-"))
-
-        elif event.source == participant.response_rules.rules.rhs.td.update:
-            participant.response_choice.select()
+            pattern = r".*query_rel\.(left|right|below|above).*bricks\.(mirror_L|half_T|vertical|horizontal).*bricks\.(mirror_L|half_T|vertical|horizontal).*"
+            match = re.match(pattern, str(test_query), re.DOTALL)
+            viz.start_response(shape_dict[match.group(2)], shape_dict[match.group(3)], match.group(1))
 
         elif event.source == participant.response_choice.select:
             results.append(((event.time - last_end_construction_time).total_seconds(), 
@@ -250,13 +249,14 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             viz.choose_response("yes" 
                                 if (participant.response_choice.poll()[~participant.response_space.io.output * ~participant.response_space.response] == ~participant.response_space.io.output * ~participant.response_space.response.yes) 
                                 else "no")
+            
+            all_rule_history.append(participant.all_rule_history)
+            all_rule_lhs_history.append(participant.all_rule_lhs_history)
+            all_constructions.append(participant.all_constructions)
 
             participant.finish_response_trial(timedelta())
 
         elif event.source == participant.finish_response_trial:
-            all_rule_history.append(participant.all_rule_history)
-            all_rule_lhs_history.append(participant.all_rule_lhs_history)
-            all_constructions.append(participant.all_constructions)
 
             if original_length - len(trials) == 50:
                 original_length = len(trials)
@@ -286,9 +286,6 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
 
 def run_theoretical_participant(participant, constructions):
 
-    all_rule_history, all_rule_lhs_history = [], []
-
-    init_participant_construction_rules(participant)
     participant.start_construct_trial(timedelta())
 
     past_length = 0
@@ -299,7 +296,7 @@ def run_theoretical_participant(participant, constructions):
 
         if event.source == participant.start_construct_trial:
             trial = constructions[cur_trial_index]
-            participant.past_constructions = [remove_high_level(c) for c in constructions]
+            participant.past_constructions = [remove_high_level(c) for i, c in enumerate(constructions) if i < cur_trial_index]
             participant.past_chosen_rule_lhs_history = [None] * len(participant.past_constructions) #dummy, just to prevent errors
             participant.construction_input.send(remove_high_level(trial), flip=True)
         
@@ -307,11 +304,15 @@ def run_theoretical_participant(participant, constructions):
             assert len(participant.all_rule_lhs_history) == past_length + 1
             past_length += 1
             participant.end_construction()
+            participant.system.queue.clear()
         
         if event.source == participant.end_construction:
+            cur_trial_index += 1
+            if cur_trial_index >= len(constructions):
+                break
             participant.start_response_trial(timedelta())
     
-    return all_rule_history, all_rule_lhs_history
+    return participant.all_rule_history, participant.all_rule_history
 
 
 # trials_df = pd.read_csv("~/personalproj/clarion_replay/processed/test_data/all_test_data.csv")
@@ -357,7 +358,7 @@ def run_experiment(num_train_sessions=100, num_test_sessions=20, run_train_only=
     test_grid_names = test_trials["Grid_Name"].tolist()
     test_grids = [np.load(f"processed/test_data/test_stims/{grid_name}.npy") for grid_name in test_grid_names]
 
-    test_results, test_construction_correctness, test_rule_choices, test_rule_lhs_information, test_constructions = run_participant_session(participant, test_trials, session_type="test", q_type="query")
+    test_results, test_construction_correctness, test_rule_choices, test_rule_lhs_information, test_constructions = run_participant_session(participant, test_trials, session_type="test", q_type="query", init_rules=False)
 
     test_results_df = pd.DataFrame(test_results, columns=["rt", "response_correctness"])
     test_results_df["construction_correctness"] = test_construction_correctness
@@ -400,6 +401,7 @@ def run_experiment(num_train_sessions=100, num_test_sessions=20, run_train_only=
 
     # delayed effects modeling
     theoretical_rule_histories, theoretical_rule_lhs_histories = [], []
+    init_participant_construction_rules(participant)
     for construction in test_constructions:
         theoretical_rule_history, theoretical_rule_lhs_history = run_theoretical_participant(theoretical_participant, construction)
         theoretical_rule_histories.append(theoretical_rule_history)

@@ -115,8 +115,8 @@ class BaseParticipant(Agent):
         # -- RESPONSE PROCESSING --
         # if event.source == self.response_rules.rules.update: # after the rules have updated 
         #     self.response_blas.update() # timestep update
-        if event.source == self.response_pool.update and \
-            self.trigger_response \
+        if event.source == self.response_pool.update \
+            and self.trigger_response \
             and all(e.source not in self.response_trigger_wait for e in self.system.queue):
             self.response_rules.trigger()
         elif event.source == self.response_rules.rules.rhs.td.update:
@@ -202,13 +202,22 @@ class BaseParticipant(Agent):
                               dt: timedelta,
         priority: Priority = Priority.PROPAGATION
     ) -> None:
+        self.past_constructions = []
+        self.past_chosen_rules = []
+        self.all_rule_history = []
+        self.all_rule_lhs_history = []
+        self.all_constructions = []
+        self.past_chosen_rule_lhs_history = []
+
+        self.system.queue.clear()
+
         self.system.schedule(self.finish_response_trial, dt=dt, priority=priority)
 
     def feedback(self, correct: float=0) -> None:
-        if not self.past_chosen_rules:
+        if not self.past_chosen_rule_choices:
             return
         
-        rule = self.past_chosen_rules.pop()
+        rule = self.past_chosen_rule_choices.pop()
         #is there a correct already in there?:
         if self.search_space_matchstats.crit[0].c:
             correct = 1.0
@@ -390,7 +399,7 @@ class AbstractParticipant(BaseParticipant):
 
         elif cur_choice[~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens] == ~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens.stop_construction:
             self.end_construction() # TODO: consider adding stop construction rules to rule history for matchstats
-        elif len(self.past_chosen_rules) > 4:
+        elif len(self.past_chosen_rules) > 5:
                 # one too many -- restart --
                 self.past_chosen_rules = []
                 self.all_rule_history = []
@@ -489,6 +498,18 @@ class AbstractParticipant(BaseParticipant):
             math.exp(-1. * steps_done / EPS_DECAY)
 
         return sample > eps_threshold
+    
+    def finish_response_trial(self,
+                                dt: timedelta,
+            priority: Priority = Priority.PROPAGATION
+        ) -> None:
+            super().finish_response_trial(dt=dt, priority=priority)
+            self.past_chosen_goals = []
+            self.all_goal_history = []
+
+            self.past_chosen_rule_choices = []
+            self.transition_store = []
+
 
 
 
