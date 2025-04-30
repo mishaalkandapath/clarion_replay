@@ -157,6 +157,7 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
     per_trial_time = 3.5 if session_type != "train" else 6
     # some results
     results, construction_correctness, all_constructions, all_rule_history, all_rule_lhs_history = [], [], [], [], []
+    all_goal_choices = []   
     # neural network training stats:
     construction_reward_vals, construction_q_vals, construction_action_vals = [], [], []   
     trials = []
@@ -170,7 +171,7 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
     
     for _, trial in session_df.iterrows():
         trials.append(trial)
-        break # testing
+        # break # testing
     original_length = len(trials)
     done_count = 0
     viz = SimulationVisualizer()
@@ -253,6 +254,7 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             all_rule_history.append(participant.all_rule_history)
             all_rule_lhs_history.append(participant.all_rule_lhs_history)
             all_constructions.append(participant.all_constructions)
+            all_goal_choices.append(participant.all_goal_history[:-1])
 
             participant.finish_response_trial(timedelta())
 
@@ -272,6 +274,7 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             plt.xlabel("Steps")
             plt.ylabel("Loss")
             plt.savefig("figures/construction_net_training.png")
+            plt.close()
             plt.figure(viz.fig.number)
 
             participant.start_construct_trial(timedelta())
@@ -282,7 +285,7 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
         and not participant.trigger_response:
             print("premature end of trial")
             participant.end_construction()
-    return results, construction_correctness, all_rule_history, all_rule_lhs_history, all_constructions
+    return results, construction_correctness, all_rule_history, all_rule_lhs_history, all_constructions, all_goal_choices
 
 def run_theoretical_participant(participant, constructions):
 
@@ -327,7 +330,7 @@ def run_experiment(num_train_sessions=100, num_test_sessions=20, run_train_only=
         train_grids = [grid_name.split(".")[0] for grid_name in train_grids]
         #make this list a pandas dataframe
         train_trials = pd.DataFrame(train_grids, columns=["Grid_Name"])
-        train_results, train_construction_correctness, _, _, _ = run_participant_session(participant, train_trials)
+        train_results, train_construction_correctness, _, _, _, _ = run_participant_session(participant, train_trials)
 
         train_results_df = pd.DataFrame(train_results, columns=["rt", "response_correctness"])
         train_results_df["construction_correctness"] = train_construction_correctness
@@ -336,16 +339,16 @@ def run_experiment(num_train_sessions=100, num_test_sessions=20, run_train_only=
         # ---- Plotting ---- 
         sns.scatterplot(train_results_df, x="trial #", y="construction_correctness")
         plt.savefig("figures/train_construction_correctness.png")
-        plt.clf()
+        plt.close()
 
         sns.scatterplot(train_results_df, x="trial #", y="rt")
         sns.lineplot(train_results_df, x="trial #", y="rt", color="red")
         plt.savefig("figures/train_rt.png")
-        plt.clf()
+        plt.close()
 
         sns.scatterplot(train_results_df, x="trial #", y="response_correctness")
         plt.savefig("figures/train_response_correctness.png")
-        plt.clf()
+        plt.close()
 
     if run_train_only: return
 
@@ -355,7 +358,7 @@ def run_experiment(num_train_sessions=100, num_test_sessions=20, run_train_only=
     test_grid_names = test_trials["Grid_Name"].tolist()
     test_grids = [np.load(f"processed/test_data/test_stims/{grid_name}.npy") for grid_name in test_grid_names]
 
-    test_results, test_construction_correctness, test_rule_choices, test_rule_lhs_information, test_constructions = run_participant_session(participant, test_trials, session_type="test", q_type="query", init_rules=False)
+    test_results, test_construction_correctness, test_rule_choices, test_rule_lhs_information, test_constructions, test_goal_choices = run_participant_session(participant, test_trials, session_type="test", q_type="query", init_rules=False)
 
     test_results_df = pd.DataFrame(test_results, columns=["rt", "response_correctness"])
     test_results_df["construction_correctness"] = test_construction_correctness
@@ -365,16 +368,16 @@ def run_experiment(num_train_sessions=100, num_test_sessions=20, run_train_only=
 
     sns.scatterplot(test_results_df, x="trial #", y="construction_correctness")
     plt.savefig("figures/test_construction_correctness.png")
-    plt.clf()
+    plt.close()
 
     sns.scatterplot(test_results_df, x="trial #", y="rt")
     sns.lineplot(test_results_df, x="trial #", y="rt", color="red")
     plt.savefig("figures/test_rt.png")
-    plt.clf()
+    plt.close()
 
     sns.scatterplot(test_results_df, x="trial #", y="response_correctness")
     plt.savefig("figures/test_response_correctness.png")
-    plt.clf()
+    plt.close()
 
 
     n_stable_to_present, n_present_to_stable, n_distant_to_stable, n_stable_to_distant, n_present_to_present = simple_sequenceness(test_rule_choices, test_rule_lhs_information, test_grids)
@@ -383,7 +386,7 @@ def run_experiment(num_train_sessions=100, num_test_sessions=20, run_train_only=
     n_distant_to_stable = n_distant_to_stable.mean(axis=0)
     n_stable_to_distant = n_stable_to_distant.mean(axis=0)
     n_present_to_present = n_present_to_present.mean(axis=0)
-    # plot the delayed effects
+
     plt.figure(figsize=(8, 4))
     plt.plot(n_stable_to_present, label='Stable to Present', color='C0')
     plt.plot(n_present_to_stable, label='Present to Stable', color='C1')
@@ -395,44 +398,70 @@ def run_experiment(num_train_sessions=100, num_test_sessions=20, run_train_only=
     plt.title("Sequences across steps")
     plt.legend()
     plt.savefig("figures/sequences_simple.png")
+    plt.close()
 
-    # delayed effects modeling
-    theoretical_rule_histories, theoretical_rule_lhs_histories = [], []
-    init_participant_construction_rules(theoretical_participant)
-    for construction in test_constructions:
-        theoretical_rule_history, theoretical_rule_lhs_history = run_theoretical_participant(theoretical_participant, construction)
-        theoretical_rule_histories.append(theoretical_rule_history)
-        theoretical_rule_lhs_histories.append(theoretical_rule_lhs_history)
-
-    
-    m_stable_to_present, m_present_to_stable, m_distant_to_stable, m_stable_to_distant, m_present_to_present = simple_sequenceness(theoretical_rule_histories, theoretical_rule_lhs_histories, test_grids)
-    m_stable_to_present = m_stable_to_present.mean(axis=0)
-    m_present_to_stable = m_present_to_stable.mean(axis=0)
-    m_distant_to_stable = m_distant_to_stable.mean(axis=0)
-    m_stable_to_distant = m_stable_to_distant.mean(axis=0)
-    m_present_to_present = m_present_to_present.mean(axis=0)
-    
-
-
-    n_lags, betas, pvals = calculate_delayed_effects((m_stable_to_present, m_present_to_stable, m_distant_to_stable, m_stable_to_distant, m_present_to_present), 
-                                                     (n_stable_to_present, n_present_to_stable, n_distant_to_stable, n_stable_to_distant, n_present_to_present))
-                                                     
-    time_ms = np.arange(n_lags) * 50  # adjust if your step ≠10ms
+    stable_to_present, present_to_stable, present_to_present, stable_to_absent, present_to_absent, absent_to_present, absent_to_stable = simple_goal_sequencessness(test_goal_choices, test_grids)
+    stable_to_present = stable_to_present.mean(axis=0)
+    present_to_stable = present_to_stable.mean(axis=0)
+    present_to_present = present_to_present.mean(axis=0)
+    stable_to_absent = stable_to_absent.mean(axis=0)
+    present_to_absent = present_to_absent.mean(axis=0)
+    absent_to_present = absent_to_present.mean(axis=0)
+    absent_to_stable = absent_to_stable.mean(axis=0)
 
     plt.figure(figsize=(8, 4))
-    plt.plot(time_ms, betas, label='GLM β (data ← theory)', color='C2')
-    plt.axhline(0, color='k', linestyle='--', linewidth=0.8)
-
-    # Optionally, mark timepoints with p<0.05
-    sig = pvals < 0.05
-    plt.scatter(time_ms[sig], betas[sig], color='red', s=20, label='p < 0.05')
-
-    plt.xlabel('Time lag (ms)')
-    plt.ylabel('Regression β')
-    plt.title('Sequenceness β‑weights (empirical vs. theoretical)')
+    plt.plot(stable_to_present, label='Stable to Present', color='C0')
+    plt.plot(present_to_stable, label='Present to Stable', color='C1')
+    plt.plot(present_to_present, label='Present to Present', color='C2')
+    plt.plot(stable_to_absent, label='Stable to Absent', color='C3')
+    plt.plot(present_to_absent, label='Present to Absent', color='C4')
+    plt.plot(absent_to_present, label='Absent to Present', color='C5')
+    plt.plot(absent_to_stable, label='Absent to Stable', color='C6')
+    plt.xlabel('Time steps')
+    plt.ylabel('Sequence occurence average')
+    plt.title("Sequences across steps")
     plt.legend()
-    plt.tight_layout()
-    plt.show()
+    plt.savefig("figures/sequences_simple_goal.png")
+    plt.close()
+
+
+    # # delayed effects modeling
+    # theoretical_rule_histories, theoretical_rule_lhs_histories = [], []
+    # init_participant_construction_rules(theoretical_participant)
+    # for construction in test_constructions:
+    #     theoretical_rule_history, theoretical_rule_lhs_history = run_theoretical_participant(theoretical_participant, construction)
+    #     theoretical_rule_histories.append(theoretical_rule_history)
+    #     theoretical_rule_lhs_histories.append(theoretical_rule_lhs_history)
+
+    
+    # m_stable_to_present, m_present_to_stable, m_distant_to_stable, m_stable_to_distant, m_present_to_present = simple_sequenceness(theoretical_rule_histories, theoretical_rule_lhs_histories, test_grids)
+    # m_stable_to_present = m_stable_to_present.mean(axis=0)
+    # m_present_to_stable = m_present_to_stable.mean(axis=0)
+    # m_distant_to_stable = m_distant_to_stable.mean(axis=0)
+    # m_stable_to_distant = m_stable_to_distant.mean(axis=0)
+    # m_present_to_present = m_present_to_present.mean(axis=0)
+    
+
+
+    # n_lags, betas, pvals = calculate_delayed_effects((m_stable_to_present, m_present_to_stable, m_distant_to_stable, m_stable_to_distant, m_present_to_present), 
+    #                                                  (n_stable_to_present, n_present_to_stable, n_distant_to_stable, n_stable_to_distant, n_present_to_present))
+                                                     
+    # time_ms = np.arange(n_lags) * 50  # adjust if your step ≠10ms
+
+    # plt.figure(figsize=(8, 4))
+    # plt.plot(time_ms, betas, label='GLM β (data ← theory)', color='C2')
+    # plt.axhline(0, color='k', linestyle='--', linewidth=0.8)
+
+    # # Optionally, mark timepoints with p<0.05
+    # sig = pvals < 0.05
+    # plt.scatter(time_ms[sig], betas[sig], color='red', s=20, label='p < 0.05')
+
+    # plt.xlabel('Time lag (ms)')
+    # plt.ylabel('Regression β')
+    # plt.title('Sequenceness β‑weights (empirical vs. theoretical)')
+    # plt.legend()
+    # plt.tight_layout()
+    # plt.show()
 
 if __name__ == "__main__":
     run_experiment(num_train_sessions=10, num_test_sessions=2)

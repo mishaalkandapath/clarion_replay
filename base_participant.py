@@ -364,8 +364,8 @@ class AbstractParticipant(BaseParticipant):
                     # opposite 80% others 20% start
                     cur_choice = {c: random.choices([k for k in self.abstract_goal_choice.main[0]], [0.03/4]*4 + [0.97/48]*48)[0] for c in cur_choice} 
                 
-            self.past_chosen_goals.append(str(list(cur_choice.values())[0][-1]))
-            self.all_chosen_goals.append(str(list(cur_choice.values())[0][-1]))
+            self.past_chosen_goals.append(str(list(cur_choice.values())[0][-1][0]))
+            self.all_goal_history.append(goal_shape_extractor(str(list(cur_choice.values())[0][-1][0])))
             self.transition_store.append(list(cur_choice.values())[0])
             self.construction_input.send(make_goal_outputs_construction_input(self.construction_input.main[0], cur_choice), flip=True)
 
@@ -388,6 +388,10 @@ class AbstractParticipant(BaseParticipant):
                 self.past_chosen_rules.pop()
                 self.past_chosen_goals.pop()
 
+            if len(self.past_constructions) == 1:
+                # not a right start rule
+                self.all_goal_history.pop()
+            
             #-- MLP ACTIONS --
             # one bad reward for the last choice
             self.construction_reward_vals.append(-1.0)

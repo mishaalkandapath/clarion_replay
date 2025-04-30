@@ -346,3 +346,11 @@ def remove_high_level(data_dict: dict):
             new_data_dict[Key(f"(construction_space,construction_space):(io,response):(target_{shape},yes)")] = 1.0
 
     return new_data_dict
+
+def goal_shape_extractor(goal):
+    if "start" in goal:
+        pattern = r"(mirror_L|half_T|horizontal|vertical)_start"
+        return [re.match(pattern, goal).group(1)]
+    pattern = r"(mirror_L|half_T|horizontal|vertical)_(mirror_L|half_T|horizontal|vertical)_(left|right|above|below)"
+    match = re.match(pattern, goal)
+    return [match.group(1), match.group(2)]

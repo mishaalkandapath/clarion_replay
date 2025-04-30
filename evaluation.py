@@ -217,6 +217,60 @@ def simple_sequenceness(rule_choices, rule_lhs_information, grids):
 
     return stable_to_present, present_to_stable, distant_to_stable, stable_to_distant, present_to_present
 
+def simple_goal_sequencessness(goals, grids):
+    max_len = max([len(g) for g in goals])-1
+    stable_to_present = np.zeros((len(goals), max_len))
+    present_to_stable = np.zeros((len(goals), max_len)) # backtracking
+    present_to_present = np.zeros((len(goals), max_len)) 
+    stable_to_absent = np.zeros((len(goals), max_len))
+    present_to_absent = np.zeros((len(goals), max_len))
+    absent_to_present = np.zeros((len(goals), max_len))
+    absent_to_stable = np.zeros((len(goals), max_len))
+
+    for i, choices_in_trial in enumerate(goals):
+        stable_block = choices_in_trial[0][0]
+        
+        #now is it a present, present typa situation or a present, distant present typa situation. 
+        _, brick_rel = brick_connectedness(grids[i])
+        only_presents = brick_rel.count(SHAPE_MAP[stable_block]) == 2
+        t = brick_rel.index(SHAPE_MAP[stable_block])
+        present = brick_rel[t - 2 if t >= 2 else t + 2]
+        present2 = np.unique(grids[i])[(np.unique(grids[i]) != present) & (np.unique(grids[i]) != SHAPE_MAP[stable_block]) & (np.unique(grids[i]) != 0)].item()
+        present_block = REVERSE_SHAPE_MAP[present]
+        present2_block = REVERSE_SHAPE_MAP[present2]
+
+        for j, other_blocks in enumerate(choices_in_trial[1:]):
+            
+             match other_blocks:
+                case [stable_block, present_block]:
+                    stable_to_present[i, j] = 1
+                case [stable_block, present2_block]:
+                    stable_to_present[i, j] = 1
+                case [present_block, stable_block]:
+                    present_to_stable[i, j] = 1
+                case [present2_block, stable_block]:
+                    present_to_stable[i, j] = 1
+                case [present_block, present2_block]:
+                    present_to_present[i, j] = 1
+                case [present2_block, present_block]:
+                    present_to_present[i, j] = 1
+                case [stable_block, _]:
+                    stable_to_absent[i, j] = 1
+                case [_, stable_block]:
+                    absent_to_stable[i, j] = 1
+                case [present_block, _]:
+                    present_to_absent[i, j] = 1
+                case [_, present_block]:
+                    absent_to_present[i, j] = 1
+                case [present2_block, _]:
+                    present_to_absent[i, j] = 1
+                case [_, present2_block]:
+                    absent_to_present[i, j] = 1
+                        
+    return stable_to_present, present_to_stable, present_to_present, stable_to_absent, present_to_absent, absent_to_present, absent_to_stable
+
+
+
 if __name__ == "__main__":
     sample_array = [[0, 0, 0, 0, 0, 0],
                     [0, 1, 1, 4, 4, 4],
