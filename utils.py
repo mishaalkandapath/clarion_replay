@@ -329,12 +329,20 @@ def clean_construction_input(data_dict,leave_only_inputs=False):
 
 def remove_high_level(data_dict: dict):
     new_data_dict = {}
+    shapes_in = set()
+    shapes_all = ["mirror_L", "half_T", "horizontal", "vertical"]
     for k in data_dict:
         if re.match(r".*input_(mirror_L|half_T|horizontal|vertical)_(row|col)(\d+)", str(k)):
             new_data_dict[k] = data_dict[k]
-        elif re.match(r".*target_(mirror_L|half_T|horizontal|vertical).*", str(k)):
+        elif re.match(".*target_(mirror_L|half_T|horizontal|vertical)_(row|col)(\d+)", str(k)):
+            shapes_in.add(re.match(r".*target_(mirror_L|half_T|horizontal|vertical)_(row|col)(\d+)", str(k)).group(1))
             new_data_dict[k] = data_dict[k]
         elif re.match(r".*construction_signal.*", str(k)):
             new_data_dict[k] = data_dict[k]
+    for shape in shapes_all:
+        if shape not in shapes_in:
+            new_data_dict[Key(f"(construction_space,construction_space):(io,response):(target_{shape},no)")] = 1.0
+        else:
+            new_data_dict[Key(f"(construction_space,construction_space):(io,response):(target_{shape},yes)")] = 1.0
 
     return new_data_dict

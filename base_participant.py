@@ -128,7 +128,8 @@ class BaseParticipant(Agent):
         elif event.source == self.start_construct_trial:
             self.trigger_response = False
         elif event.source == self.construction_input.send \
-            and any(e.source in self.construction_input_wait for e in self.system.queue):
+            and (any(e.source in self.construction_input_wait for e in self.system.queue)
+                 or not self.construction_input_wait):
             self.past_constructions.append(self.construction_input.main[0].d.copy()) # add the current construction to the past constructions    
             self.all_constructions.append(self.construction_input.main[0].d.copy()) # add the current construction to the all constructions
         elif event.source == self.search_space_rules.rules.update:
@@ -363,7 +364,8 @@ class AbstractParticipant(BaseParticipant):
                     # opposite 80% others 20% start
                     cur_choice = {c: random.choices([k for k in self.abstract_goal_choice.main[0]], [0.03/4]*4 + [0.97/48]*48)[0] for c in cur_choice} 
                 
-            self.past_chosen_goals.append(cur_choice)
+            self.past_chosen_goals.append(str(list(cur_choice.values())[0][-1]))
+            self.all_chosen_goals.append(str(list(cur_choice.values())[0][-1]))
             self.transition_store.append(list(cur_choice.values())[0])
             self.construction_input.send(make_goal_outputs_construction_input(self.construction_input.main[0], cur_choice), flip=True)
 
@@ -384,6 +386,7 @@ class AbstractParticipant(BaseParticipant):
 
                 self.past_chosen_rule_lhs_history.pop()
                 self.past_chosen_rules.pop()
+                self.past_chosen_goals.pop()
 
             #-- MLP ACTIONS --
             # one bad reward for the last choice

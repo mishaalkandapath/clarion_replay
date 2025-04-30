@@ -303,16 +303,13 @@ def run_theoretical_participant(participant, constructions):
         if past_length < len(participant.all_rule_lhs_history):
             assert len(participant.all_rule_lhs_history) == past_length + 1
             past_length += 1
-            participant.end_construction()
             participant.system.queue.clear()
-        
-        if event.source == participant.end_construction:
             cur_trial_index += 1
             if cur_trial_index >= len(constructions):
                 break
-            participant.start_response_trial(timedelta())
+            participant.start_construct_trial(timedelta())
     
-    return participant.all_rule_history, participant.all_rule_history
+    return participant.all_rule_history, participant.all_rule_lhs_history
 
 
 # trials_df = pd.read_csv("~/personalproj/clarion_replay/processed/test_data/all_test_data.csv")
@@ -401,7 +398,7 @@ def run_experiment(num_train_sessions=100, num_test_sessions=20, run_train_only=
 
     # delayed effects modeling
     theoretical_rule_histories, theoretical_rule_lhs_histories = [], []
-    init_participant_construction_rules(participant)
+    init_participant_construction_rules(theoretical_participant)
     for construction in test_constructions:
         theoretical_rule_history, theoretical_rule_lhs_history = run_theoretical_participant(theoretical_participant, construction)
         theoretical_rule_histories.append(theoretical_rule_history)
