@@ -1,24 +1,16 @@
-import math
 import random
-import matplotlib
-import matplotlib.pyplot as plt
 from collections import namedtuple, deque
-from itertools import count
 from typing import List
-
-from pyClarion import Key
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 
-# code adapted from https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
+from pyClarion import Key
 
+# code adapted from https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
-
-
 def pyc_to_torch(d: dict[Key, float], indices=List[Key]):
     data_array = torch.zeros(len(indices))
     for k in d:
@@ -32,7 +24,7 @@ def torch_to_pyc(t: torch.Tensor, indices=List[Key]):
         data_dict[k] = t[i].item()
     return data_dict
 
-class ReplayMemory(object):
+class ReplayMemory():
     def __init__(self, capacity, state_keys, action_keys):
         self.memory = deque([], maxlen=capacity)
         self.state_keys = state_keys

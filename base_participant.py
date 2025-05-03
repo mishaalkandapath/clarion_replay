@@ -1,15 +1,24 @@
-from pyClarion import Input, Choice, Agent, Event, Priority, Family, Atoms, Atom, BaseLevel, Pool, NumDict, Train, IDN
+from datetime import timedelta
+from tqdm import tqdm
+from typing import override
+import math
+import random
+
+from pyClarion import (Input, Choice, Agent, Event, 
+                       Priority, Family,
+                       BaseLevel, Pool, NumDict, Key)
 from pyClarion.components.stats import MatchStats
 
 
-from utils import *
-from knowledge_init import *
-from q_learning import *
-
-from datetime import timedelta
-import math
-import random
-from tqdm import tqdm
+from utils import (mlpify, filter_keys_by_rule_chunk, 
+                   clean_construction_input, make_goal_outputs_construction_input,
+                   goal_shape_extractor, make_response_input)
+from pyc_utils import RuleWBLA, FlippableInput
+from knowledge_init import (BrickConstructionTask, BrickResponseTask, 
+                            BrickConstructionTaskAbstractParticipant, Numbers,
+                            HighLevelConstructionSignals, JustYes,
+                            MLPConstructionIO)
+from q_learning import external_mlp_handle
 
 EPS_START = 0.9
 EPS_END = 0.05
@@ -22,7 +31,6 @@ class BaseParticipant(Agent):
     search_space_matchstats: MatchStats
     search_space_pool: Pool
     search_space_choice: Choice
-    
     construction_input: Input
 
     response_space: BrickResponseTask
@@ -32,7 +40,16 @@ class BaseParticipant(Agent):
     response_pool: Pool
     response_choice: Choice
 
-    #TODO: fill in the rest here once ur done below
+    p: Family
+    e: Family
+
+    past_constructions: list
+    past_chosen_rules: list
+    past_chosen_rule_lhs_history: list
+    past_chosen_rule_choices: list
+    all_rule_history: list
+    all_rule_lhs_history: list
+    all_constructions: list
 
     def __init__(self, name: str, **kwargs) -> None:
         p = Family()
@@ -64,7 +81,6 @@ class BaseParticipant(Agent):
             self.response_rules = RuleWBLA("response_rules", p=p, r=r_response, c=c_response, d=response_space, v=response_space, sd=1e-4)
             self.search_space_rules = RuleWBLA("search_space_rules", p=p, r=r_construction, c=c_construction, d=construction_space, v=construction_space, sd=1e-4)
 
-            #TODO: this good?
             self.search_space_matchstats = MatchStats("search_space_matchstats", p, self.search_space_rules.rules.rules, th_cond=0.9, th_crit=0.9) # 0.9 because i want to compare against 1.
             
             self.response_pool = Pool("pool", p, self.response_rules.rules.rules, func=NumDict.sum) # to pool together the blas and condition activations
@@ -82,11 +98,10 @@ class BaseParticipant(Agent):
         self.response_pool["response_rules.rules"] = (
             self.response_rules.rules.main,
             lambda d: d.shift(x=1).scale(x=0.5).logit()) # you can take atmost 0.2 points of activation off using matchstats 
-        #TODO: the contribution of matchstats should be weakened as the neural network gets better ?
         
         self.search_space_pool["search_space_matchstats"] = (
             self.search_space_matchstats.main, 
-            lambda d: d.shift(x=1).tanh().scale(x=0.2)) # TODO: is the function here correct?
+            lambda d: d.shift(x=1).tanh().scale(x=0.2))
         
         self.response_rules.bla_main = self.response_pool.main #updated site for the response rules to take BLAS into account
         self.search_space_rules.bla_main = self.search_space_pool.main
@@ -97,25 +112,24 @@ class BaseParticipant(Agent):
         self.response_choice.input = self.response_rules.rules.rhs.td.main # bu choice
         self.search_space_choice.input = self.search_space_rules.rules.rhs.td.main
         
-        #backtracking queues: #TODO: use BLA queue
+        #backtracking queues:
         self.past_constructions = []
         self.past_chosen_rules = []
+        self.past_chosen_rule_choices = []
+        self.past_chosen_rule_lhs_history = []
         self.all_rule_history = []
         self.all_rule_lhs_history = []
         self.all_constructions = []
-        self.past_chosen_rule_lhs_history = []
 
         #wait events for low level pool update;
         self.search_space_trigger_wait = []
         self.response_trigger_wait = []
         self.construction_input_wait = []
 
-        self.trigger_response = False #TODO: prolly dont need this here. 
+        self.trigger_response = False
 
     def resolve(self, event: Event) -> None:
         # -- RESPONSE PROCESSING --
-        # if event.source == self.response_rules.rules.update: # after the rules have updated 
-        #     self.response_blas.update() # timestep update
         if event.source == self.response_pool.update \
             and self.trigger_response \
             and all(e.source not in self.response_trigger_wait for e in self.system.queue):
@@ -135,27 +149,21 @@ class BaseParticipant(Agent):
             self.all_constructions.append(self.construction_input.main[0].d.copy()) # add the current construction to the all constructions
         elif event.source == self.search_space_rules.rules.update:
             self.search_space_matchstats.update() # update the match stats
-        
         elif event.source == self.search_space_pool.update \
             and all(e.source not in self.search_space_trigger_wait for e in self.system.queue):
             self.search_space_rules.trigger()
-        
         elif event.source == self.search_space_rules.rules.rhs.td.update:
             self.search_space_choice.trigger()
-        
         elif event.source == self.search_space_choice.select:
             self.resolve_lowlevel_search_choice(event)
-        
         elif event.source == self.search_space_matchstats.increment:
             # make the mask zero:
             new_empty_mask = self.search_space_matchstats.cond.new({}).with_default(c=0.0)
             self.search_space_matchstats.cond.data.pop()
             self.search_space_matchstats.cond.data.append(new_empty_mask)
-            self.search_space_matchstats.discount()#TODO: apt timedelta?
-
+            self.search_space_matchstats.discount()
         elif event.source == self.search_space_matchstats.discount and any(e.source == self.end_construction_feedback for e in self.system.queue):
-                self.propagate_feedback()
-
+            self.propagate_feedback()
         elif event.source == self.end_construction:
             # clear system queue
             self.system.queue.clear() # at this point, you should have a clear target_grid representation built -- correct or incorrect
@@ -170,7 +178,7 @@ class BaseParticipant(Agent):
         self.search_space_matchstats.cond.data.append(new_rule_mask) # update the condition ot only change scores for this rule
         self.search_space_matchstats.crit.data.append(new_crit_score) 
 
-        self.search_space_matchstats.increment() # TODO: apt timedelta?
+        self.search_space_matchstats.increment()
     
     def start_construct_trial(self, 
         dt: timedelta, 
@@ -254,16 +262,14 @@ class LowLevelParticipant(BaseParticipant):
             self.search_space_matchstats.cond.data.append(new_rule_mask) # update the condition ot only change scores for this rule
             self.search_space_matchstats.crit.data.append(new_crit_score) 
 
-            self.search_space_matchstats.increment() # TODO: apt timedelta?
+            self.search_space_matchstats.increment()
             last_construction = self.past_constructions.pop()
             self.past_chosen_rule_lhs_history.pop()
             self.construction_input.send(last_construction, flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
 
         elif cur_choice[~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens] == ~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens.stop_construction:
-            self.end_construction() # TODO: consider adding stop construction rules to rule history for matchstats
+            self.end_construction()
         else: #continue construction
-            # self.past_chosen_rules.append(list(cur_rule_choice.values())[0])
-            # self.all_rule_history.append(list(cur_rule_choice.values())[0])
             cur_additions = filter_keys_by_rule_chunk(self.search_space_rules.rules.rhs.chunks._members_[Key(f"{cur_rule_number}")], self.search_space_choice.main[0].d)
             self.past_chosen_rules.append(cur_additions)
             self.all_rule_history.append(cur_additions)
@@ -317,11 +323,9 @@ class AbstractParticipant(BaseParticipant):
             action_keys = [k for k in self.abstract_goal_choice.main[0]]
         )
         
-        #extra backtracking queues: #TODO: better way to do this is probably with Sites, adn their inbuilt deque
+        #extra backtracking queues:
         self.past_chosen_goals = []
         self.all_goal_history = []
-
-        self.past_chosen_rule_choices = []
 
         #RL stats
         self.construction_reward_vals = []
@@ -341,12 +345,11 @@ class AbstractParticipant(BaseParticipant):
         if event.source == self.mlp_construction_input.send:
             self.shift_goal()
         elif event.source == self.shift_goal and len(self.transition_store) > 0:
-                self.transition_store.insert(2, self.mlp_construction_input.main[0].d.copy())
-                self.backward_qnet()
+            self.transition_store.insert(2, self.mlp_construction_input.main[0].d.copy())
+            self.backward_qnet()
         elif event.source == self.shift_goal:
             self.forward_qnet()
             self.transition_store = [self.mlp_construction_input.main[0].d.copy()] 
-
         elif event.source == self.backward_qnet and not any(e.source == self.end_construction_feedback for e in self.system.queue):
             # run the q_net on the new stuff
             self.forward_qnet()
@@ -355,7 +358,6 @@ class AbstractParticipant(BaseParticipant):
             self.abstract_goal_choice.trigger() # at this point olayer.forward has been applied
         elif event.source == self.abstract_goal_choice.select:
             cur_choice = self.abstract_goal_choice.poll()
-
             greedy_move = self.select_action()
             if not greedy_move:
                 if len(self.past_constructions) == 1:
@@ -402,35 +404,30 @@ class AbstractParticipant(BaseParticipant):
 
             self.transition_store.append(-1.0)
 
-            self.mlp_construction_input.send(mlpify(last_construction, self.mlp_construction_input.main[0].i), flip=True)
+            self.mlp_construction_input.send(mlpify(last_construction), flip=True)
             self.construction_input.send(clean_construction_input(last_construction), flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
 
         elif cur_choice[~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens] == ~self.construction_space.io.construction_signal * ~self.construction_space.signal_tokens.stop_construction:
-            self.end_construction() # TODO: consider adding stop construction rules to rule history for matchstats
+            self.end_construction()
         elif len(self.past_chosen_rules) > 5:
-                # one too many -- restart --
-                self.past_chosen_rules = []
-                self.all_rule_history = []
-                self.all_rule_lhs_history = []
-                self.past_chosen_rule_lhs_history = []
-                self.past_chosen_rule_choices = []
-                self.past_chosen_goals = []
-                self.all_goal_history = []
-                self.past_constructions = [self.past_constructions[0]]
+            # one too many -- restart --
+            self.past_chosen_rules = []
+            self.all_rule_history = []
+            self.all_rule_lhs_history = []
+            self.past_chosen_rule_lhs_history = []
+            self.past_chosen_rule_choices = []
+            self.past_chosen_goals = []
+            self.all_goal_history = []
+            self.past_constructions = [self.past_constructions[0]]
 
-                last_construction = self.past_constructions.pop()
-                self.mlp_construction_input.send(mlpify(last_construction, self.mlp_construction_input.main[0].i), flip=True)
-                self.construction_input.send(clean_construction_input(last_construction, leave_only_inputs=True), flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
+            last_construction = self.past_constructions.pop()
+            self.mlp_construction_input.send(mlpify(last_construction), flip=True)
+            self.construction_input.send(clean_construction_input(last_construction, leave_only_inputs=True), flip=True) # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
 
-                self.transition_store.append(-1.0)
-
-                self.construction_reward_vals.append(-1.0)
-                self.construction_qvals.append(self.abstract_goal_choice.input[0].max().c)
-
-                #TODO: matchstat updates?
-
+            self.transition_store.append(-1.0)
+            self.construction_reward_vals.append(-1.0)
+            self.construction_qvals.append(self.abstract_goal_choice.input[0].max().c)
         else:
-
             cur_additions = filter_keys_by_rule_chunk(self.search_space_rules.rules.rhs.chunks._members_[Key(f"{cur_rule_number}")], self.search_space_choice.main[0].d)
             self.past_chosen_rules.append(cur_additions)
             self.all_rule_history.append(cur_additions)
@@ -438,7 +435,7 @@ class AbstractParticipant(BaseParticipant):
             self.past_chosen_rule_lhs_history.append(self.search_space_rules.rules.lhs.chunks._members_[Key(f"{cur_rule_number}")])
             self.past_chosen_rule_choices.append(cur_rule_choice)
             
-            self.mlp_construction_input.send(mlpify(cur_additions, self.mlp_construction_input.main[0].i)) 
+            self.mlp_construction_input.send(mlpify(cur_additions)) 
             self.construction_input.send(cur_additions) # loop it back in --for more selections
 
             self.transition_store.append(-0.1) # tiny punishment for timestep
@@ -454,7 +451,6 @@ class AbstractParticipant(BaseParticipant):
         self.transition_store.append(None)
         self.transition_store.append(-1.0 if not correct else correct)
         self.backward_qnet()
-
         self.construction_reward_vals.append(-1.0 if not correct else correct)
         self.construction_qvals.append(self.abstract_goal_choice.input[0].max().c)
     
@@ -463,9 +459,7 @@ class AbstractParticipant(BaseParticipant):
         priority: Priority = Priority.DEFERRED
     ) -> None:
         self.system.schedule(self.shift_goal, dt=dt, priority=priority)
-
-
-    # Qnet training
+   
     def forward_qnet(self, 
                      dt: timedelta = timedelta(seconds=0),
         priority: Priority = Priority.PROPAGATION
@@ -483,7 +477,6 @@ class AbstractParticipant(BaseParticipant):
                                **{["state", "action", "next_state", "reward"][i]: self.transition_store[i] for i in range(4)})
         
         self.construction_net_training_results.append(loss)
-
         #push into memory buffer
         self.goal_net_memory.push(*self.transition_store)
         self.goal_net_update()
@@ -498,7 +491,6 @@ class AbstractParticipant(BaseParticipant):
             loss = self.goal_net_optimize(use_memory=True)
             self.construction_net_training_results.append(loss)
             self.goal_net_update()
-
         self.system.schedule(self.replay_optimize_qnet,
                                 dt=dt, priority=priority)
 
@@ -507,47 +499,13 @@ class AbstractParticipant(BaseParticipant):
         sample = random.random()
         eps_threshold = EPS_END + (EPS_START - EPS_END) * \
             math.exp(-1. * steps_done / EPS_DECAY)
-
         return sample > eps_threshold
     
     def finish_response_trial(self,
-                                dt: timedelta,
-            priority: Priority = Priority.PROPAGATION
-        ) -> None:
-            super().finish_response_trial(dt=dt, priority=priority)
-            self.past_chosen_goals = []
-            self.all_goal_history = []
-
-            self.past_chosen_rule_choices = []
-            self.transition_store = []
-
-
-
-
-"""
-MLP will be changing the weights of the main in the input class -- by a certain amount
-but ideally it should only change the weights of that which is already there. -- you can establish that by multiplication -- because if it isnt there, 
-it is 0.
-
-But what about the MLP -- it cant be an IDN with TD error. What do attention MLPs look like? Whats a good way to implement that?
-"""
-
-"""
-Workflow:
-1. send mlp inputs -- DONE
-2. send construction_inputs -- DONE
-3. forward mlp -- DONE
-4. get mlp choice and pass it along to construction -- DONE
-5. add new workign space to past constructions (NEED TO ADD AN MLP WAIT HERE) -- DONE
-6. update rules and what not -- DONE
-7. fire and choose a rule (NEED TO ADD AN MLP WAIT HERE) -- DONE
-8. if a backtrack rule was chosen:
-    -1 for the last two choices, propagate rewards - DONE
-    pop the last construction, send it to MLP, continue -- DONE
-9. otherwise, send the new construction to MLP, continue. -- DONE
-10. repeat
-11. at the end of the trial, if the construction was correct, make supposed changes to matchstats of low level rules, and propagate rewards to all the choices of the MLP in that right path
-
-MLP WAIT has to disappear once olayer.forward has been applied. 
-
-"""
+                              dt: timedelta,
+                              priority: Priority = Priority.PROPAGATION) -> None:
+        super().finish_response_trial(dt=dt, priority=priority)
+        self.past_chosen_goals = []
+        self.all_goal_history = []
+        self.past_chosen_rule_choices = []
+        self.transition_store = []

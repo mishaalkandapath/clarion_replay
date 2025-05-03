@@ -1,146 +1,24 @@
-from pyClarion import FixedRules, Choice, NumDict, numdict, Index, Chunk, Priority, TDError, MLP, FixedRules
-from pyClarion import Site, RuleStore, Choice, KeyForm, Family, Sort, Atom, Input, Key, Event, BottomUp, ChunkStore, RuleStore, keyform
-from pyClarion import Activation, Adam, Optimizer, Train
-from pyClarion.components.base import D, V, DV
-
-from typing import *
-from datetime import timedelta
-
 import numpy as np
 import re
+from pyClarion import NumDict, numdict, Index, Chunk, Site, Key
 
-class RuleWBLA(FixedRules):
-    main: Site
-    rules: RuleStore
-    choice: Choice
-    by: KeyForm
-    updated_main: Site
-
-    def __init__(self, 
-        name: str, 
-        p: Family,
-        r: Family,
-        c: Family, 
-        d: Family | Sort | Atom, 
-        v: Family | Sort,
-        *,
-        sd: float = 1.0
-    ) -> None:
-        
-        super().__init__(name, p=p, r=r, c=c, d=d, v=v, sd=sd)
-        self.bla_main = Site(self.rules.main.index, {}, 0.0)
-        self.choice.input = self.bla_main
-
-class FlippableInput(Input):
-
-    @override
-    def send(self,
-            d: dict | Chunk,
-            dt: timedelta = timedelta(),
-            priority: int = Priority.PROPAGATION,
-            flip: bool = False):
-        reset = self.reset if not flip else not self.reset
-        data = self._parse_input(d)
-        method = Site.push if reset else FlippableInput.write_inplace_consistent
-        self.system.schedule(self.send, 
-                             self.main.update(data, method),
-                             dt=dt, priority=priority)
-    
-    def write_inplace_consistent(site: Site,
-                                data:NumDict,
-                                index: int = 0,
-                                grad: bool = False) -> None:
-        d = site.grad if grad else site.data
-        with d[index].mutable():
-            new_keys = data.d.keys()
-            to_del = []
-            #consistency checking
-            for k in d[index].d:
-                if any(conflicting_keys(str(k)).match(str(k_)) for k_ in new_keys) and k not in new_keys:
-                    to_del.append(k)
-            with data.mutable():
-                for k in to_del:
-                    data.update({k: 0.0})      
-            #update
-            d[index].update(data.d)
-
-class SuppressionBottomUp(BottomUp):
-    @override
-    def update(self, 
-        dt: timedelta = timedelta(), 
-        priority: int = Priority.PROPAGATION
-    ) -> None:
-        input = self.input[0]
-        if self.pre is not None:
-            input = self.pre(input)
-        main = (self.weights[0]
-            .mul(input, by=self.mul_by))
-        temp = (main
-                .max(by=self.max_by))
-        another_temp = (main
-                        .min(by=self.max_by)
-                        .simple_where(lambda x: x < 0.0))
-        main = (temp
-                .sum(another_temp)
-                .sum(by=self.sum_by))
-        main = (main
-                .simple_where(lambda x: x >= 0.0)
-                .with_default(c=0.0))
-        if self.post is not None:
-            main = self.post(main)
-        self.system.schedule(self.update, 
-            self.main.update(main), 
-            dt=dt, priority=priority)
-            
-class SupressionChunkStore(ChunkStore):
-    def __init__(self, 
-        name: str, 
-        c: Family, 
-        d: Family | Sort | Atom, 
-        v: Family | Sort
-    ) -> None:
-        super().__init__(name)
-        with self:
-            self.bu = SuppressionBottomUp(f"{name}.bu", self.chunks, d, v)
-
-class SuppressionRuleStore(RuleStore):
-    def __init__(self, 
-        name: str, 
-        r: Family,
-        c: Family, 
-        d: Family | Sort | Atom, 
-        v: Family | Sort, 
-    ) -> None:
-        super().__init__(name)
-        with self:
-            self.lhs = SupressionChunkStore(f"{name}.lhs", c, d, v)
-        idx_r = self.system.get_index(keyform(self.rules))
-        idx_lhs = self.system.get_index(keyform(self.lhs.chunks))
-        idx_rhs = self.system.get_index(keyform(self.rhs.chunks))
-        self.main = Site(idx_r, {}, c=0.0)
-        self.riw = Site(idx_r * idx_r, {}, c=float("nan"))
-        self.lhw = Site(idx_r * idx_lhs, {}, c=float("nan"))
-        self.rhw = Site(idx_r * idx_rhs, {}, c=float("nan"))
-
-class SupressionActionRules(FixedRules):
-    def __init__(self, 
-        name: str, 
-        p: Family,
-        r: Family,
-        c: Family, 
-        d: Family | Sort | Atom, 
-        v: Family | Sort,
-        *,
-        sd: float = 1.0
-    ) -> None:
-        super().__init__(name)
-        with self:
-            self.rules = SuppressionRuleStore(f"{name}.rules", r, c, d, v)
-            self.choice = Choice(f"{name}.choice", p, self.rules.rules, sd=sd)
-        self.main = Site(self.rules.main.index, {}, 0.0)
-        self.mul_by = keyform(self.rules.rules).agg * keyform(self.rules.rules)
-        self.sum_by = keyform(self.rules.rules) * keyform(self.rules.rules).agg
-        self.choice.input = self.rules.main
+def write_inplace_consistent(site: Site,
+                             data:NumDict,
+                             index: int = 0,
+                             grad: bool = False) -> None: 
+    d = site.grad if grad else site.data
+    with d[index].mutable():
+        new_keys = data.d.keys()
+        to_del = []
+        #consistency checking
+        for k in d[index].d:
+            if any(conflicting_keys(str(k)).match(str(k_)) for k_ in new_keys) and k not in new_keys:
+                to_del.append(k)
+        with data.mutable():
+            for k in to_del:
+                data.update({k: 0.0})      
+        #update
+        d[index].update(data.d)
 
 def numpify_grid(grid: NumDict) -> np.ndarray:
     data = grid._d
@@ -203,7 +81,7 @@ def numpify_grid(grid: NumDict) -> np.ndarray:
     return array_grid
         
 
-def mlpify(cur_working_space: NumDict, index: Index) -> NumDict:
+def mlpify(cur_working_space: NumDict) -> NumDict:
     """
     Convert keys of the form (construction_space,construction_space):(io,bricks):(input_shape2_row_2, n2)
     to the form (mlp_space_1, mlp_space_2): (input_shape2_row_2, n2)
@@ -373,7 +251,7 @@ def remove_high_level(data_dict: dict):
     for k in data_dict:
         if re.match(r".*input_(mirror_L|half_T|horizontal|vertical)_(row|col)(\d+)", str(k)):
             new_data_dict[k] = data_dict[k]
-        elif re.match(".*target_(mirror_L|half_T|horizontal|vertical)_(row|col)(\d+)", str(k)):
+        elif re.match(r".*target_(mirror_L|half_T|horizontal|vertical)_(row|col)(\d+)", str(k)):
             shapes_in.add(re.match(r".*target_(mirror_L|half_T|horizontal|vertical)_(row|col)(\d+)", str(k)).group(1))
             new_data_dict[k] = data_dict[k]
         elif re.match(r".*construction_signal.*", str(k)):

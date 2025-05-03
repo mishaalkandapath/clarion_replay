@@ -1,7 +1,4 @@
-from pyClarion import (Agent, Input, Choice, ChunkStore, FixedRules, 
-    Family, Atoms, Atom, BaseLevel, Pool, NumDict, Event, Priority)
-
-from typing import *
+from pyClarion import Family, Atoms, Atom
 
 class Brick(Atoms):
     horizontal: Atom
@@ -276,24 +273,6 @@ class ConstructionIOwAbstract(Atoms):
 
     construction_signal: Atom
 
-class HighLevelConstructionConditions(Atoms):
-    input_half_T: Atom
-    input_mirror_L: Atom
-    input_vertical: Atom
-    input_horizontal: Atom
-
-    target_half_T: Atom
-    target_mirror_L: Atom
-    target_vertical: Atom
-    target_horizontal: Atom
-
-    stop: Atom
-    start: Atom
-    left: Atom
-    right: Atom
-    above: Atom
-    below: Atom
-
 class HighLevelConstructionSignals(Atoms):
     half_T_start: Atom
     mirror_L_start: Atom
@@ -354,17 +333,8 @@ class HighLevelConstructionSignals(Atoms):
     horizontal_vertical_above: Atom
     horizontal_vertical_below: Atom
 
-class SmallerSigTokens(Atoms):
-    stop_construction: Atom
-    continue_construction: Atom
-    backtrack_construction: Atom
-
 class JustYes(Atoms):
     yes: Atom
-
-class GoalMLPOutputSpace(Family):
-    construction_signal: HighLevelConstructionSignals
-    response: JustYes
 
 class BrickConstructionTask(Family):
     numbers: Numbers
@@ -374,7 +344,7 @@ class BrickConstructionTask(Family):
 
 class BrickConstructionTaskAbstractParticipant(Family):
     numbers: Numbers
-    signal_tokens: SmallerSigTokens
+    signal_tokens: SignalTokens
     io: ConstructionIOwAbstract
     response: HighLevelResponse
 
@@ -384,11 +354,3 @@ class BrickResponseTask(Family):
     query_rel: Rel
     io: ResponseIO
     response: Response
-
-class MLPConstructionSubTask(Family):
-    io: MLPConstructionIO
-    numbers: Numbers
-
-class HighLevelConstruction(Family):
-    io: HighLevelConstructionConditions
-    response: HighLevelResponse

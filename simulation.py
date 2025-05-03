@@ -19,38 +19,57 @@ from knowledge_init import (Numbers,
                             BrickConstructionTask,
                             BrickConstructionTaskAbstractParticipant,
                             MLPConstructionIO)
-from rule_defs import (init_participant_response_rules, 
-                       init_participant_construction_rules, 
+from rule_defs import (init_participant_response_rules,
+                       init_participant_construction_rules,
                        init_participant_construction_rule_w_abstract)
-from base_participant import BaseParticipant, LowLevelParticipant, AbstractParticipant
-from evaluation import simple_sequenceness, simple_goal_sequencessness, brick_connectedness
+from base_participant import (BaseParticipant,
+                              LowLevelParticipant,
+                              AbstractParticipant)
+from evaluation import (simple_sequenceness,
+                        simple_goal_sequencessness,
+                        brick_connectedness)
 from simulation_viz import SimulationVisualizer
 from plotting import simple_plotting, simple_snsplot, plot_sequences
 
-def present_stimulus(d:BrickConstructionTask, stim_grid: np.ndarray,
+def present_stimulus(d: BrickConstructionTask, stim_grid: np.ndarray,
                      mlp_space_1: MLPConstructionIO, mlp_space_2: Numbers):
     stim_bricks = np.unique(stim_grid)
     stim_bricks = stim_bricks[stim_bricks != 0]
-    
-    brick_row_map = {1: {1: "input_half_T_row1", 2: "input_half_T_row2", 3: "input_half_T_row3"}, 
-                     2: {1: "input_mirror_L_row1", 2: "input_mirror_L_row2", 3: "input_mirror_L_row3"},
-                     3: {1: "input_vertical_row1", 2: "input_vertical_row2", 3: "input_vertical_row3"},
-                     4: {1: "input_horizontal_row1", 2: "input_horizontal_row2", 3: "input_horizontal_row3"}}
-    brick_col_map = {1: {1: "input_half_T_col1", 2: "input_half_T_col2", 3: "input_half_T_col3"}, 
-                     2: {1: "input_mirror_L_col1", 2: "input_mirror_L_col2", 3: "input_mirror_L_col3"}, 
-                     3: {1: "input_vertical_col1", 2: "input_vertical_col2", 3: "input_vertical_col3"}, 
-                     4: {1: "input_horizontal_col1", 2: "input_horizontal_col2", 3: "input_horizontal_col3"}}
-    shape_brick_map = {1: "input_half_T", 2: "input_mirror_L", 3: "input_vertical", 4: "input_horizontal"}
-    
+    brick_row_map = {1: {1: "input_half_T_row1",
+                         2: "input_half_T_row2",
+                         3: "input_half_T_row3"},
+                     2: {1: "input_mirror_L_row1",
+                         2: "input_mirror_L_row2",
+                         3: "input_mirror_L_row3"},
+                     3: {1: "input_vertical_row1",
+                         2: "input_vertical_row2",
+                         3: "input_vertical_row3"},
+                     4: {1: "input_horizontal_row1",
+                         2: "input_horizontal_row2",
+                         3: "input_horizontal_row3"}}
+    brick_col_map = {1: {1: "input_half_T_col1",
+                         2: "input_half_T_col2",
+                         3: "input_half_T_col3"},
+                     2: {1: "input_mirror_L_col1",
+                         2: "input_mirror_L_col2",
+                         3: "input_mirror_L_col3"},
+                     3: {1: "input_vertical_col1",
+                         2: "input_vertical_col2",
+                         3: "input_vertical_col3"},
+                     4: {1: "input_horizontal_col1",
+                         2: "input_horizontal_col2",
+                         3: "input_horizontal_col3"}}
+    shape_brick_map = {1: "input_half_T", 2: "input_mirror_L",
+                       3: "input_vertical", 4: "input_horizontal"}
     in_send_val = None
     mlp_send_val = None
     for i, brick in enumerate(stim_bricks):
-        # brick row indices: 
+        # brick row indices:
         row_indices = np.where(stim_grid == brick)[0] + 1
         col_indices = np.where(stim_grid == brick)[1] + 1
         if not in_send_val:
             in_send_val = (+ d.io[shape_brick_map[brick]] ** d.response.yes
-                           + d.io[brick_row_map[brick][1]] ** d.numbers[f"n{row_indices[0]}"] 
+                           + d.io[brick_row_map[brick][1]] ** d.numbers[f"n{row_indices[0]}"]
                            + d.io[brick_row_map[brick][2]] **  d.numbers[f"n{row_indices[1]}"]
                            + d.io[brick_row_map[brick][3]] ** d.numbers[f"n{row_indices[2]}"]
                            + d.io[brick_col_map[brick][1]] ** d.numbers[f"n{col_indices[0]}"]
@@ -78,13 +97,11 @@ def present_stimulus(d:BrickConstructionTask, stim_grid: np.ndarray,
                             + mlp_space_1[brick_col_map[brick][1]] ** mlp_space_2[f"n{col_indices[0]}"]
                             + mlp_space_1[brick_col_map[brick][2]] ** mlp_space_2[f"n{col_indices[1]}"]
                             + mlp_space_1[brick_col_map[brick][3]] ** mlp_space_2[f"n{col_indices[2]}"])
-        
         in_send_val = (in_send_val
                        + d.io.target_half_T ** d.response.no
                        + d.io.target_mirror_L ** d.response.no
                        + d.io.target_vertical ** d.response.no
                        + d.io.target_horizontal ** d.response.no)
-            
     # get the shapes that were not used and set their response to no
     for i in range(1, 5):
         if i not in stim_bricks:
@@ -97,7 +114,6 @@ def load_trial(construction_space: BrickConstructionTask | BrickConstructionTask
                mlp_space_1: MLPConstructionIO, mlp_space_2: Numbers,
                trial: pd.Series, t_type="test", q_type="query"):
     grid_name = trial["Grid_Name"]
-    
     stim_grid = np.load(
         f"/Users/mishaal/personalproj/clarion_replay/processed/{t_type}_data/{t_type}_stims/{grid_name}.npy"
     )             
@@ -108,7 +124,6 @@ def load_trial(construction_space: BrickConstructionTask | BrickConstructionTask
     query_col_map = {1: "left_element", 2: "ontop_element", 3: "right_element", 4: "below_element"}
     brick_map = {1: response_space.bricks.half_T, 2: response_space.bricks.mirror_L, 
                  3: response_space.bricks.vertical, 4: response_space.bricks.horizontal}
-
     choice_is_yes = None
     print("Stimulus grid: \n", stim_grid)
     if t_type == "test":
@@ -136,7 +151,6 @@ def load_trial(construction_space: BrickConstructionTask | BrickConstructionTask
         else:
             choice_is_yes = False
     else: chunk_test = ()
-    
     if q_type == "query" and t_type == "test":
         print("Query brick 1: ", trial["Q_Brick_Left"])
         print("Query brick 2: ", trial["Q_Brick_Middle"])
@@ -145,7 +159,6 @@ def load_trial(construction_space: BrickConstructionTask | BrickConstructionTask
         print("Query brick 1: ", blocks[0])
         print("Query brick 2: ", blocks[1])
         print("Query relation: ", relation[0])
-
     return stim_grid, chunk_grid, chunk_grid_mlp, chunk_test, choice_is_yes
 
 def run_participant_session(participant: BaseParticipant, session_df: pd.DataFrame, 
@@ -158,7 +171,6 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
      all_rule_history, 
      all_rule_lhs_history,
      all_goal_choices) = [], [], [], [], [], [] 
-    
     # Knowledge initialization
     if init_rules:
         init_participant_response_rules(participant)
@@ -166,7 +178,6 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             init_participant_construction_rules(participant)
         elif type(participant) is AbstractParticipant:
             init_participant_construction_rule_w_abstract(participant)
-    
     trials = []
     for _, trial in session_df.iterrows():
         trials.append(trial)
@@ -176,8 +187,7 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
     viz.init_progress(original_length)
     participant.start_construct_trial(timedelta())
     last_end_construction_time = None
-    start_time = datetime.timedelta(0)
-
+    start_time = timedelta(0)
     real_start_time = datetime.now()
     while participant.system.queue:
         event = participant.system.advance()
@@ -263,7 +273,7 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             participant.start_construct_trial(timedelta())
             done_count += 1
             viz.update_progress(done_count, datetime.now() - real_start_time)
-        if ((event.time - start_time) > datetime.timedelta(seconds=per_trial_time)
+        if ((event.time - start_time) > timedelta(seconds=per_trial_time)
              and not participant.trigger_response):
             print("premature end of trial")
             start_time = event.time # temporarily
@@ -324,7 +334,9 @@ def run_experiment(num_train_sessions=100, num_test_sessions=20, run_train_only=
     test_grid_names = test_trials["Grid_Name"].tolist()
     test_grids = [np.load(f"processed/test_data/test_stims/{grid_name}.npy") for grid_name in test_grid_names]
 
-    test_results, test_construction_correctness, test_rule_choices, test_rule_lhs_information, test_constructions, test_goal_choices = run_participant_session(participant, test_trials, session_type="test", q_type="query", init_rules=False)
+    (test_results, test_construction_correctness, 
+     test_rule_choices, test_rule_lhs_information,
+     _, test_goal_choices) = run_participant_session(participant, test_trials, session_type="test", q_type="query", init_rules=False)
 
     #pickle it all
     with open("processed/test_data/test_results.pkl", "wb") as f:

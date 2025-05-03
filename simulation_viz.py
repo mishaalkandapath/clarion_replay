@@ -184,9 +184,9 @@ class SimulationVisualizer:
         margin_x = (3 - w_cells * scale) / 2
         margin_y = (3 - h_cells * scale) / 2
 
-        for (r, c) in coords:
-            x0 = margin_x + c * scale
-            y0 = margin_y + r * scale
+        for (a, b) in coords:
+            x0 = margin_x + b * scale
+            y0 = margin_y + a * scale
             rect = Rectangle(
                 (x0, y0), scale, scale,
                 facecolor=self.cmap(shape_id),

@@ -1,11 +1,10 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
-from typing import *
-from collections import count
+from collections import Counter
 
 def plot_sequences(sequences: dict[str,np.array]):
-    counting = (count(start = 0, step = 1))
+    counting = (Counter(start = 0, step = 1))
     plt.figure(figsize=(8, 4))
     for sequence in sequences:
         sequences[sequence] = sequences[sequence].mean(axis=0)

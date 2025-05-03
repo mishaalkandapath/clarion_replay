@@ -1,9 +1,6 @@
 import numpy as np
 import re
 import statsmodels.api as sm
-from utils import filter_keys_by_rule_chunk
-
-from pyClarion import Key
 
 SHAPE_MAP = {"half_T": 1, "mirror_L": 2, "vertical": 3, "horizontal": 4}
 REVERSE_SHAPE_MAP = {v: k for k, v in SHAPE_MAP.items()}
@@ -91,9 +88,9 @@ def brick_connectedness(stim_grid):
     if len(bricks) == 2:
         bricks = np.array([bricks[0], bricks[1], 5])
     
-    part1 = np.copy(stim_grid); part1[part1==bricks[0]] = 0;
-    part2 = np.copy(stim_grid); part2[part1==bricks[1]] = 0;
-    part3 = np.copy(stim_grid); part3[part1==bricks[2]] = 0;
+    part1 = np.copy(stim_grid); part1[part1==bricks[0]] = 0
+    part2 = np.copy(stim_grid); part2[part1==bricks[1]] = 0
+    part3 = np.copy(stim_grid); part3[part1==bricks[2]] = 0
 
     bricks_order = np.array([[mk_ontopness(part3)[0]+mk_ontopness(part2)[0], mk_ontopness(part1)[0]+mk_ontopness(part3)[0], mk_ontopness(part1)[0]+mk_ontopness(part2)[0]], [mk_besideness(part3)[0]+mk_besideness(part2)[0], mk_besideness(part1)[0]+mk_besideness(part3)[0], mk_besideness(part1)[0]+mk_besideness(part2)[0]]])
     bricks_order = ([np.where(~bricks_order[0, :] & bricks_order[1,:])[0],
@@ -101,8 +98,8 @@ def brick_connectedness(stim_grid):
                        np.where(bricks_order[0,:] & ~bricks_order[1,:])[0]])
     try:
         bricks_conn_trial = bricks[bricks_order].T
-    except:
-        pass # let it be bro
+    finally:
+        pass
 
     if mk_ontopness(part1)[0]:
         _, _, bricks_rel_trial[1], bricks_rel_trial[3] = mk_ontopness(part1)
@@ -246,7 +243,6 @@ def simple_goal_sequencessness(goals, grids):
         
         #now is it a present, present typa situation or a present, distant present typa situation. 
         _, brick_rel = brick_connectedness(grids[i])
-        only_presents = brick_rel.count(SHAPE_MAP[stable_block]) == 2
         t = brick_rel.index(SHAPE_MAP[stable_block])
         present = brick_rel[t - 2 if t >= 2 else t + 2]
         present2 = np.unique(grids[i])[(np.unique(grids[i]) != present) & (np.unique(grids[i]) != SHAPE_MAP[stable_block]) & (np.unique(grids[i]) != 0)].item()
@@ -254,32 +250,33 @@ def simple_goal_sequencessness(goals, grids):
         present2_block = REVERSE_SHAPE_MAP[present2]
 
         for j, other_blocks in enumerate(choices_in_trial[1:]):
-            
-             match other_blocks:
-                case [stable_block, present_block]:
-                    stable_to_present[i, j] = 1
-                case [stable_block, present2_block]:
-                    stable_to_present[i, j] = 1
-                case [present_block, stable_block]:
-                    present_to_stable[i, j] = 1
-                case [present2_block, stable_block]:
-                    present_to_stable[i, j] = 1
-                case [present_block, present2_block]:
-                    present_to_present[i, j] = 1
-                case [present2_block, present_block]:
-                    present_to_present[i, j] = 1
-                case [stable_block, _]:
-                    stable_to_absent[i, j] = 1
-                case [_, stable_block]:
-                    absent_to_stable[i, j] = 1
-                case [present_block, _]:
-                    present_to_absent[i, j] = 1
-                case [_, present_block]:
-                    absent_to_present[i, j] = 1
-                case [present2_block, _]:
-                    present_to_absent[i, j] = 1
-                case [_, present2_block]:
-                    absent_to_present[i, j] = 1
+            if len(other_blocks) == 2:
+                block1, block2 = other_blocks
+            else: continue
+            if block1 == stable_block and block2 == present_block:
+                stable_to_present[i, j] = 1
+            elif block1 == stable_block and block2 == present2_block:
+                stable_to_present[i, j] = 1
+            elif block1 == present_block and block2 == stable_block:
+                present_to_stable[i, j] = 1
+            elif block1 == present2_block and block2 == stable_block:
+                present_to_stable[i, j] = 1
+            elif block1 == present_block and block2 == present2_block:
+                present_to_present[i, j] = 1
+            elif block1 == present2_block and block2 == present_block:
+                present_to_present[i, j] = 1
+            elif block1 == stable_block:  # and block2 is anything else
+                stable_to_absent[i, j] = 1
+            elif block2 == stable_block:  # and block1 is anything else
+                absent_to_stable[i, j] = 1
+            elif block1 == present_block:  # and block2 is anything else
+                present_to_absent[i, j] = 1
+            elif block2 == present_block:  # and block1 is anything else
+                absent_to_present[i, j] = 1
+            elif block1 == present2_block:  # and block2 is anything else
+                present_to_absent[i, j] = 1
+            elif block2 == present2_block:  # and block1 is anything else
+                absent_to_present[i, j] = 1
 
     return sequences
 
@@ -303,9 +300,8 @@ if __name__ == "__main__":
     # sample_deviant_array = np.array(sample_deviant_array)
     # # is this present in train trials?
     import os
-    for i, file in enumerate(os.listdir("processed/train_data/train_stims/")):
+    for file in os.listdir("processed/train_data/train_stims/"):
         if file.endswith("_d.npy"):
             stim = np.load(os.path.join("processed/train_data/train_stims/", file))
             if len(np.unique(stim)) == 5:
-                #rename the file to add in a _d suffix
                 os.rename(os.path.join("processed/train_data/train_stims/", file), os.path.join("processed/train_data/train_stims/", file[:-5] + ".npy"))
