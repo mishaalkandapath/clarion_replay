@@ -1,9 +1,23 @@
 from typing import override
 from datetime import timedelta
 
-from pyClarion import (FixedRules, RuleStore, Choice, KeyForm, Site,
-                       Family, Sort, Atom, Chunk, ChunkStore,
-                       BottomUp, Input, Priority, keyform)
+from pyClarion import (
+    FixedRules,
+    RuleStore,
+    Choice,
+    KeyForm,
+    Site,
+    Family,
+    Sort,
+    Atom,
+    Chunk,
+    ChunkStore,
+    BottomUp,
+    Input,
+    Priority,
+    keyform,
+)
+
 
 class RuleWBLA(FixedRules):
     main: Site
@@ -12,82 +26,76 @@ class RuleWBLA(FixedRules):
     by: KeyForm
     updated_main: Site
 
-    def __init__(self, 
-        name: str, 
+    def __init__(
+        self,
+        name: str,
         p: Family,
         r: Family,
-        c: Family, 
-        d: Family | Sort | Atom, 
+        c: Family,
+        d: Family | Sort | Atom,
         v: Family | Sort,
         *,
-        sd: float = 1.0
+        sd: float = 1.0,
     ) -> None:
-        
         super().__init__(name, p=p, r=r, c=c, d=d, v=v, sd=sd)
         self.bla_main = Site(self.rules.main.index, {}, 0.0)
         self.choice.input = self.bla_main
 
-class FlippableInput(Input):
 
+class FlippableInput(Input):
     @override
-    def send(self,
-            d: dict | Chunk,
-            dt: timedelta = timedelta(),
-            priority: int = Priority.PROPAGATION,
-            flip: bool = False):
+    def send(
+        self,
+        d: dict | Chunk,
+        dt: timedelta = timedelta(),
+        priority: int = Priority.PROPAGATION,
+        flip: bool = False,
+    ):
         reset = self.reset if not flip else not self.reset
         data = self._parse_input(d)
         method = Site.push if reset else FlippableInput.write_inplace_consistent
-        self.system.schedule(self.send, 
-                             self.main.update(data, method),
-                             dt=dt, priority=priority)
+        self.system.schedule(
+            self.send, self.main.update(data, method), dt=dt, priority=priority
+        )
+
 
 class SuppressionBottomUp(BottomUp):
     @override
-    def update(self, 
-        dt: timedelta = timedelta(), 
-        priority: int = Priority.PROPAGATION
+    def update(
+        self, dt: timedelta = timedelta(), priority: int = Priority.PROPAGATION
     ) -> None:
         ipt = self.input[0]
         if self.pre is not None:
             ipt = self.pre(ipt)
-        main = (self.weights[0]
-            .mul(ipt, by=self.mul_by))
-        temp = (main
-                .max(by=self.max_by))
-        another_temp = (main
-                        .min(by=self.max_by)
-                        .simple_where(lambda x: x < 0.0))
-        main = (temp
-                .sum(another_temp)
-                .sum(by=self.sum_by))
-        main = (main
-                .simple_where(lambda x: x >= 0.0)
-                .with_default(c=0.0))
+        main = self.weights[0].mul(ipt, by=self.mul_by)
+        temp = main.max(by=self.max_by)
+        another_temp = main.min(by=self.max_by).simple_where(lambda x: x < 0.0)
+        main = temp.sum(another_temp).sum(by=self.sum_by)
+        main = main.simple_where(lambda x: x >= 0.0).with_default(c=0.0)
         if self.post is not None:
             main = self.post(main)
-        self.system.schedule(self.update, 
-            self.main.update(main), 
-            dt=dt, priority=priority)
-            
+        self.system.schedule(
+            self.update, self.main.update(main), dt=dt, priority=priority
+        )
+
+
 class SupressionChunkStore(ChunkStore):
-    def __init__(self, 
-        name: str, 
-        c: Family, 
-        d: Family | Sort | Atom, 
-        v: Family | Sort
+    def __init__(
+        self, name: str, c: Family, d: Family | Sort | Atom, v: Family | Sort
     ) -> None:
         super().__init__(name, c=c, d=d, v=v)
         with self:
             self.bu = SuppressionBottomUp(f"{name}.bu", self.chunks, c, d, v)
 
+
 class SuppressionRuleStore(RuleStore):
-    def __init__(self, 
-        name: str, 
+    def __init__(
+        self,
+        name: str,
         r: Family,
-        c: Family, 
-        d: Family | Sort | Atom, 
-        v: Family | Sort, 
+        c: Family,
+        d: Family | Sort | Atom,
+        v: Family | Sort,
     ) -> None:
         super().__init__(name, r=r, c=c, d=d, v=v)
         with self:
@@ -100,16 +108,18 @@ class SuppressionRuleStore(RuleStore):
         self.lhw = Site(idx_r * idx_lhs, {}, c=float("nan"))
         self.rhw = Site(idx_r * idx_rhs, {}, c=float("nan"))
 
+
 class SupressionActionRules(FixedRules):
-    def __init__(self, 
-        name: str, 
+    def __init__(
+        self,
+        name: str,
         p: Family,
         r: Family,
-        c: Family, 
-        d: Family | Sort | Atom, 
+        c: Family,
+        d: Family | Sort | Atom,
         v: Family | Sort,
         *,
-        sd: float = 1.0
+        sd: float = 1.0,
     ) -> None:
         super().__init__(name, p=p, r=r, c=c, d=d, v=v, sd=sd)
         with self:
