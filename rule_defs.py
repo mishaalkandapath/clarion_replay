@@ -22,8 +22,17 @@ def init_participant_response_rules(participant) -> None:
     #i = 0, horizontal is next to the potruding part of the shape, else it is next to the flat part at the bottom
     half_T_left_of_horizontal = [
         (+ io.query_block ** (bricks.half_T if not switcharoo else bricks.horizontal)
+         - io.query_block ** bricks.vertical 
+         - io.query_block ** bricks.mirror_L
+         - io.query_block ** (bricks.horizontal if not switcharoo else bricks.half_T)
         + io.query_block_reference ** (bricks.horizontal if not switcharoo else bricks.half_T)
-        + 5.0* (io.query_relation ** (query_rel.left if not switcharoo else query_rel.right))
+        - io.query_block_reference ** bricks.vertical
+        - io.query_block_reference ** bricks.mirror_L
+        - io.query_block_reference ** (bricks.half_T if not switcharoo else bricks.horizontal)
+        + 2.0* (io.query_relation ** (query_rel.left if not switcharoo else query_rel.right))
+        - 2.0* (io.query_relation ** (query_rel.right if not switcharoo else query_rel.left))
+        - 2.0 * (io.query_relation ** query_rel.above)
+        - 2.0 * (io.query_relation ** query_rel.below)
         + io.target_half_T ** response.yes
         + io.target_horizontal ** response.yes
         + io.target_half_T_row1 ** numbers[f"n{row}"]
@@ -44,8 +53,17 @@ def init_participant_response_rules(participant) -> None:
 
     half_T_right_of_horizontal = [
         (+ io.query_block ** (bricks.half_T if not switcharoo else bricks.horizontal)
+         - io.query_block ** bricks.vertical 
+         - io.query_block ** bricks.mirror_L
+         - io.query_block ** (bricks.horizontal if not switcharoo else bricks.half_T)
         + io.query_block_reference ** (bricks.horizontal if not switcharoo else bricks.half_T)
-        + 5.0* (io.query_relation ** (query_rel.right if not switcharoo else query_rel.left))
+        - io.query_block_reference ** bricks.vertical
+        - io.query_block_reference ** bricks.mirror_L
+        - io.query_block_reference ** (bricks.half_T if not switcharoo else bricks.horizontal)
+        + 2.0* (io.query_relation ** (query_rel.right if not switcharoo else query_rel.left))
+        - 2.0 * (io.query_relation ** (query_rel.left if not switcharoo else query_rel.right))
+        - 2.0 * (io.query_relation ** query_rel.above)
+        - 2.0 * (io.query_relation ** query_rel.below)
         + io.target_half_T ** response.yes
         + io.target_horizontal ** response.yes
         + io.target_half_T_row1 ** numbers[f"n{row}"]
@@ -73,8 +91,17 @@ def init_participant_response_rules(participant) -> None:
 
     half_T_below_horizontal = [
         (+ io.query_block ** (bricks.half_T if not switcharoo else bricks.horizontal)
+         - io.query_block ** bricks.vertical 
+         - io.query_block ** bricks.mirror_L
+         - io.query_block ** (bricks.horizontal if not switcharoo else bricks.half_T)
         + io.query_block_reference ** (bricks.horizontal if not switcharoo else bricks.half_T)
-        + 5.0*(io.query_relation ** (query_rel.below if not switcharoo else query_rel.above))
+        - io.query_block_reference ** bricks.vertical
+        - io.query_block_reference ** bricks.mirror_L
+        - io.query_block_reference ** (bricks.half_T if not switcharoo else bricks.horizontal)
+        + 2.0*(io.query_relation ** (query_rel.below if not switcharoo else query_rel.above))
+        - 2.0 * (io.query_relation ** (query_rel.above if not switcharoo else query_rel.below))
+        - 2.0 * (io.query_relation ** query_rel.left)
+        - 2.0 * (io.query_relation ** query_rel.right)
         + io.target_half_T ** response.yes
         + io.target_horizontal ** response.yes
         + io.target_half_T_row1 ** numbers[f"n{row}"]
@@ -96,8 +123,17 @@ def init_participant_response_rules(participant) -> None:
 
     half_T_above_horizontal = [
         (+ io.query_block ** (bricks.half_T if not switcharoo else bricks.horizontal)
+         - io.query_block ** bricks.vertical 
+         - io.query_block ** bricks.mirror_L
+         - io.query_block ** (bricks.horizontal if not switcharoo else bricks.half_T)
         + io.query_block_reference ** (bricks.horizontal if not switcharoo else bricks.half_T)
-        + 5.0* (io.query_relation ** (query_rel.above if not switcharoo else query_rel.below))
+        - io.query_block_reference ** bricks.vertical
+        - io.query_block_reference ** bricks.mirror_L
+        - io.query_block_reference ** (bricks.half_T if not switcharoo else bricks.horizontal)
+        + 2.0* (io.query_relation ** (query_rel.above if not switcharoo else query_rel.below))
+        - 2.0 * (io.query_relation ** (query_rel.below if not switcharoo else query_rel.above))
+        - 2.0 * (io.query_relation ** query_rel.left)
+        - 2.0 * (io.query_relation ** query_rel.right)
         + io.target_half_T ** response.yes
         + io.target_horizontal ** response.yes
         + io.target_half_T_row1 ** numbers[f"n{row}"]
@@ -120,8 +156,17 @@ def init_participant_response_rules(participant) -> None:
 
     half_T_left_vertical = [
         (+ io.query_block ** (bricks.half_T if not switcharoo else bricks.vertical)
+         - io.query_block ** bricks.horizontal
+         - io.query_block ** bricks.mirror_L
+         - io.query_block ** (bricks.vertical if not switcharoo else bricks.half_T)
         + io.query_block_reference ** (bricks.vertical if not switcharoo else bricks.half_T)
-        + 5.0*(io.query_relation ** (query_rel.left if not switcharoo else query_rel.right))
+        - io.query_block_reference ** bricks.horizontal
+        - io.query_block_reference ** bricks.mirror_L
+        - io.query_block_reference ** (bricks.half_T if not switcharoo else bricks.vertical)
+        + 2.0* (io.query_relation ** (query_rel.left if not switcharoo else query_rel.right))
+        - 2.0* (io.query_relation ** (query_rel.right if not switcharoo else query_rel.left))
+        - 2.0 * (io.query_relation ** query_rel.above)
+        - 2.0 * (io.query_relation ** query_rel.below)
         + io.target_half_T ** response.yes
         + io.target_vertical ** response.yes
         + io.target_half_T_row1 ** numbers[f"n{row}"]
@@ -142,8 +187,17 @@ def init_participant_response_rules(participant) -> None:
 
     half_T_right_vertical = [
         (+ io.query_block ** (bricks.half_T if not switcharoo else bricks.vertical)
+         - io.query_block ** bricks.horizontal
+         - io.query_block ** bricks.mirror_L
+         - io.query_block ** (bricks.vertical if not switcharoo else bricks.half_T)
         + io.query_block_reference ** (bricks.vertical if not switcharoo else bricks.half_T)
-        + 5.0*(io.query_relation ** (query_rel.right if not switcharoo else query_rel.left))
+        - io.query_block_reference ** bricks.horizontal
+        - io.query_block_reference ** bricks.mirror_L
+        - io.query_block_reference ** (bricks.half_T if not switcharoo else bricks.vertical)
+        + 2.0* (io.query_relation ** (query_rel.right if not switcharoo else query_rel.left))
+        - 2.0 * (io.query_relation ** (query_rel.left if not switcharoo else query_rel.right))
+        - 2.0 * (io.query_relation ** query_rel.above)
+        - 2.0 * (io.query_relation ** query_rel.below)
         + io.target_half_T ** response.yes
         + io.target_vertical ** response.yes
         + io.target_half_T_row1 ** numbers[f"n{row}"]
@@ -164,8 +218,17 @@ def init_participant_response_rules(participant) -> None:
 
     half_T_below_vertical = [
         (+ io.query_block ** (bricks.half_T if not switcharoo else bricks.vertical)
+         - io.query_block ** bricks.horizontal
+         - io.query_block ** bricks.mirror_L
+         - io.query_block ** (bricks.vertical if not switcharoo else bricks.half_T)
         + io.query_block_reference ** (bricks.vertical if not switcharoo else bricks.half_T)
-        + 5.0*(io.query_relation ** (query_rel.below if not switcharoo else query_rel.above))
+        - io.query_block_reference ** bricks.horizontal
+        - io.query_block_reference ** bricks.mirror_L
+        - io.query_block_reference ** (bricks.half_T if not switcharoo else bricks.vertical)
+        + 2.0*(io.query_relation ** (query_rel.below if not switcharoo else query_rel.above))
+        - 2.0 * (io.query_relation ** (query_rel.above if not switcharoo else query_rel.below))
+        - 2.0 * (io.query_relation ** query_rel.left)
+        - 2.0 * (io.query_relation ** query_rel.right)
         + io.target_half_T ** response.yes
         + io.target_vertical ** response.yes
         + io.target_half_T_row1 ** numbers[f"n{row}"]
@@ -186,8 +249,17 @@ def init_participant_response_rules(participant) -> None:
 
     half_T_above_vertical = [
         (+ io.query_block ** (bricks.half_T if not switcharoo else bricks.vertical)
+         - io.query_block ** bricks.horizontal
+         - io.query_block ** bricks.mirror_L
+         - io.query_block ** (bricks.vertical if not switcharoo else bricks.half_T)
         + io.query_block_reference ** (bricks.vertical if not switcharoo else bricks.half_T)
-        + 5.0*(io.query_relation ** (query_rel.above if not switcharoo else query_rel.below))
+        - io.query_block_reference ** bricks.horizontal
+        - io.query_block_reference ** bricks.mirror_L
+        - io.query_block_reference ** (bricks.half_T if not switcharoo else bricks.vertical)
+        + 2.0*(io.query_relation ** (query_rel.above if not switcharoo else query_rel.below))
+        - 2.0 * (io.query_relation ** (query_rel.below if not switcharoo else query_rel.above))
+        - 2.0 * (io.query_relation ** query_rel.left)
+        - 2.0 * (io.query_relation ** query_rel.right)
         + io.target_half_T ** response.yes
         + io.target_vertical ** response.yes
         + io.target_half_T_row1 ** numbers[f"n{row}"]
@@ -209,8 +281,17 @@ def init_participant_response_rules(participant) -> None:
     #HALF_T X MIRROR_L
     half_T_left_mirror_L = [
         (+ io.query_block ** (bricks.half_T if not switcharoo else bricks.mirror_L)
+        - io.query_block ** bricks.horizontal
+        - io.query_block ** bricks.vertical
+        - io.query_block ** (bricks.mirror_L if not switcharoo else bricks.half_T)
         + io.query_block_reference ** (bricks.mirror_L if not switcharoo else bricks.half_T)
-        + 5.0*(io.query_relation ** (query_rel.left if not switcharoo else query_rel.right))
+        - io.query_block_reference ** bricks.horizontal
+        - io.query_block_reference ** bricks.vertical
+        - io.query_block_reference ** (bricks.half_T if not switcharoo else bricks.mirror_L)
+        + 2.0* (io.query_relation ** (query_rel.left if not switcharoo else query_rel.right))
+        - 2.0* (io.query_relation ** (query_rel.right if not switcharoo else query_rel.left))
+        - 2.0 * (io.query_relation ** query_rel.above)
+        - 2.0 * (io.query_relation ** query_rel.below)
         + io.target_half_T ** response.yes
         + io.target_mirror_L ** response.yes
         + io.target_half_T_row1 ** numbers[f"n{row}"]
@@ -239,8 +320,17 @@ def init_participant_response_rules(participant) -> None:
     """
     half_T_right_mirror_L = [
         (+ io.query_block ** (bricks.half_T if not switcharoo else bricks.mirror_L)
+        - io.query_block ** bricks.horizontal
+        - io.query_block ** bricks.vertical
+        - io.query_block ** (bricks.mirror_L if not switcharoo else bricks.half_T)
         + io.query_block_reference ** (bricks.mirror_L if not switcharoo else bricks.half_T)
-        + 5.0*(io.query_relation ** (query_rel.right if not switcharoo else query_rel.left))
+        - io.query_block_reference ** bricks.horizontal
+        - io.query_block_reference ** bricks.vertical
+        - io.query_block_reference ** (bricks.half_T if not switcharoo else bricks.mirror_L)
+        + 2.0* (io.query_relation ** (query_rel.right if not switcharoo else query_rel.left))
+        - 2.0 * (io.query_relation ** (query_rel.left if not switcharoo else query_rel.right))
+        - 2.0 * (io.query_relation ** query_rel.above)
+        - 2.0 * (io.query_relation ** query_rel.below)
         + io.target_half_T ** response.yes
         + io.target_mirror_L ** response.yes
         + io.target_half_T_row1 ** numbers[f"n{row}"]
@@ -261,8 +351,17 @@ def init_participant_response_rules(participant) -> None:
 
     half_T_below_mirror_L = [
         (+ io.query_block ** (bricks.half_T if not switcharoo else bricks.mirror_L)
+        - io.query_block ** bricks.horizontal
+        - io.query_block ** bricks.vertical
+        - io.query_block ** (bricks.mirror_L if not switcharoo else bricks.half_T)
         + io.query_block_reference ** (bricks.mirror_L if not switcharoo else bricks.half_T)
-        + 5.0*(io.query_relation ** (query_rel.below if not switcharoo else query_rel.above))
+        - io.query_block_reference ** bricks.horizontal
+        - io.query_block_reference ** bricks.vertical
+        - io.query_block_reference ** (bricks.half_T if not switcharoo else bricks.mirror_L)
+        + 2.0*(io.query_relation ** (query_rel.below if not switcharoo else query_rel.above))
+        - 2.0 * (io.query_relation ** (query_rel.above if not switcharoo else query_rel.below))
+        - 2.0 * (io.query_relation ** query_rel.left)
+        - 2.0 * (io.query_relation ** query_rel.right)
         + io.target_half_T ** response.yes
         + io.target_mirror_L ** response.yes
         + io.target_half_T_row1 ** numbers[f"n{row}"]
@@ -283,8 +382,17 @@ def init_participant_response_rules(participant) -> None:
 
     half_T_above_mirror_L = [
         (+ io.query_block ** (bricks.half_T if not switcharoo else bricks.mirror_L)
+        - io.query_block ** bricks.horizontal
+        - io.query_block ** bricks.vertical
+        - io.query_block ** (bricks.mirror_L if not switcharoo else bricks.half_T)
         + io.query_block_reference ** (bricks.mirror_L if not switcharoo else bricks.half_T)
-        + 5.0*(io.query_relation ** (query_rel.above if not switcharoo else query_rel.below))
+        - io.query_block_reference ** bricks.horizontal
+        - io.query_block_reference ** bricks.vertical
+        - io.query_block_reference ** (bricks.half_T if not switcharoo else bricks.mirror_L)
+        + 2.0*(io.query_relation ** (query_rel.above if not switcharoo else query_rel.below))
+        - 2.0 * (io.query_relation ** (query_rel.below if not switcharoo else query_rel.above))
+        - 2.0 * (io.query_relation ** query_rel.left)
+        - 2.0 * (io.query_relation ** query_rel.right)
         + io.target_half_T ** response.yes
         + io.target_mirror_L ** response.yes
         + io.target_half_T_row1 ** numbers[f"n{row}"]
@@ -306,8 +414,17 @@ def init_participant_response_rules(participant) -> None:
     #MIRROR_L X HORIZONTAL
     mirror_L_left_horizontal  = [
         (+ io.query_block ** (bricks.mirror_L if not switcharoo else bricks.horizontal)
+        - io.query_block ** bricks.half_T
+        - io.query_block ** bricks.vertical
+        - io.query_block ** (bricks.horizontal if not switcharoo else bricks.mirror_L)
         + io.query_block_reference ** (bricks.horizontal if not switcharoo else bricks.mirror_L)
-        + 5.0*(io.query_relation ** (query_rel.left if not switcharoo else query_rel.right))
+        - io.query_block_reference ** bricks.half_T
+        - io.query_block_reference ** bricks.vertical
+        - io.query_block_reference ** (bricks.mirror_L if not switcharoo else bricks.horizontal)
+        + 2.0* (io.query_relation ** (query_rel.left if not switcharoo else query_rel.right))
+        - 2.0* (io.query_relation ** (query_rel.right if not switcharoo else query_rel.left))
+        - 2.0 * (io.query_relation ** query_rel.above)
+        - 2.0 * (io.query_relation ** query_rel.below)
         + io.target_mirror_L ** response.yes
         + io.target_horizontal ** response.yes
         + io.target_mirror_L_row1 ** numbers[f"n{row}"]
@@ -328,8 +445,17 @@ def init_participant_response_rules(participant) -> None:
 
     mirror_L_right_horizontal = [
         (+ io.query_block ** (bricks.mirror_L if not switcharoo else bricks.horizontal)
+        - io.query_block ** bricks.half_T
+        - io.query_block ** bricks.vertical
+        - io.query_block ** (bricks.horizontal if not switcharoo else bricks.mirror_L)
         + io.query_block_reference ** (bricks.horizontal if not switcharoo else bricks.mirror_L)
-        + 5.0*(io.query_relation ** (query_rel.right if not switcharoo else query_rel.left))
+        - io.query_block_reference ** bricks.half_T
+        - io.query_block_reference ** bricks.vertical
+        - io.query_block_reference ** (bricks.mirror_L if not switcharoo else bricks.horizontal)
+        + 2.0* (io.query_relation ** (query_rel.right if not switcharoo else query_rel.left))
+        - 2.0 * (io.query_relation ** (query_rel.left if not switcharoo else query_rel.right))
+        - 2.0 * (io.query_relation ** query_rel.above)
+        - 2.0 * (io.query_relation ** query_rel.below)
         + io.target_mirror_L ** response.yes
         + io.target_horizontal ** response.yes
         + io.target_mirror_L_row1 ** numbers[f"n{row}"]
@@ -357,8 +483,17 @@ def init_participant_response_rules(participant) -> None:
 
     mirror_L_above_horizontal = [
         (+ io.query_block ** (bricks.mirror_L if not switcharoo else bricks.horizontal)
+        - io.query_block ** bricks.half_T
+        - io.query_block ** bricks.vertical
+        - io.query_block ** (bricks.horizontal if not switcharoo else bricks.mirror_L)
         + io.query_block_reference ** (bricks.horizontal if not switcharoo else bricks.mirror_L)
-        + 5.0*(io.query_relation ** (query_rel.above if not switcharoo else query_rel.below))
+        - io.query_block_reference ** bricks.half_T
+        - io.query_block_reference ** bricks.vertical
+        - io.query_block_reference ** (bricks.mirror_L if not switcharoo else bricks.horizontal)
+        + 2.0*(io.query_relation ** (query_rel.above if not switcharoo else query_rel.below))
+        - 2.0 * (io.query_relation ** (query_rel.below if not switcharoo else query_rel.above))
+        - 2.0 * (io.query_relation ** query_rel.left)
+        - 2.0 * (io.query_relation ** query_rel.right)
         + io.target_mirror_L ** response.yes
         + io.target_horizontal ** response.yes
         + io.target_mirror_L_row1 ** numbers[f"n{row}"]
@@ -397,8 +532,17 @@ def init_participant_response_rules(participant) -> None:
 
     mirror_L_below_horizontal = [
         (+ io.query_block ** (bricks.mirror_L if not switcharoo else bricks.horizontal)
+        - io.query_block ** bricks.half_T
+        - io.query_block ** bricks.vertical
+        - io.query_block ** (bricks.horizontal if not switcharoo else bricks.mirror_L)
         + io.query_block_reference ** (bricks.horizontal if not switcharoo else bricks.mirror_L)
-        + 5.0*(io.query_relation ** (query_rel.below if not switcharoo else query_rel.above))
+        - io.query_block_reference ** bricks.half_T
+        - io.query_block_reference ** bricks.vertical
+        - io.query_block_reference ** (bricks.mirror_L if not switcharoo else bricks.horizontal)
+        + 2.0*(io.query_relation ** (query_rel.below if not switcharoo else query_rel.above))
+        - 2.0 * (io.query_relation ** (query_rel.above if not switcharoo else query_rel.below))
+        - 2.0 * (io.query_relation ** query_rel.left)
+        - 2.0 * (io.query_relation ** query_rel.right)
         + io.target_mirror_L ** response.yes
         + io.target_horizontal ** response.yes
         + io.target_mirror_L_row1 ** numbers[f"n{row}"]
@@ -425,8 +569,17 @@ def init_participant_response_rules(participant) -> None:
     #MIRROR_L X VERTICAL
     mirror_L_left_vertical  = [
         (+ io.query_block ** (bricks.mirror_L if not switcharoo else bricks.vertical)
+        - io.query_block ** bricks.half_T
+        - io.query_block ** bricks.horizontal
+        - io.query_block ** (bricks.vertical if not switcharoo else bricks.mirror_L)
         + io.query_block_reference ** (bricks.vertical if not switcharoo else bricks.mirror_L)
-        + 5.0*(io.query_relation ** (query_rel.left if not switcharoo else query_rel.right))
+        - io.query_block_reference ** bricks.half_T
+        - io.query_block_reference ** bricks.horizontal
+        - io.query_block_reference ** (bricks.mirror_L if not switcharoo else bricks.vertical)
+        + 2.0* (io.query_relation ** (query_rel.left if not switcharoo else query_rel.right))
+        - 2.0* (io.query_relation ** (query_rel.right if not switcharoo else query_rel.left))
+        - 2.0 * (io.query_relation ** query_rel.above)
+        - 2.0 * (io.query_relation ** query_rel.below)
         + io.target_mirror_L ** response.yes
         + io.target_vertical ** response.yes
         + io.target_mirror_L_row1 ** numbers[f"n{row}"]
@@ -459,8 +612,17 @@ def init_participant_response_rules(participant) -> None:
 
     mirror_L_right_vertical = [
         (+ io.query_block ** (bricks.mirror_L if not switcharoo else bricks.vertical)
+        - io.query_block ** bricks.half_T
+        - io.query_block ** bricks.horizontal
+        - io.query_block ** (bricks.vertical if not switcharoo else bricks.mirror_L)
         + io.query_block_reference ** (bricks.vertical if not switcharoo else bricks.mirror_L)
-        + 5.0*(io.query_relation ** (query_rel.right if not switcharoo else query_rel.left))
+        - io.query_block_reference ** bricks.half_T
+        - io.query_block_reference ** bricks.horizontal
+        - io.query_block_reference ** (bricks.mirror_L if not switcharoo else bricks.vertical)
+        + 2.0* (io.query_relation ** (query_rel.right if not switcharoo else query_rel.left))
+        - 2.0 * (io.query_relation ** (query_rel.left if not switcharoo else query_rel.right))
+        - 2.0 * (io.query_relation ** query_rel.above)
+        - 2.0 * (io.query_relation ** query_rel.below)
         + io.target_mirror_L ** response.yes
         + io.target_vertical ** response.yes
         + io.target_mirror_L_row1 ** numbers[f"n{row}"]
@@ -501,8 +663,17 @@ def init_participant_response_rules(participant) -> None:
 
     mirror_L_above_vertical = [
         (+ io.query_block ** (bricks.mirror_L if not switcharoo else bricks.vertical)
+        - io.query_block ** bricks.half_T
+        - io.query_block ** bricks.horizontal
+        - io.query_block ** (bricks.vertical if not switcharoo else bricks.mirror_L)
         + io.query_block_reference ** (bricks.vertical if not switcharoo else bricks.mirror_L)
-        + 5.0*(io.query_relation ** (query_rel.above if not switcharoo else query_rel.below))
+        - io.query_block_reference ** bricks.half_T
+        - io.query_block_reference ** bricks.horizontal
+        - io.query_block_reference ** (bricks.mirror_L if not switcharoo else bricks.vertical)
+        + 2.0*(io.query_relation ** (query_rel.above if not switcharoo else query_rel.below))
+        - 2.0 * (io.query_relation ** (query_rel.below if not switcharoo else query_rel.above))
+        - 2.0 * (io.query_relation ** query_rel.left)
+        - 2.0 * (io.query_relation ** query_rel.right)
         + io.target_mirror_L ** response.yes
         + io.target_vertical ** response.yes
         + io.target_mirror_L_row1 ** numbers[f"n{row}"]
@@ -537,8 +708,17 @@ def init_participant_response_rules(participant) -> None:
 
     mirror_L_below_vertical = [
         (+ io.query_block ** (bricks.mirror_L if not switcharoo else bricks.vertical)
+        - io.query_block ** bricks.half_T
+        - io.query_block ** bricks.horizontal
+        - io.query_block ** (bricks.vertical if not switcharoo else bricks.mirror_L)
         + io.query_block_reference ** (bricks.vertical if not switcharoo else bricks.mirror_L)
-        + 5.0*(io.query_relation ** (query_rel.below if not switcharoo else query_rel.above))
+        - io.query_block_reference ** bricks.half_T
+        - io.query_block_reference ** bricks.horizontal
+        - io.query_block_reference ** (bricks.mirror_L if not switcharoo else bricks.vertical)
+        + 2.0*(io.query_relation ** (query_rel.below if not switcharoo else query_rel.above))
+        - 2.0 * (io.query_relation ** (query_rel.above if not switcharoo else query_rel.below))
+        - 2.0 * (io.query_relation ** query_rel.left)
+        - 2.0 * (io.query_relation ** query_rel.right)
         + io.target_mirror_L ** response.yes
         + io.target_vertical ** response.yes
         + io.target_mirror_L_row1 ** numbers[f"n{row}"]
@@ -568,22 +748,31 @@ def init_participant_response_rules(participant) -> None:
     #HORIZONTAL X VERTICAL
     horizontal_left_vertical  = [
         (+ io.query_block ** (bricks.horizontal if not switcharoo else bricks.vertical)
+        - io.query_block ** bricks.half_T
+        - io.query_block ** bricks.mirror_L
+        - io.query_block ** (bricks.vertical if not switcharoo else bricks.horizontal)
         + io.query_block_reference ** (bricks.vertical if not switcharoo else bricks.horizontal)
-        +5.0* (io.query_relation ** (query_rel.left if not switcharoo else query_rel.right))
+        - io.query_block_reference ** bricks.half_T
+        - io.query_block_reference ** bricks.mirror_L
+        - io.query_block_reference ** (bricks.horizontal if not switcharoo else bricks.vertical)
+        +2.0* (io.query_relation ** (query_rel.left if not switcharoo else query_rel.right))
+        - 2.0* (io.query_relation ** (query_rel.right if not switcharoo else query_rel.left))
+        - 2.0 * (io.query_relation ** query_rel.above)
+        - 2.0 * (io.query_relation ** query_rel.below)
         + io.target_vertical ** response.yes
         + io.target_horizontal ** response.yes
-        + io.target_vertical_row1 ** numbers[f"n{row}"]
-        + io.target_vertical_row2 ** numbers[f"n{row}"]
-        + io.target_vertical_row3 ** numbers[f"n{row}"]
-        + io.target_vertical_col1 ** numbers[f"n{col}"]
-        + io.target_vertical_col2 ** numbers[f"n{col+1}"] 
-        + io.target_vertical_col3 ** numbers[f"n{col+2}"]
-        + io.target_horizontal_row1 ** numbers[f"n{row-2+i}"]
-        + io.target_horizontal_row2 ** numbers[f"n{row-1+i}"]
-        + io.target_horizontal_row3 ** numbers[f"n{row+i}"]
-        + io.target_horizontal_col1 ** numbers[f"n{col+3}"]
-        + io.target_horizontal_col2 ** numbers[f"n{col+3}"]
-        + io.target_horizontal_col3 ** numbers[f"n{col+3}"]
+        + io.target_horizontal_row1 ** numbers[f"n{row}"]
+        + io.target_horizontal_row2 ** numbers[f"n{row}"]
+        + io.target_horizontal_row3 ** numbers[f"n{row}"]
+        + io.target_horizontal_col1 ** numbers[f"n{col}"]
+        + io.target_horizontal_col2 ** numbers[f"n{col+1}"] 
+        + io.target_horizontal_col3 ** numbers[f"n{col+2}"]
+        + io.target_vertical_row1 ** numbers[f"n{row-2+i}"]
+        + io.target_vertical_row2 ** numbers[f"n{row-1+i}"]
+        + io.target_vertical_row3 ** numbers[f"n{row+i}"]
+        + io.target_vertical_col1 ** numbers[f"n{col+3}"]
+        + io.target_vertical_col2 ** numbers[f"n{col+3}"]
+        + io.target_vertical_col3 ** numbers[f"n{col+3}"]
         >>
         + io.output ** response.yes) for switcharoo in (True, False) for i in range(3) for row in range(3-i, 7-i) for col in range(1, 4)
     ]
@@ -604,22 +793,31 @@ def init_participant_response_rules(participant) -> None:
 
     horizontal_right_vertical = [
         (+ io.query_block ** (bricks.horizontal if not switcharoo else bricks.vertical)
+        - io.query_block ** bricks.half_T
+        - io.query_block ** bricks.mirror_L
+        - io.query_block ** (bricks.vertical if not switcharoo else bricks.horizontal)
         + io.query_block_reference ** (bricks.vertical if not switcharoo else bricks.horizontal)
-        + 5.0*(io.query_relation ** (query_rel.right if not switcharoo else query_rel.left))
+        - io.query_block_reference ** bricks.half_T
+        - io.query_block_reference ** bricks.mirror_L
+        - io.query_block_reference ** (bricks.horizontal if not switcharoo else bricks.vertical)
+        + 2.0* (io.query_relation ** (query_rel.right if not switcharoo else query_rel.left))
+        - 2.0 * (io.query_relation ** (query_rel.left if not switcharoo else query_rel.right))
+        - 2.0 * (io.query_relation ** query_rel.above)
+        - 2.0 * (io.query_relation ** query_rel.below)
         + io.target_vertical ** response.yes
         + io.target_horizontal ** response.yes
-        + io.target_vertical_row1 ** numbers[f"n{row}"]
-        + io.target_vertical_row2 ** numbers[f"n{row}"]
-        + io.target_vertical_row3 ** numbers[f"n{row}"]
-        + io.target_vertical_col1 ** numbers[f"n{col}"]
-        + io.target_vertical_col2 ** numbers[f"n{col+1}"] 
-        + io.target_vertical_col3 ** numbers[f"n{col+2}"]
-        + io.target_horizontal_row1 ** numbers[f"n{row-2+i}"]
-        + io.target_horizontal_row2 ** numbers[f"n{row-1+i}"]
-        + io.target_horizontal_row3 ** numbers[f"n{row+i}"]
-        + io.target_horizontal_col1 ** numbers[f"n{col-1}"]
-        + io.target_horizontal_col2 ** numbers[f"n{col-1}"]
-        + io.target_horizontal_col3 ** numbers[f"n{col-1}"]
+        + io.target_horizontal_row1 ** numbers[f"n{row}"]
+        + io.target_horizontal_row2 ** numbers[f"n{row}"]
+        + io.target_horizontal_row3 ** numbers[f"n{row}"]
+        + io.target_horizontal_col1 ** numbers[f"n{col}"]
+        + io.target_horizontal_col2 ** numbers[f"n{col+1}"] 
+        + io.target_horizontal_col3 ** numbers[f"n{col+2}"]
+        + io.target_vertical_row1 ** numbers[f"n{row-2+i}"]
+        + io.target_vertical_row2 ** numbers[f"n{row-1+i}"]
+        + io.target_vertical_row3 ** numbers[f"n{row+i}"]
+        + io.target_vertical_col1 ** numbers[f"n{col-1}"]
+        + io.target_vertical_col2 ** numbers[f"n{col-1}"]
+        + io.target_vertical_col3 ** numbers[f"n{col-1}"]
         >>
         + io.output ** response.yes) for switcharoo in (True, False) for i in range(3) for row in range(3-i, 7-i) for col in range(2, 5)
     ]
@@ -640,22 +838,31 @@ def init_participant_response_rules(participant) -> None:
 
     horizontal_above_vertical = [
         (+ io.query_block ** (bricks.horizontal if not switcharoo else bricks.vertical)
+        - io.query_block ** bricks.half_T
+        - io.query_block ** bricks.mirror_L
+        - io.query_block ** (bricks.vertical if not switcharoo else bricks.horizontal)
         + io.query_block_reference ** (bricks.vertical if not switcharoo else bricks.horizontal)
-        +5.0* (io.query_relation ** (query_rel.above if not switcharoo else query_rel.below))
+        - io.query_block_reference ** bricks.half_T
+        - io.query_block_reference ** bricks.mirror_L
+        - io.query_block_reference ** (bricks.horizontal if not switcharoo else bricks.vertical)
+        +2.0* (io.query_relation ** (query_rel.above if not switcharoo else query_rel.below))
+        - 2.0 * (io.query_relation ** (query_rel.below if not switcharoo else query_rel.above))
+        - 2.0 * (io.query_relation ** query_rel.left)
+        - 2.0 * (io.query_relation ** query_rel.right)
         + io.target_vertical ** response.yes
         + io.target_horizontal ** response.yes
-        + io.target_vertical_row1 ** numbers[f"n{row}"]
-        + io.target_vertical_row2 ** numbers[f"n{row}"]
-        + io.target_vertical_row3 ** numbers[f"n{row}"]
-        + io.target_vertical_col1 ** numbers[f"n{col}"]
-        + io.target_vertical_col2 ** numbers[f"n{col+1}"] 
-        + io.target_vertical_col3 ** numbers[f"n{col+2}"]
-        + io.target_horizontal_row1 ** numbers[f"n{row+1}"]
-        + io.target_horizontal_row2 ** numbers[f"n{row+2}"]
-        + io.target_horizontal_row3 ** numbers[f"n{row+3}"]
-        + io.target_horizontal_col1 ** numbers[f"n{col+i}"]
-        + io.target_horizontal_col2 ** numbers[f"n{col+i}"]
-        + io.target_horizontal_col3 ** numbers[f"n{col+i}"]
+        + io.target_horizontal_row1 ** numbers[f"n{row}"]
+        + io.target_horizontal_row2 ** numbers[f"n{row}"]
+        + io.target_horizontal_row3 ** numbers[f"n{row}"]
+        + io.target_horizontal_col1 ** numbers[f"n{col}"]
+        + io.target_horizontal_col2 ** numbers[f"n{col+1}"] 
+        + io.target_horizontal_col3 ** numbers[f"n{col+2}"]
+        + io.target_vertical_row1 ** numbers[f"n{row+1}"]
+        + io.target_vertical_row2 ** numbers[f"n{row+2}"]
+        + io.target_vertical_row3 ** numbers[f"n{row+3}"]
+        + io.target_vertical_col1 ** numbers[f"n{col+i}"]
+        + io.target_vertical_col2 ** numbers[f"n{col+i}"]
+        + io.target_vertical_col3 ** numbers[f"n{col+i}"]
         >>
         + io.output ** response.yes) for switcharoo in (True, False) for i in range(3) for row in range(1, 4) for col in range(1, 5)
     ]
@@ -679,22 +886,31 @@ def init_participant_response_rules(participant) -> None:
 
     horizontal_below_vertical = [
         (+ io.query_block ** (bricks.horizontal if not switcharoo else bricks.vertical)
+        - io.query_block ** bricks.half_T
+        - io.query_block ** bricks.mirror_L
+        - io.query_block ** (bricks.vertical if not switcharoo else bricks.horizontal)
         + io.query_block_reference ** (bricks.vertical if not switcharoo else bricks.horizontal)
-        + 5.0*(io.query_relation ** (query_rel.below if not switcharoo else query_rel.above))
+        - io.query_block_reference ** bricks.half_T
+        - io.query_block_reference ** bricks.mirror_L
+        - io.query_block_reference ** (bricks.horizontal if not switcharoo else bricks.vertical)
+        + 2.0*(io.query_relation ** (query_rel.below if not switcharoo else query_rel.above))
+        - 2.0 * (io.query_relation ** (query_rel.above if not switcharoo else query_rel.below))
+        - 2.0 * (io.query_relation ** query_rel.left)
+        - 2.0 * (io.query_relation ** query_rel.right)
         + io.target_vertical ** response.yes
         + io.target_horizontal ** response.yes
-        + io.target_vertical_row1 ** numbers[f"n{row}"]
-        + io.target_vertical_row2 ** numbers[f"n{row}"]
-        + io.target_vertical_row3 ** numbers[f"n{row}"]
-        + io.target_vertical_col1 ** numbers[f"n{col}"]
-        + io.target_vertical_col2 ** numbers[f"n{col+1}"] 
-        + io.target_vertical_col3 ** numbers[f"n{col+2}"]
-        + io.target_horizontal_row1 ** numbers[f"n{row-3}"]
-        + io.target_horizontal_row2 ** numbers[f"n{row-2}"]
-        + io.target_horizontal_row3 ** numbers[f"n{row-1}"]
-        + io.target_horizontal_col1 ** numbers[f"n{col+i}"]
-        + io.target_horizontal_col2 ** numbers[f"n{col+i}"]
-        + io.target_horizontal_col3 ** numbers[f"n{col+i}"]
+        + io.target_horizontal_row1 ** numbers[f"n{row}"]
+        + io.target_horizontal_row2 ** numbers[f"n{row}"]
+        + io.target_horizontal_row3 ** numbers[f"n{row}"]
+        + io.target_horizontal_col1 ** numbers[f"n{col}"]
+        + io.target_horizontal_col2 ** numbers[f"n{col+1}"] 
+        + io.target_horizontal_col3 ** numbers[f"n{col+2}"]
+        + io.target_vertical_row1 ** numbers[f"n{row-3}"]
+        + io.target_vertical_row2 ** numbers[f"n{row-2}"]
+        + io.target_vertical_row3 ** numbers[f"n{row-1}"]
+        + io.target_vertical_col1 ** numbers[f"n{col+i}"]
+        + io.target_vertical_col2 ** numbers[f"n{col+i}"]
+        + io.target_vertical_col3 ** numbers[f"n{col+i}"]
         >>
         + io.output ** response.yes) for switcharoo in (True, False) for i in range(3) for row in range(4, 7) for col in range(1, 5)
     ]
@@ -717,9 +933,9 @@ def init_participant_response_rules(participant) -> None:
 
     #no rule
     no_response_rule = [
-        (+ io.query_block ** q_block
-        + io.query_block_reference ** q_block_ref
-        + io.query_relation ** rel
+        (+ 4.0 * (io.query_block ** q_block)
+        + 4.0 *(io.query_block_reference ** q_block_ref)
+        + 4.0 * (io.query_relation ** rel)
         >>
         + io.output ** response.no)
 
@@ -3444,7 +3660,7 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"input_{(SHAPES[:i] + SHAPES[i+1:])[1]}"] ** response.no
             + io1[f"input_{(SHAPES[:i] + SHAPES[i+1:])[2]}"] ** response.no
 
-            + io1[f"target_{shape}"] ** (response.yes if j else response.reference)
+            + io1[f"target_{shape}"] ** response.yes
             + io1[f"target_{(SHAPES[:i] + SHAPES[i+1:])[0]}"] ** response.no
             + io1[f"target_{(SHAPES[:i] + SHAPES[i+1:])[1]}"] ** response.no
             + io1[f"target_{(SHAPES[:i] + SHAPES[i+1:])[2]}"] ** response.no
@@ -3452,7 +3668,7 @@ def init_participant_construction_rule_w_abstract(participant):
             >>
             + io.construction_signal ** con_signal.stop_construction
         )
-        for j in range(2) for i, shape in enumerate(SHAPES)
+        for i, shape in enumerate(SHAPES)
     ]
 
     stop_construction_input_blocks_used_two = [
@@ -3479,14 +3695,14 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"input_{[s for s in SHAPES if s not in (shape, other_shape)][0]}"] ** response.no
             + io1[f"input_{[s for s in SHAPES if s not in (shape, other_shape)][1]}"] ** response.no
 
-            + io1[f"target_{shape}"] ** (response.yes if j else response.reference)
-            + io1[f"target_{other_shape}"] ** (response.yes if not j else response.reference)
+            + io1[f"target_{shape}"] ** response.yes
+            + io1[f"target_{other_shape}"] ** response.yes
             + io1[f"target_{[s for s in SHAPES if s not in (shape, other_shape)][0]}"] ** response.no
             + io1[f"target_{[s for s in SHAPES if s not in (shape, other_shape)][1]}"] ** response.no
             >>
             io.construction_signal ** con_signal.stop_construction
         )
-        for j in range(2) for (shape, other_shape) in itertools.combinations(SHAPES, 2)
+        for (shape, other_shape) in itertools.combinations(SHAPES, 2)
     ]
 
     stop_construction_input_blocks_used_three = [
@@ -3496,15 +3712,15 @@ def init_participant_construction_rule_w_abstract(participant):
             + io1[f"input_{other_other_shape}"] ** response.yes
             + io1[f"input_{[s for s in SHAPES if s not in (shape, other_shape, other_other_shape)][0]}"] ** response.no
 
-            + io1[f"target_{shape}"] ** (response.yes if j != 0 else response.reference)
-            + io1[f"target_{other_shape}"] ** (response.yes if j != 1 else response.reference)
-            + io1[f"target_{other_other_shape}"] ** (response.yes if j != 2 else response.reference)
+            + io1[f"target_{shape}"] ** response.yes
+            + io1[f"target_{other_shape}"] ** response.yes
+            + io1[f"target_{other_other_shape}"] ** response.yes
             + io1[f"target_{[s for s in SHAPES if s not in (shape, other_shape, other_other_shape)][0]}"] ** response.no
 
             >>
             io.construction_signal ** con_signal.stop_construction
         )
-        for j in range(5) for (shape, other_shape, other_other_shape) in itertools.combinations(SHAPES, 3)
+        for (shape, other_shape, other_other_shape) in itertools.combinations(SHAPES, 3)
     ]
 
     
@@ -3518,8 +3734,7 @@ def init_participant_construction_rule_w_abstract(participant):
             + mirror_L_left_horizontal_placement_rule + mirror_L_right_horizontal_placement_rule + mirror_L_above_horizontal_placement_rule + mirror_L_below_horizontal_placement_rule
             + mirror_L_left_vertical_placement_rule + mirror_L_right_vertical_placement_rule + mirror_L_above_vertical_placement_rule + mirror_L_below_vertical_placement_rule
             + horizontal_left_vertical_placement_rule + horizontal_right_vertical_placement_rule + horizontal_above_vertical_placement_rule + horizontal_below_vertical_placement_rule 
-            + stop_construction_input_blocks_used_one + stop_construction_input_blocks_used_two + stop_construction_input_blocks_used_three + stop_construction_rule_all_four
-            + stop_construction_rule_all_four_reference + stop_construction_input_blocks_used_two_reference
+            + stop_construction_input_blocks_used_one + stop_construction_input_blocks_used_two + stop_construction_input_blocks_used_three + stop_construction_rule_all_four  +stop_construction_rule_all_four_reference
             + bad_brick_backtracking_rule + passive_backtracking_rule_one + passive_backtracking_rule_two + passive_backtracking_rule_three + passive_backtracking_rule_four
         )
     )

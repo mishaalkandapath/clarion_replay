@@ -18,19 +18,20 @@ from base_participant import *
 from evaluation import * 
 from simulation_viz import *
 import math
+import pickle as p
 
 # plotting 
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(funcName)s - %(message)s')
+# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(funcName)s - %(message)s')
 
-logger = logging.getLogger("pyClarion.system")
-logger.setLevel(logging.DEBUG)
+# logger = logging.getLogger("pyClarion.system")
+# logger.setLevel(logging.DEBUG)
 
-handler = logging.StreamHandler(sys.stdout)
-# handler.setFormatter(formatter)
-logger.addHandler(handler)
+# handler = logging.StreamHandler(sys.stdout)
+# # handler.setFormatter(formatter)
+# logger.addHandler(handler)
 
 
 def present_stimulus(d:BrickConstructionTask, stim_grid: np.ndarray, mlp_space_1: MLPConstructionIO, mlp_space_2: Numbers):
@@ -213,10 +214,10 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
                     viz.update_status("start", "", chosen_goal.group(1), "TBD" if not len(participant.transition_store) or type(participant.transition_store[-1]) else list(participant.transition_store[-1]))
             
         elif event.source == participant.end_construction:
-            correctness = np.all(grid_stimulus_np == numpify_grid(participant.construction_input.main[0]))
+            correctness = acc(grid_stimulus_np, numpify_grid(participant.construction_input.main[0]))
             construction_correctness.append(correctness)
             if session_type == "train":
-                print("Construction was ", "correct" if correctness else "incorrect")
+                print("Construction was ", "correct" if correctness == 1 else "incorrect")
                 participant.propagate_feedback(correct = float(correctness))
                 participant.end_construction_feedback()
             else:
@@ -237,7 +238,7 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
             
         elif event.source == participant.start_response_trial:
             participant.response_input.send(test_query, flip=True) # dont reset, just add
-            shape_dict = {"half_T":1, "mirror_L":2, "vertical":4, "horizontal":3}
+            shape_dict = {"half_T":1, "mirror_L":2, "vertical":3, "horizontal":4}
             last_end_construction_time = event.time
             pattern = r".*query_rel\.(left|right|below|above).*bricks\.(mirror_L|half_T|vertical|horizontal).*bricks\.(mirror_L|half_T|vertical|horizontal).*"
             match = re.match(pattern, str(test_query), re.DOTALL)
@@ -260,7 +261,7 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
 
         elif event.source == participant.finish_response_trial:
 
-            if original_length - len(trials) == 50:
+            if original_length - len(trials) == 35:
                 original_length = len(trials)
                 participant.replay_optimize_qnet()
             else:
@@ -284,7 +285,13 @@ def run_participant_session(participant: BaseParticipant, session_df: pd.DataFra
         if (event.time - start_time) > datetime.timedelta(seconds=per_trial_time) \
         and not participant.trigger_response:
             print("premature end of trial")
+            start_time = event.time # temporarily
             participant.end_construction()
+
+    # pickel comnstruvtion training results
+    if session_type == "train":
+        with open("processed/train_data/construction_training_results.pkl", "wb") as f:
+            p.dump(participant.construction_net_training_results, f)
     return results, construction_correctness, all_rule_history, all_rule_lhs_history, all_constructions, all_goal_choices
 
 def run_theoretical_participant(participant, constructions):
@@ -330,10 +337,18 @@ def run_experiment(num_train_sessions=100, num_test_sessions=20, run_train_only=
         train_grids = [grid_name.split(".")[0] for grid_name in train_grids]
         #make this list a pandas dataframe
         train_trials = pd.DataFrame(train_grids, columns=["Grid_Name"])
-        train_results, train_construction_correctness, _, _, _, _ = run_participant_session(participant, train_trials)
+        train_results, train_construction_correctness, _, _, _, train_goal_choices = run_participant_session(participant, train_trials)
+        #pickle it all 
+        with open("processed/train_data/train_results.pkl", "wb") as f:
+            p.dump(train_results, f)
+        with open("processed/train_data/train_construction_correctness.pkl", "wb") as f:
+            p.dump(train_construction_correctness, f)
+        with open("processed/train_data/train_goal_choices.pkl", "wb") as f:
+            p.dump(train_goal_choices, f)
 
         train_results_df = pd.DataFrame(train_results, columns=["rt", "response_correctness"])
         train_results_df["construction_correctness"] = train_construction_correctness
+        train_results_df["goal_choices"] = [len(t) for t in train_goal_choices]
         train_results_df["trial #"] = list(range(1, len(train_results_df) + 1))
 
         # ---- Plotting ---- 
@@ -344,6 +359,11 @@ def run_experiment(num_train_sessions=100, num_test_sessions=20, run_train_only=
         sns.scatterplot(train_results_df, x="trial #", y="rt")
         sns.lineplot(train_results_df, x="trial #", y="rt", color="red")
         plt.savefig("figures/train_rt.png")
+        plt.close()
+
+        #plot number of goal choices:
+        sns.scatterplot(train_results_df, x="trial #", y="goal_choices")
+        plt.savefig("figures/train_goal_choices.png")
         plt.close()
 
         sns.scatterplot(train_results_df, x="trial #", y="response_correctness")
@@ -360,8 +380,17 @@ def run_experiment(num_train_sessions=100, num_test_sessions=20, run_train_only=
 
     test_results, test_construction_correctness, test_rule_choices, test_rule_lhs_information, test_constructions, test_goal_choices = run_participant_session(participant, test_trials, session_type="test", q_type="query", init_rules=False)
 
+    #pickle it all
+    with open("processed/test_data/test_results.pkl", "wb") as f:
+        p.dump(test_results, f)
+    with open("processed/test_data/test_construction_correctness.pkl", "wb") as f:
+        p.dump(test_construction_correctness, f)
+    with open("processed/test_data/test_rule_choices.pkl", "wb") as f:
+        p.dump(test_rule_choices, f)
+
     test_results_df = pd.DataFrame(test_results, columns=["rt", "response_correctness"])
     test_results_df["construction_correctness"] = test_construction_correctness
+    test_results_df["goal_choices"] = [len(t) for t in test_goal_choices]
     test_results_df["trial #"] = list(range(1, len(test_results_df) + 1))
 
     # --- Plotting ---
@@ -373,6 +402,11 @@ def run_experiment(num_train_sessions=100, num_test_sessions=20, run_train_only=
     sns.scatterplot(test_results_df, x="trial #", y="rt")
     sns.lineplot(test_results_df, x="trial #", y="rt", color="red")
     plt.savefig("figures/test_rt.png")
+    plt.close()
+
+    #plot number of goal choices:
+    sns.scatterplot(test_results_df, x="trial #", y="goal_choices")
+    plt.savefig("figures/test_goal_choices.png")
     plt.close()
 
     sns.scatterplot(test_results_df, x="trial #", y="response_correctness")
@@ -464,4 +498,4 @@ def run_experiment(num_train_sessions=100, num_test_sessions=20, run_train_only=
     # plt.show()
 
 if __name__ == "__main__":
-    run_experiment(num_train_sessions=10, num_test_sessions=2)
+    run_experiment(num_train_sessions=7, num_test_sessions=2)

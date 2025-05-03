@@ -1,5 +1,5 @@
-from pyClarion import FixedRules, Choice, NumDict, numdict, Index, Chunk, Priority, TDError, MLP
-from pyClarion import Site, RuleStore, Choice, KeyForm, Family, Sort, Atom, Input, Key, Event
+from pyClarion import FixedRules, Choice, NumDict, numdict, Index, Chunk, Priority, TDError, MLP, FixedRules
+from pyClarion import Site, RuleStore, Choice, KeyForm, Family, Sort, Atom, Input, Key, Event, BottomUp, ChunkStore, RuleStore, keyform
 from pyClarion import Activation, Adam, Optimizer, Train
 from pyClarion.components.base import D, V, DV
 
@@ -64,44 +64,83 @@ class FlippableInput(Input):
             #update
             d[index].update(data.d)
 
-class DelayedTDError(TDError):
-    @override 
-    def resolve(self, event: Event) -> None:
-        return
-    
-class ChoiceDelayIDN(MLP):
-    """
-    An implicit decision network (IDN).
-    
-    Learns to make action decisions in the bottom level via temporal difference 
-    learning.
-    """
+class SuppressionBottomUp(BottomUp):
+    @override
+    def update(self, 
+        dt: timedelta = timedelta(), 
+        priority: int = Priority.PROPAGATION
+    ) -> None:
+        input = self.input[0]
+        if self.pre is not None:
+            input = self.pre(input)
+        main = (self.weights[0]
+            .mul(input, by=self.mul_by))
+        temp = (main
+                .max(by=self.max_by))
+        another_temp = (main
+                        .min(by=self.max_by)
+                        .simple_where(lambda x: x < 0.0))
+        main = (temp
+                .sum(another_temp)
+                .sum(by=self.sum_by))
+        main = (main
+                .simple_where(lambda x: x >= 0.0)
+                .with_default(c=0.0))
+        if self.post is not None:
+            main = self.post(main)
+        self.system.schedule(self.update, 
+            self.main.update(main), 
+            dt=dt, priority=priority)
+            
+class SupressionChunkStore(ChunkStore):
+    def __init__(self, 
+        name: str, 
+        c: Family, 
+        d: Family | Sort | Atom, 
+        v: Family | Sort
+    ) -> None:
+        super().__init__(name)
+        with self:
+            self.bu = SuppressionBottomUp(f"{name}.bu", self.chunks, d, v)
 
-    error: DelayedTDError
+class SuppressionRuleStore(RuleStore):
+    def __init__(self, 
+        name: str, 
+        r: Family,
+        c: Family, 
+        d: Family | Sort | Atom, 
+        v: Family | Sort, 
+    ) -> None:
+        super().__init__(name)
+        with self:
+            self.lhs = SupressionChunkStore(f"{name}.lhs", c, d, v)
+        idx_r = self.system.get_index(keyform(self.rules))
+        idx_lhs = self.system.get_index(keyform(self.lhs.chunks))
+        idx_rhs = self.system.get_index(keyform(self.rhs.chunks))
+        self.main = Site(idx_r, {}, c=0.0)
+        self.riw = Site(idx_r * idx_r, {}, c=float("nan"))
+        self.lhw = Site(idx_r * idx_lhs, {}, c=float("nan"))
+        self.rhw = Site(idx_r * idx_rhs, {}, c=float("nan"))
 
+class SupressionActionRules(FixedRules):
     def __init__(self, 
         name: str, 
         p: Family,
-        h: Family,
-        r: D | DV, 
-        s1: V | DV,
-        s2: V | DV | None = None,
-        layers: Sequence[int] = (),
-        optimizer: Type[Optimizer] = Adam,
-        afunc: Activation | None = None,
-        func: Callable[[TDError], NumDict] = TDError.max_Q,
-        gamma: float = .3,
-        l: int = 1,
-        train: Train = Train.ALL,
-        init_sd: float = 1e-2,
-        **kwargs: Any
+        r: Family,
+        c: Family, 
+        d: Family | Sort | Atom, 
+        v: Family | Sort,
+        *,
+        sd: float = 1.0
     ) -> None:
-        super().__init__(
-            name, p, h, s1, s2, layers, optimizer, afunc, l + 1, train, init_sd, 
-            **kwargs)
-        self.error = self >> DelayedTDError(f"{name}.error", 
-            p, r, func=func, gamma=gamma, l=l)
-
+        super().__init__(name)
+        with self:
+            self.rules = SuppressionRuleStore(f"{name}.rules", r, c, d, v)
+            self.choice = Choice(f"{name}.choice", p, self.rules.rules, sd=sd)
+        self.main = Site(self.rules.main.index, {}, 0.0)
+        self.mul_by = keyform(self.rules.rules).agg * keyform(self.rules.rules)
+        self.sum_by = keyform(self.rules.rules) * keyform(self.rules.rules).agg
+        self.choice.input = self.rules.main
 
 def numpify_grid(grid: NumDict) -> np.ndarray:
     data = grid._d
@@ -354,3 +393,6 @@ def goal_shape_extractor(goal):
     pattern = r"(mirror_L|half_T|horizontal|vertical)_(mirror_L|half_T|horizontal|vertical)_(left|right|above|below)"
     match = re.match(pattern, goal)
     return [match.group(1), match.group(2)]
+
+def acc(pred_grid, true_grid):
+    return (pred_grid == true_grid).sum() / (pred_grid.shape[0] * pred_grid.shape[1])

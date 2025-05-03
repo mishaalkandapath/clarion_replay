@@ -93,7 +93,7 @@ def external_mlp_handle(state_keys, action_keys):
     target_net.load_state_dict(policy_net.state_dict())
 
     optimizer = optim.Adam(policy_net.parameters(), lr=LR)
-    memory = ReplayMemory(1000,
+    memory = ReplayMemory(10000,
                           state_keys=state_keys,
                           action_keys=action_keys)
 
@@ -114,11 +114,11 @@ def external_mlp_handle(state_keys, action_keys):
             # (a final state would've been the one after which simulation ended)
             non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
                                                 batch.next_state)), device=device, dtype=torch.bool)
-            non_final_next_states = torch.cat([s for s in batch.next_state
+            non_final_next_states = torch.stack([s for s in batch.next_state
                                                         if s is not None])
-            state_batch = torch.cat(batch.state)
-            action_batch = torch.cat(batch.action)
-            reward_batch = torch.cat(batch.reward)
+            state_batch = torch.stack(batch.state)
+            action_batch = torch.stack(batch.action)
+            reward_batch = torch.stack(batch.reward)
         else:
             assert state is not None and action is not None and reward is not None
             batch_size = 1
@@ -148,7 +148,7 @@ def external_mlp_handle(state_keys, action_keys):
             if torch.any(non_final_mask):
                 next_state_values[non_final_mask] = target_net(non_final_next_states).max(1).values
         # Compute the expected Q values
-        expected_state_action_values = (next_state_values * GAMMA) + reward_batch
+        expected_state_action_values = (next_state_values * GAMMA).unsqueeze(1) + reward_batch
 
         # Compute Huber loss
         criterion = nn.SmoothL1Loss()

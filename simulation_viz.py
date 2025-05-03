@@ -66,8 +66,8 @@ class SimulationVisualizer:
         self.brick_coords = {
             1: [(0,0),(0,1),(1,0)],  # half-T
             2: [(0,1),(1,1),(1,0)],  # mirror-L
-            3: [(0,0),(0,1),(0,2)],  # horizontal
-            4: [(0,1),(1,1),(2,1)],  # vertical
+            4: [(0,0),(0,1),(0,2)],  # horizontal
+            3: [(0,1),(1,1),(2,1)],  # vertical
         }
 
         self.time_text = self.fig.text(

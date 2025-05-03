@@ -9,6 +9,7 @@ from q_learning import *
 from datetime import timedelta
 import math
 import random
+from tqdm import tqdm
 
 EPS_START = 0.9
 EPS_END = 0.05
@@ -346,7 +347,7 @@ class AbstractParticipant(BaseParticipant):
             self.forward_qnet()
             self.transition_store = [self.mlp_construction_input.main[0].d.copy()] 
 
-        elif event.source == self.backward_qnet and all(e.source == self.end_construction_feedback for e in self.system.queue):
+        elif event.source == self.backward_qnet and not any(e.source == self.end_construction_feedback for e in self.system.queue):
             # run the q_net on the new stuff
             self.forward_qnet()
             self.transition_store = [self.mlp_construction_input.main[0].d.copy()] 
@@ -448,13 +449,13 @@ class AbstractParticipant(BaseParticipant):
 
     @override
     def propagate_feedback(self, correct = 0):
-        self.feedback(correct)
+        self.feedback(correct == 1)
         # feedback for the MLP
         self.transition_store.append(None)
-        self.transition_store.append(-1.0 if not correct else 1.0)
+        self.transition_store.append(-1.0 if not correct else correct)
         self.backward_qnet()
 
-        self.construction_reward_vals.append(1.0 if correct else -1.0)
+        self.construction_reward_vals.append(-1.0 if not correct else correct)
         self.construction_qvals.append(self.abstract_goal_choice.input[0].max().c)
     
     def shift_goal(self, 
@@ -493,10 +494,13 @@ class AbstractParticipant(BaseParticipant):
         dt: timedelta = timedelta(seconds=0),
         priority: Priority = Priority.PROPAGATION
     ) -> None:
-        for _ in range(5):
+        for _ in tqdm(range(50)):
             loss = self.goal_net_optimize(use_memory=True)
             self.construction_net_training_results.append(loss)
             self.goal_net_update()
+
+        self.system.schedule(self.replay_optimize_qnet,
+                                dt=dt, priority=priority)
 
     def select_action(self):
         steps_done = len(self.construction_net_training_results)
