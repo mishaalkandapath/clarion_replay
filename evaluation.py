@@ -173,6 +173,12 @@ def simple_sequenceness(rule_choices, rule_lhs_information, grids):
     stable_to_distant = np.zeros((len(rule_choices), max_len)) 
     present_to_present = np.zeros((len(rule_choices), max_len)) 
 
+    sequences = {"Stable to present": stable_to_present,
+                 "Present to stable": present_to_stable,
+                "Distant to stable": distant_to_stable,
+                "Stable to distant": stable_to_distant,
+                "Present to present": present_to_present}
+
     for i, choices_in_trial in enumerate(rule_choices):
         stable_block = [str(k).split(":")[-1] for k in choices_in_trial[0] if re.fullmatch(r"target_(mirror_L|half_T|horizontal|vertical)", str(k).split(":")[-1].split(",")[0][1:])][0].split(",")[0][1:]
         stable_block = str(stable_block)[len('target_'):]
@@ -215,7 +221,7 @@ def simple_sequenceness(rule_choices, rule_lhs_information, grids):
                 else:
                     present_to_present[i, j] = 1
 
-    return stable_to_present, present_to_stable, distant_to_stable, stable_to_distant, present_to_present
+    return sequences
 
 def simple_goal_sequencessness(goals, grids):
     max_len = max([len(g) for g in goals])-1
@@ -226,6 +232,14 @@ def simple_goal_sequencessness(goals, grids):
     present_to_absent = np.zeros((len(goals), max_len))
     absent_to_present = np.zeros((len(goals), max_len))
     absent_to_stable = np.zeros((len(goals), max_len))
+
+    sequences = {"Stable to present": stable_to_present,
+                "Present to stable": present_to_stable,
+                "Present to present": present_to_present,
+                "Stable to absent": stable_to_absent,
+                "Present to absent": present_to_absent,
+                "Absent to present": absent_to_present,
+                "Absent to stable": absent_to_stable}
 
     for i, choices_in_trial in enumerate(goals):
         stable_block = choices_in_trial[0][0]
@@ -266,8 +280,8 @@ def simple_goal_sequencessness(goals, grids):
                     present_to_absent[i, j] = 1
                 case [_, present2_block]:
                     absent_to_present[i, j] = 1
-                        
-    return stable_to_present, present_to_stable, present_to_present, stable_to_absent, present_to_absent, absent_to_present, absent_to_stable
+
+    return sequences
 
 
 

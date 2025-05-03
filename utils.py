@@ -396,3 +396,9 @@ def goal_shape_extractor(goal):
 
 def acc(pred_grid, true_grid):
     return (pred_grid == true_grid).sum() / (pred_grid.shape[0] * pred_grid.shape[1])
+
+
+shape_shape_rel = r"(half_T|mirror_L|vertical|horizontal)_(half_T|mirror_L|vertical|horizontal)_(left|right|above|below)"
+shape_start = r"(half_T|mirror_L|vertical|horizontal)_start"
+query_rel_pattern = r".*query_rel\.(left|right|below|above).*bricks\.(mirror_L|half_T|vertical|horizontal).*bricks\.(mirror_L|half_T|vertical|horizontal).*"
+shape_dict = {"half_T":1, "mirror_L":2, "vertical":3, "horizontal":4}
