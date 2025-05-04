@@ -7,6 +7,8 @@ SHAPE_MAP = {"half_T": 1, "mirror_L": 2, "vertical": 3, "horizontal": 4}
 REVERSE_SHAPE_MAP = {v: k for k, v in SHAPE_MAP.items()}
 
 # code adapated from https://github.com/schwartenbeckph/Generative-Replay/
+
+
 def mk_ontopness(required_form):
     """
     Check if there is ontopness in pattern.
@@ -141,8 +143,8 @@ def brick_connectedness(stim_grid):
     ]
     try:
         bricks_conn_trial = bricks[bricks_order].T
-    except:
-        pass
+    except Exception as e:
+        print(f"{e} \n Because of incorrectly configured grid")
 
     if mk_ontopness(part1)[0]:
         _, _, bricks_rel_trial[1], bricks_rel_trial[3] = mk_ontopness(part1)
@@ -226,7 +228,7 @@ def calculate_delayed_effects(normal_search_stats, mlp_search_stats):
 
 
 def simple_sequenceness(rule_choices, rule_lhs_information, grids):
-    #filter ruke choices and rule_lhs_information
+    # filter ruke choices and rule_lhs_information
     good_indices = [i for i in range(len(rule_choices)) if rule_choices[i]]
     rule_choices = [rule_choices[i] for i in good_indices]
     rule_lhs_information = [
@@ -323,7 +325,7 @@ def simple_sequenceness(rule_choices, rule_lhs_information, grids):
 
 
 def simple_goal_sequencessness(goals, grids):
-    #filter goals
+    # filter goals
     good_indices = [i for i in range(len(goals)) if goals[i]]
     goals = [goals[i] for i in good_indices]
     grids = [grids[i] for i in good_indices]

@@ -20,33 +20,6 @@ from pyClarion import (
 )
 
 
-class RuleWBLA(FixedRules):
-    """
-    Rules with ability to incorporate BLAs
-    """
-
-    main: Site
-    rules: RuleStore
-    choice: Choice
-    by: KeyForm
-    updated_main: Site
-
-    def __init__(
-        self,
-        name: str,
-        p: Family,
-        r: Family,
-        c: Family,
-        d: Family | Sort | Atom,
-        v: Family | Sort,
-        *,
-        sd: float = 1.0,
-    ) -> None:
-        super().__init__(name, p=p, r=r, c=c, d=d, v=v, sd=sd)
-        self.bla_main = Site(self.rules.main.index, {}, 0.0)
-        self.choice.input = self.bla_main
-
-
 class FlippableInput(Input):
     """
     Input process that can be flipped to either reset or write in place
@@ -66,9 +39,13 @@ class FlippableInput(Input):
             self.send, self.main.update(data, method), dt=dt, priority=priority
         )
 
+
 """
-Revised processes to account for suppressed -ve weighted chunks within dimension.
+Revised processes to account for suppressed
+-ve weighted chunks within dimension.
 """
+
+
 class SuppressionBottomUp(BottomUp):
     @override
     def update(
@@ -120,6 +97,7 @@ class SuppressionRuleStore(RuleStore):
 
 
 class SupressionActionRules(FixedRules):
+    bla_main: Site 
     def __init__(
         self,
         name: str,
@@ -139,3 +117,6 @@ class SupressionActionRules(FixedRules):
         self.mul_by = keyform(self.rules.rules).agg * keyform(self.rules.rules)
         self.sum_by = keyform(self.rules.rules) * keyform(self.rules.rules).agg
         self.choice.input = self.rules.main
+        self.bla_main = Site(self.rules.main.index, {}, 0.0)
+        self.choice.input = self.bla_main
+        
