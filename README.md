@@ -7,9 +7,9 @@ This is a project for COG403: Seminar in Cognitive Science at the University of 
 
 ## Contributions
 This project mainly deals with a first attempt at formalizing a hypothesis presented in this 
-[Kurth-Nelson, Zeb, et al. "Replay and compositional computation." Neuron 111.4 (2023): 454-469.]([https://www.cell.com/neuron/fulltext/S0896-6273(22)01125-4?_returnURL=https%3A%2F%2Flinkinghub.elsevier.com%2Fretrieve%2Fpii%2FS0896627322011254%3Fshowall%3Dtrue]) 
+[Kurth-Nelson, Zeb, et al. "Replay and compositional computation." Neuron 111.4 (2023): 454-469.](https://www.cell.com/neuron/fulltext/S0896-6273(22)01125-4?_returnURL=https%3A%2F%2Flinkinghub.elsevier.com%2Fretrieve%2Fpii%2FS0896627322011254%3Fshowall%3Dtrue) 
 based on a task presented in 
-[Schwartenbeck, Philipp, et al. "Generative replay underlies compositional inference in the hippocampal-prefrontal circuit." Cell 186.22 (2023): 4885-4897.]([https://www.cell.com/neuron/fulltext/S0896-6273(22)01125-4?_returnURL=https%3A%2F%2Flinkinghub.elsevier.com%2Fretrieve%2Fpii%2FS0896627322011254%3Fshowall%3Dtrue]) 
+[Schwartenbeck, Philipp, et al. "Generative replay underlies compositional inference in the hippocampal-prefrontal circuit." Cell 186.22 (2023): 4885-4897.](https://www.cell.com/neuron/fulltext/S0896-6273(22)01125-4?_returnURL=https%3A%2F%2Flinkinghub.elsevier.com%2Fretrieve%2Fpii%2FS0896627322011254%3Fshowall%3Dtrue) 
 
 The code is supplementary to the paper included in the repository (file: paper.pdf).
 
@@ -21,7 +21,7 @@ The easiest way to install all necessary packages would be to build a conda/virt
 conda env create -f clarion_env.yml	# create & install
 conda activate clarion_env			      # activate
 ```
-###Note: this module requires pyClarion, which needs to be independently downloaded from [here]([https://github.com/cmekik/pyClarion/tree/v2409])
+**Note**: this module requires pyClarion, which needs to be independently downloaded from [here](https://github.com/cmekik/pyClarion/tree/v2409)
  ### Running
  Simply run simulation.py to reproduce all results in the paper. 
  ```
