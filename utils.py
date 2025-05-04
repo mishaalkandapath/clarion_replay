@@ -9,6 +9,11 @@ RELS = ["start", "left", "right", "above", "below"]
 def write_inplace_consistent(
     site: Site, data: NumDict, index: int = 0, grad: bool = False
 ) -> None:
+    """
+    Make sure that when writing in place,
+    any inccompatible keys are removed
+    """
+
     d = site.grad if grad else site.data
     with d[index].mutable():
         new_keys = data.d.keys()
@@ -130,6 +135,10 @@ def mlpify(cur_working_space: NumDict) -> NumDict:
 def filter_keys_by_rule_chunk(
     rule_rhs_chunk: Chunk, choice_main: dict, space_descr="construction_space"
 ) -> dict:
+    """
+    Extract additions from thre rule_rhs_chunk
+    and filter the keys in choice_main to only include these
+    """
     key_filter = []
     for (d, v), _ in rule_rhs_chunk._dyads_.items():
         k1, k2 = ~d, ~v
@@ -162,6 +171,10 @@ def conflicting_keys(ref: str) -> re.Pattern:
 def make_response_input(
         cur_working_space: NumDict,
         response_index: Index) -> NumDict:
+    """
+    make current working space data compatible with response space index
+    """
+
     response_data = {}
 
     for k_ in cur_working_space.d:
@@ -184,6 +197,10 @@ def make_response_input(
 def make_goal_outputs_construction_input(
     cur_working_space: NumDict, goal_outputs: NumDict
 ):
+    """
+    send goals to construction space
+    """
+
     key_template = (
         lambda shape,
         response: f"(construction_space,construction_space):(io,response):(target_{shape},{response})"
@@ -257,6 +274,9 @@ def make_goal_outputs_construction_input(
 
 
 def clean_construction_input(data_dict, leave_only_inputs=False):
+    """
+    Clean any goal data from the construction input
+    """
     yes_key_lambda = lambda shape: Key(
         f"(construction_space,construction_space):(io,response):({shape},yes)"
     )
@@ -309,44 +329,6 @@ def clean_construction_input(data_dict, leave_only_inputs=False):
 
     return data_dict
 
-
-def remove_high_level(data_dict: dict):
-    new_data_dict = {}
-    shapes_in = set()
-    shapes_all = ["mirror_L", "half_T", "horizontal", "vertical"]
-    for k in data_dict:
-        if re.match(
-            r".*input_(mirror_L|half_T|horizontal|vertical)_(row|col)(\d+)",
-                str(k)):
-            new_data_dict[k] = data_dict[k]
-        elif re.match(
-            r".*target_(mirror_L|half_T|horizontal|vertical)_(row|col)(\d+)", str(k)
-        ):
-            shapes_in.add(
-                re.match(
-                    r".*target_(mirror_L|half_T|horizontal|vertical)_(row|col)(\d+)",
-                    str(k),
-                ).group(1))
-            new_data_dict[k] = data_dict[k]
-        elif re.match(r".*construction_signal.*", str(k)):
-            new_data_dict[k] = data_dict[k]
-    for shape in shapes_all:
-        if shape not in shapes_in:
-            new_data_dict[
-                Key(
-                    f"(construction_space,construction_space):(io,response):(target_{shape},no)"
-                )
-            ] = 1.0
-        else:
-            new_data_dict[
-                Key(
-                    f"(construction_space,construction_space):(io,response):(target_{shape},yes)"
-                )
-            ] = 1.0
-
-    return new_data_dict
-
-
 def goal_shape_extractor(goal):
     if "start" in goal:
         pattern = r"(mirror_L|half_T|horizontal|vertical)_start"
@@ -360,7 +342,7 @@ def acc(pred_grid, true_grid):
     return (pred_grid == true_grid).sum() / \
         (pred_grid.shape[0] * pred_grid.shape[1])
 
-
+# useful patterns and dicts
 SHAPE_SHAPE_REL = r"(half_T|mirror_L|vertical|horizontal)_(half_T|mirror_L|vertical|horizontal)_(left|right|above|below)"
 SHAPE_START = r"(half_T|mirror_L|vertical|horizontal)_start"
 QUERY_REL_PATTERN = r".*query_rel\.(left|right|below|above).*bricks\.(mirror_L|half_T|vertical|horizontal).*bricks\.(mirror_L|half_T|vertical|horizontal).*"

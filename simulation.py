@@ -423,6 +423,8 @@ def run_participant_session(
             participant.finish_response_trial(timedelta())
         elif event.source == participant.finish_response_trial:
             if original_length - len(trials) == 35:
+                # its a session break
+                # 35 slightly smaller than 50 to account for lesser trials
                 original_length = len(trials)
                 participant.replay_optimize_qnet()
             else:
@@ -443,7 +445,7 @@ def run_participant_session(
             viz.update_progress(done_count, datetime.now() - real_start_time)
         if (event.time - start_time) > timedelta(
             seconds=per_trial_time
-        ) and not participant.trigger_response:
+        ) and not participant.trigger_response: # trial expired?
             print("premature end of trial")
             start_time = event.time  # temporarily
             participant.end_construction()
@@ -547,6 +549,8 @@ def run_experiment(
         p.dump(test_construction_correctness, f)
     with open("processed/test_data/test_rule_choices.pkl", "wb") as f:
         p.dump(test_rule_choices, f)
+    with open("processed/test_data/test_goal_choices.pkl", "wb") as f:
+        p.dump(test_goal_choices, f)
 
     test_results_df = pd.DataFrame(
         test_results, columns=[

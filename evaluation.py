@@ -6,7 +6,7 @@ import statsmodels.api as sm
 SHAPE_MAP = {"half_T": 1, "mirror_L": 2, "vertical": 3, "horizontal": 4}
 REVERSE_SHAPE_MAP = {v: k for k, v in SHAPE_MAP.items()}
 
-
+# code adapated from https://github.com/schwartenbeckph/Generative-Replay/
 def mk_ontopness(required_form):
     """
     Check if there is ontopness in pattern.

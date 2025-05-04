@@ -20,6 +20,10 @@ from pyClarion import (
 
 
 class RuleWBLA(FixedRules):
+    """
+    Rules with ability to incorporate BLAs
+    """
+
     main: Site
     rules: RuleStore
     choice: Choice
@@ -43,6 +47,9 @@ class RuleWBLA(FixedRules):
 
 
 class FlippableInput(Input):
+    """
+    Input process that can be flipped to either reset or write in place
+    """
     @override
     def send(
         self,
@@ -58,7 +65,9 @@ class FlippableInput(Input):
             self.send, self.main.update(data, method), dt=dt, priority=priority
         )
 
-
+"""
+Revised processes to account for suppressed -ve weighted chunks within dimension.
+"""
 class SuppressionBottomUp(BottomUp):
     @override
     def update(
