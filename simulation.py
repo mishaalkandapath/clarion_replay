@@ -174,7 +174,7 @@ def load_trial(
 ):
     grid_name = trial["Grid_Name"]
     stim_grid = np.load(
-        f"/Users/mishaal/personalproj/clarion_replay/processed/{t_type}_data/{t_type}_stims/{grid_name}.npy"
+        f"data/processed/{t_type}_data/{t_type}_stims/{grid_name}.npy"
     )
     chunk_grid, chunk_grid_mlp = present_stimulus(
         construction_space, stim_grid, mlp_space_1, mlp_space_2
@@ -601,7 +601,7 @@ def run_experiment(
     else:
         # load the model
         participant.goal_net.load_state_dict(
-            torch.load("goal_net_trained.pt"))
+            torch.load("data/goal_net_trained.pt"))
     if run_train_only:
         return
     test_trial_indices = random.sample(
