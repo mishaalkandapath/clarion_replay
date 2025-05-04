@@ -2,7 +2,7 @@
 This is a project for COG403: Seminar in Cognitive Science at the University of Toronto. I investigated a particular hypothesis on hippocampal replay in a brick-based game task whose code can be found [here]([https://github.com/schwartenbeckph/Generative-Replay/]).
 
 <p align="center">
-<img width="30%" src="https://github.com/mishaalkandapath/clarion_replay/figures/agentpic.png">
+<img width="30%" src="https://github.com/mishaalkandapath/clarion_replay/blob/main/figures/agentpic.png">
 </p>
 
 ## Contributions
