@@ -21,7 +21,7 @@ The easiest way to install all necessary packages would be to build a conda/virt
 conda env create -f clarion_env.yml	# create & install
 conda activate clarion_env			      # activate
 ```
-
+###Note: this module requires pyClarion, which needs to be independently downloaded from [here]([https://github.com/cmekik/pyClarion/tree/v2409])
  ### Running
  Simply run simulation.py to reproduce all results in the paper. 
  ```
