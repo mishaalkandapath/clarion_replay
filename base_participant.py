@@ -27,7 +27,7 @@ from utils import (
     goal_shape_extractor,
     make_response_input,
 )
-from pyc_utils import SupressionActionRules, FlippableInput
+from pyc_utils import RuleWBLA, FlippableInput
 from knowledge_init import (
     BrickConstructionTask,
     BrickResponseTask,
@@ -46,7 +46,7 @@ EPS_DECAY = 1000
 
 class BaseParticipant(Agent):
     construction_space: BrickConstructionTask
-    search_space_rules: SupressionActionRules
+    search_space_rules: RuleWBLA
     search_space_blas: BaseLevel
     search_space_matchstats: MatchStats
     search_space_pool: Pool
@@ -55,7 +55,7 @@ class BaseParticipant(Agent):
 
     response_space: BrickResponseTask
     response_input: Input
-    response_rules: SupressionActionRules
+    response_rules: RuleWBLA
     response_blas: BaseLevel
     response_pool: Pool
     response_choice: Choice
@@ -114,7 +114,7 @@ class BaseParticipant(Agent):
                 "response_input", (response_space, response_space), reset=True
             )
 
-            self.response_rules = SupressionActionRules(
+            self.response_rules = RuleWBLA(
                 "response_rules",
                 p=p,
                 r=r_response,
@@ -123,7 +123,7 @@ class BaseParticipant(Agent):
                 v=response_space,
                 sd=1e-4,
             )
-            self.search_space_rules = SupressionActionRules(
+            self.search_space_rules = RuleWBLA(
                 "search_space_rules",
                 p=p,
                 r=r_construction,
