@@ -104,13 +104,9 @@ def mk_besideness(required_form):
 def brick_connectedness(stim_grid):
     # Element connected to middle via besideness | middle Element | Element
     # connected to middle via ontopness
-    bricks_conn_trial = [0, 0, 0, ]
-    bricks_rel_trial = [
-        0,
-        0,
-        0,
-        0,
-    ]  # left element | ontop element | right element | below element
+    bricks_conn_trial = [0, 0, 0]
+    # left element | ontop element | right element | below element
+    bricks_rel_trial = [0, 0, 0, 0]
 
     bricks = np.unique(stim_grid)[1:]  # dont need 0
 
@@ -145,7 +141,7 @@ def brick_connectedness(stim_grid):
     ]
     try:
         bricks_conn_trial = bricks[bricks_order].T
-    finally:
+    except:
         pass
 
     if mk_ontopness(part1)[0]:
@@ -230,6 +226,14 @@ def calculate_delayed_effects(normal_search_stats, mlp_search_stats):
 
 
 def simple_sequenceness(rule_choices, rule_lhs_information, grids):
+    #filter ruke choices and rule_lhs_information
+    good_indices = [i for i in range(len(rule_choices)) if rule_choices[i]]
+    rule_choices = [rule_choices[i] for i in good_indices]
+    rule_lhs_information = [
+        rule_lhs_information[i] for i in good_indices
+    ]
+    grids = [grids[i] for i in good_indices]
+
     max_len = max([len(g) for g in rule_choices]) - 1
     stable_to_present = np.zeros((len(rule_choices), max_len))
     present_to_stable = np.zeros((len(rule_choices), max_len))  # backtracking
@@ -319,6 +323,11 @@ def simple_sequenceness(rule_choices, rule_lhs_information, grids):
 
 
 def simple_goal_sequencessness(goals, grids):
+    #filter goals
+    good_indices = [i for i in range(len(goals)) if goals[i]]
+    goals = [goals[i] for i in good_indices]
+    grids = [grids[i] for i in good_indices]
+
     max_len = max([len(g) for g in goals]) - 1
     stable_to_present = np.zeros((len(goals), max_len))
     present_to_stable = np.zeros((len(goals), max_len))  # backtracking

@@ -506,6 +506,8 @@ class AbstractParticipant(BaseParticipant):
         self.response_trigger_wait = [self.response_rules.rules.update]
         self.construction_input_wait = [self.shift_goal]
 
+        self.backtracks = 0
+
     def resolve(self, event: Event) -> None:
         super().resolve(event)
 
@@ -575,7 +577,9 @@ class AbstractParticipant(BaseParticipant):
 
         cur_choice = self.search_space_choice.poll()
 
-        if (
+        if self.backtracks > 10:
+            self.end_construction()
+        elif (
             cur_choice[
                 ~self.construction_space.io.construction_signal
                 * ~self.construction_space.signal_tokens
@@ -614,6 +618,7 @@ class AbstractParticipant(BaseParticipant):
             # as initialized with reset = false
             self.construction_input.send(
                 clean_construction_input(last_construction), flip=True)
+            self.backtracks += 1
 
         elif (
             cur_choice[
@@ -647,6 +652,7 @@ class AbstractParticipant(BaseParticipant):
             self.construction_reward_vals.append(-1.0)
             self.construction_qvals.append(
                 self.abstract_goal_choice.input[0].max().c)
+            self.backtracks += 1
         else:
             cur_additions = filter_keys_by_rule_chunk(
                 self.search_space_rules.rules.rhs.chunks._members_[
@@ -759,3 +765,4 @@ class AbstractParticipant(BaseParticipant):
         self.all_goal_history = []
         self.past_chosen_rule_choices = []
         self.transition_store = []
+        self.backtracks = 0

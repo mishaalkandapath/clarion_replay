@@ -1,6 +1,7 @@
 from typing import override
 from datetime import timedelta
 
+from utils import write_inplace_consistent
 from pyClarion import (
     FixedRules,
     RuleStore,
@@ -60,7 +61,7 @@ class FlippableInput(Input):
     ):
         reset = self.reset if not flip else not self.reset
         data = self._parse_input(d)
-        method = Site.push if reset else FlippableInput.write_inplace_consistent
+        method = Site.push if reset else write_inplace_consistent
         self.system.schedule(
             self.send, self.main.update(data, method), dt=dt, priority=priority
         )

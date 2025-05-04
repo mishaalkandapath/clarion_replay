@@ -104,7 +104,7 @@ def external_mlp_handle(state_keys, action_keys):
 
     optimizer = optim.Adam(policy_net.parameters(), lr=LR)
     memory = ReplayMemory(
-        10000,
+        1000,
         state_keys=state_keys,
         action_keys=action_keys)
 

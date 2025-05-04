@@ -1,11 +1,11 @@
-from collections import Counter
+from itertools import count
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
 
 def plot_sequences(sequences: dict[str, np.array]):
-    counting = Counter(start=0, step=1)
+    counting = count(start=0, step=1)
     plt.figure(figsize=(8, 4))
     for sequence in sequences:
         sequences[sequence] = sequences[sequence].mean(axis=0)
@@ -31,7 +31,7 @@ def simple_snsplot(df, x_label, y_label, filename, line=False, color="red"):
     plt.close()
 
 
-def simple_plotting(data, x_label, y_label, filename, figno):
+def simple_plotting(data, x_label, y_label, filename, figno=None):
     # plot the current bit:
     plt.figure()
     plt.plot(data)
@@ -39,4 +39,5 @@ def simple_plotting(data, x_label, y_label, filename, figno):
     plt.ylabel(y_label)
     plt.savefig(filename)
     plt.close()
-    plt.figure(figno)
+    if figno:
+        plt.figure(figno)
