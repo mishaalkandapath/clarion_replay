@@ -2,7 +2,7 @@
 This is a project for COG403: Seminar in Cognitive Science at the University of Toronto. I investigated a particular hypothesis on hippocampal replay in a brick-based game task whose code can be found [here]([https://github.com/schwartenbeckph/Generative-Replay/]).
 
 <p align="center">
-<img width="30%" src="https://github.com/mishaalkandapath/clarion_replay/blob/main/figures/agentpic.png">
+<img width="30%" src="https://github.com/mishaalkandapath/clarion_replay/blob/main/data/figures/agentpic.png">
 </p>
 
 ## Contributions
@@ -27,16 +27,18 @@ conda activate clarion_env			      # activate
  ```
  python simulation.py
  ```
- rule_defs.py defines all the rules the model uses, knowledge_init.py defines all the basic atoms for organizing knowledge, and base_participant.py defines various model variations with AbstractParticipant being the main model tested in this work.
+To reproduce behavioural plots, use behavioural_plots.ipynb. Furthermore, rule_defs.py defines all the rules the model uses, knowledge_init.py defines all the basic atoms for organizing knowledge, and base_participant.py defines various model variations with AbstractParticipant being the main model tested in this work.
 
 ### Some Results
 <p align="center">
- <img width="50%" src="https://github.com/mishaalkandapath/valuedream/blob/main/plots/reward.png"><br>
- Returns over time<br>
- <img width="50%" src="https://github.com/mishaalkandapath/valuedream/blob/main/plots/score.png"><br>
- Scores over time<br>
- <img width="50%" src="https://github.com/mishaalkandapath/valuedream/blob/main/plots/score-big.png"><br>
- Spectrum of achievements at 1M steps<br>
+ <img width="50%" src="https://github.com/mishaalkandapath/clarion_replay/blob/main/data/figures/training_nn_loss.png"><br>
+ Training of Q-value over time -- Huber loss of TD-error<br>
+ <img width="50%" src="https://github.com/mishaalkandapath/clarion_replay/blob/main/data/figures/train_rt_combined.png"><br>
+ Number of Goal choices as a proxy for RT in the training phase<br>
+ <img width="50%" src="https://github.com/mishaalkandapath/clarion_replay/blob/main/data/figures/train_corr_combined.png"><br>
+ Correctness of construction in the training phase<br>
+ <img width="50%" src="https://github.com/mishaalkandapath/clarion_replay/blob/main/data/figures/sequences_simple_goal.png"><br>
+ Replay sequences as elicited from goal sequences chosen by the model <br>
 </p>
 
 
