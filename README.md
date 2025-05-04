@@ -14,7 +14,7 @@ based on a task presented in
 The code is supplementary to the paper included in the repository (file: paper.pdf).
 
 ## Reproducing Results
-### Installation
+### Setup
 The easiest way to install all necessary packages would be to build a conda/virtualenv environment from the yaml file
 #### Conda
 ```
@@ -22,6 +22,10 @@ conda env create -f clarion_env.yml	# create & install
 conda activate clarion_env # activate
 ```
 **Note**: this module requires pyClarion, which needs to be independently downloaded from [here](https://github.com/cmekik/pyClarion/tree/v2409)
+After clone pyClarion and before installing in edit mode, do the following to apply project-specific patches to pyClarion:
+```
+git apply pyc_patch.patch
+```
  ### Running
  Simply run simulation.py to reproduce all results in the paper. 
  ```
