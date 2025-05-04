@@ -384,7 +384,7 @@ def run_participant_session(
                 participant.construction_net_training_results,
                 "Steps",
                 "Loss",
-                "figures/construction_net_training.png",
+                "data/figures/construction_net_training.png",
                 viz.fig.number,
             )
         elif event.source == participant.end_construction_feedback:
@@ -441,25 +441,25 @@ def run_participant_session(
                 construction_correctness,
                 "trial #",
                 "construction correctness",
-                "figures/construction_correctness.png"
+                "data/figures/construction_correctness.png"
             )
             simple_plotting(
                 [r[1] for r in results],
                 "trial #",
                 "response correctness",
-                "figures/response_correctness.png"
+                "data/figures/response_correctness.png"
             )
             simple_plotting(
                 [r[0] for r in results],
                 "trial #",
                 "response time",
-                "figures/response_time.png"
+                "data/figures/response_time.png"
             )
             simple_plotting(
                 [len(t) for t in all_goal_choices],
                 "trial #",
                 "goal choices",
-                "figures/goal_choices.png",
+                "data/figures/goal_choices.png",
             )
 
             if session_type == "test":
@@ -484,32 +484,32 @@ def run_participant_session(
                 participant.construction_net_training_results,
                 "Steps",
                 "Loss",
-                "figures/construction_net_training.png",
+                "data/figures/construction_net_training.png",
                 viz.fig.number,
             )
             simple_plotting(
                 construction_correctness,
                 "trial #",
                 "construction correctness",
-                "figures/construction_correctness.png"
+                "data/figures/construction_correctness.png"
             )
             simple_plotting(
                 [r[1] for r in results],
                 "trial #",
                 "response correctness",
-                "figures/response_correctness.png"
+                "data/figures/response_correctness.png"
             )
             simple_plotting(
                 [r[0] for r in results],
                 "trial #",
                 "response time",
-                "figures/response_time.png"
+                "data/figures/response_time.png"
             )
             simple_plotting(
                 [len(t) for t in all_goal_choices],
                 "trial #",
                 "goal choices",
-                "figures/goal_choices.png",
+                "data/figures/goal_choices.png",
             )
             if session_type == "test":
                 n_sequences = simple_sequenceness(
@@ -529,7 +529,7 @@ def run_participant_session(
             start_time = event.time  # temporarily
             participant.end_construction()
     if session_type == "train":
-        with open("processed/train_data/construction_training_results.pkl", "wb") as f:
+        with open("data/processed/train_data/construction_training_results.pkl", "wb") as f:
             p.dump(participant.construction_net_training_results, f)
     return (
         results,
@@ -545,8 +545,8 @@ def run_experiment(
         num_train_sessions=100,
         num_test_sessions=20,
         run_train_only=False):
-    grid_names = os.listdir("processed/train_data/train_stims/")
-    test_trials = pd.read_csv("processed/test_data/all_test_data.csv")
+    grid_names = os.listdir("data/processed/train_data/train_stims/")
+    test_trials = pd.read_csv("data/processed/test_data/all_test_data.csv")
     participant = AbstractParticipant("p1")
 
     if num_train_sessions:
@@ -557,14 +557,14 @@ def run_experiment(
         train_results, train_construction_correctness, _, _, _, train_goal_choices = (
             run_participant_session(participant, train_trials))
 
-        with open("processed/train_data/train_results.pkl", "wb") as f:
+        with open("data/processed/train_data/train_results.pkl", "wb") as f:
             p.dump(train_results, f)
-        with open("processed/train_data/train_construction_correctness.pkl", "wb") as f:
+        with open("data/processed/train_data/train_construction_correctness.pkl", "wb") as f:
             p.dump(train_construction_correctness, f)
-        with open("processed/train_data/train_goal_choices.pkl", "wb") as f:
+        with open("data/processed/train_data/train_goal_choices.pkl", "wb") as f:
             p.dump(train_goal_choices, f)
         torch.save(participant.goal_net.state_dict(),
-                   "processed/train_data/goal_net.pt")
+                   "data/processed/train_data/goal_net.pt")
 
         train_results_df = pd.DataFrame(
             train_results, columns=["rt", "response_correctness"]
@@ -578,25 +578,25 @@ def run_experiment(
             train_results_df,
             "trial #",
             "construction_correctness",
-            "figures/train_construction_correctness.png",
+            "data/figures/train_construction_correctness.png",
         )
         simple_snsplot(
             train_results_df,
             "trial #",
             "rt",
-            "figures/train_rt.png",
+            "data/figures/train_rt.png",
             line=True)
         simple_snsplot(
             train_results_df,
             "trial #",
             "goal_choices",
-            "figures/train_goal_choices.png",
+            "data/figures/train_goal_choices.png",
         )
         simple_snsplot(
             train_results_df,
             "trial #",
             "response_correctness",
-            "figures/train_response_correctness.png",
+            "data/figures/train_response_correctness.png",
         )
     else:
         # load the model
@@ -611,7 +611,7 @@ def run_experiment(
 
     test_grid_names = test_trials["Grid_Name"].tolist()
     test_grids = [
-        np.load(f"processed/test_data/test_stims/{grid_name}.npy")
+        np.load(f"data/processed/test_data/test_stims/{grid_name}.npy")
         for grid_name in test_grid_names
     ]
 
@@ -628,13 +628,13 @@ def run_experiment(
                                  init_rules=not num_train_sessions)
 
     # pickle it all
-    with open("processed/test_data/test_results.pkl", "wb") as f:
+    with open("data/processed/test_data/test_results.pkl", "wb") as f:
         p.dump(test_results, f)
-    with open("processed/test_data/test_construction_correctness.pkl", "wb") as f:
+    with open("data/processed/test_data/test_construction_correctness.pkl", "wb") as f:
         p.dump(test_construction_correctness, f)
-    with open("processed/test_data/test_rule_choices.pkl", "wb") as f:
+    with open("data/processed/test_data/test_rule_choices.pkl", "wb") as f:
         p.dump(test_rule_choices, f)
-    with open("processed/test_data/test_goal_choices.pkl", "wb") as f:
+    with open("data/processed/test_data/test_goal_choices.pkl", "wb") as f:
         p.dump(test_goal_choices, f)
 
     test_results_df = pd.DataFrame(
@@ -650,24 +650,24 @@ def run_experiment(
         test_results_df,
         "trial #",
         "construction_correctness",
-        "figures/test_construction_correctness.png",
+        "data/figures/test_construction_correctness.png",
     )
     simple_snsplot(
         test_results_df,
         "trial #",
         "rt",
-        "figures/test_rt.png",
+        "data/figures/test_rt.png",
         line=True)
     simple_snsplot(
         test_results_df,
         "trial #",
         "goal_choices",
-        "figures/test_goal_choices.png")
+        "data/figures/test_goal_choices.png")
     simple_snsplot(
         test_results_df,
         "trial #",
         "response_correctness",
-        "figures/test_response_correctness.png",
+        "data/figures/test_response_correctness.png",
     )
 
     n_sequences = simple_sequenceness(
