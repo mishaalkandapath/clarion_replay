@@ -26,6 +26,7 @@ After clone pyClarion and before installing in edit mode, do the following to ap
 ```
 git apply pyc_patch.patch
 ```
+Finally, you can get the processed experimental data from [here](https://utoronto-my.sharepoint.com/:u:/g/personal/mishaal_kandapath_mail_utoronto_ca/EauGLd3KBAlJjU-UBCJjKboBV9Zi5h6DXJvsm1pcrejcag?e=0zLI8W) and add that into the data/ directory
  ### Running
  Simply run simulation.py to reproduce all results in the paper. 
  ```
