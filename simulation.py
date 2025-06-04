@@ -39,6 +39,7 @@ from base_participant import (
 from evaluation import (
     simple_sequenceness,
     simple_goal_sequencessness,
+    simple_goal_sequencessness_elaborate,
     brick_connectedness,
 )
 from simulation_viz import SimulationVisualizer
@@ -199,7 +200,7 @@ def load_trial(
         4: response_space.bricks.horizontal,
     }
     choice_is_yes = None
-    print("Stimulus grid: \n", stim_grid)
+    # print("Stimulus grid: \n", stim_grid)
     if t_type == "test":
         chunk_test = (
             +(response_space.io.query_relation ** query_map[trial["Q_Relation"]])
@@ -249,14 +250,14 @@ def load_trial(
             choice_is_yes = False
     else:
         chunk_test = ()
-    if q_type == "query" and t_type == "test":
-        print("Query brick 1: ", trial["Q_Brick_Left"])
-        print("Query brick 2: ", trial["Q_Brick_Middle"])
-        print("Query relation: ", trial["Q_Relation"])
-    elif q_type == "query":
-        print("Query brick 1: ", blocks[0])
-        print("Query brick 2: ", blocks[1])
-        print("Query relation: ", relation[0])
+    # if q_type == "query" and t_type == "test":
+    #     print("Query brick 1: ", trial["Q_Brick_Left"])
+    #     print("Query brick 2: ", trial["Q_Brick_Middle"])
+    #     print("Query relation: ", trial["Q_Relation"])
+    # elif q_type == "query":
+    #     print("Query brick 1: ", blocks[0])
+    #     print("Query brick 2: ", blocks[1])
+    #     print("Query relation: ", relation[0])
     return stim_grid, chunk_grid, chunk_grid_mlp, chunk_test, choice_is_yes
 
 
@@ -271,12 +272,13 @@ def run_participant_session(
     # some results
     (
         results,
+        construction_accuracy,
         construction_correctness,
         all_constructions,
         all_rule_history,
         all_rule_lhs_history,
         all_goal_choices,
-    ) = [], [], [], [], [], []
+    ) = [], [], [], [], [], [], []
     all_grids = []
     # Knowledge initialization
     if init_rules:
@@ -290,8 +292,8 @@ def run_participant_session(
         trials.append(trial)
     original_length = len(trials)
     done_count = 0
-    viz = SimulationVisualizer()
-    viz.init_progress(original_length)
+    # viz = SimulationVisualizer()
+    # viz.init_progress(original_length)
     participant.start_construct_trial(timedelta())
     last_end_construction_time = None
     start_time = timedelta(0)
@@ -300,7 +302,7 @@ def run_participant_session(
     while participant.system.queue:
         event = participant.system.advance()
         pbar.set_description(f"Backtracks: {participant.backtracks}")
-        viz.update_time(event.time)
+        # viz.update_time(event.time)
         if event.source == participant.start_construct_trial:
             if not trials:
                 break
@@ -325,55 +327,57 @@ def run_participant_session(
                 grid_stimulus_mlp, flip=True)
             participant.construction_input.send(grid_stimulus, flip=True)
             all_grids.append(grid_stimulus_np)
-            viz.start_trial()
-            viz.update_input(grid_stimulus_np)
+            # viz.start_trial()
+            # viz.update_input(grid_stimulus_np)
             start_time = event.time
         elif event.source == participant.construction_input.send:
-            viz.update_work(
-                numpify_grid(
-                    participant.construction_input.main[0]))
+            # viz.update_work(
+            #     numpify_grid(
+            #         participant.construction_input.main[0]))
             if participant.past_chosen_goals:
                 chosen_goal = participant.past_chosen_goals[-1]
                 chosen_goal = str(chosen_goal).split(":")[-1].split(",")[-1]
                 if re.match(SHAPE_SHAPE_REL, chosen_goal):
                     chosen_goal = re.match(SHAPE_SHAPE_REL, chosen_goal)
-                    viz.update_status(
-                        chosen_goal.group(3),
-                        chosen_goal.group(1),
-                        chosen_goal.group(2),
-                        (
-                            "TBD"
-                            if (
-                                not participant.transition_store
-                                or not isinstance(participant.transition_store[-1], float)
-                            )
-                            else participant.transition_store[-1]
-                        ),
-                    )
+                    # viz.update_status(
+                    #     chosen_goal.group(3),
+                    #     chosen_goal.group(1),
+                    #     chosen_goal.group(2),
+                    #     (
+                    #         "TBD"
+                    #         if (
+                    #             not participant.transition_store
+                    #             or not isinstance(participant.transition_store[-1], float)
+                    #         )
+                    #         else participant.transition_store[-1]
+                    #     ),
+                    # )
                 else:
                     chosen_goal = re.match(SHAPE_START, chosen_goal)
-                    viz.update_status(
-                        "start",
-                        "",
-                        chosen_goal.group(1),
-                        (
-                            "TBD"
-                            if (
-                                not participant.transition_store
-                                or not isinstance(participant.transition_store[-1], float)
-                            )
-                            else list(participant.transition_store[-1])
-                        ),
-                    )
+                    # viz.update_status(
+                    #     "start",
+                    #     "",
+                    #     chosen_goal.group(1),
+                    #     (
+                    #         "TBD"
+                    #         if (
+                    #             not participant.transition_store
+                    #             or not isinstance(participant.transition_store[-1], float)
+                    #         )
+                    #         else list(participant.transition_store[-1])
+                    #     ),
+                    # )
         elif event.source == participant.end_construction:
-            correctness = acc(
+            accuracy = acc(
                 grid_stimulus_np, numpify_grid(
                     participant.construction_input.main[0]))
+            construction_accuracy.append(accuracy)
+            correctness = 1 if accuracy == 1 else 0
             construction_correctness.append(correctness)
             if session_type == "train":
-                print(
-                    "Construction was ",
-                    "correct" if correctness == 1 else "incorrect")
+                # print(
+                #     "Construction was ",
+                #     "correct" if correctness == 1 else "incorrect")
                 participant.propagate_feedback(correct=float(correctness))
                 participant.end_construction_feedback()
             else:
@@ -385,7 +389,7 @@ def run_participant_session(
                 "Steps",
                 "Loss",
                 "data/figures/construction_net_training.png",
-                viz.fig.number,
+                # viz.fig.number,
             )
         elif event.source == participant.end_construction_feedback:
             participant.start_response_trial(timedelta())
@@ -395,8 +399,8 @@ def run_participant_session(
             )  # dont reset, just add
             last_end_construction_time = event.time
             match = re.match(QUERY_REL_PATTERN, str(test_query), re.DOTALL)
-            viz.start_response(SHAPE_DICT[match.group(
-                2)], SHAPE_DICT[match.group(3)], match.group(1))
+            # viz.start_response(SHAPE_DICT[match.group(
+            #     2)], SHAPE_DICT[match.group(3)], match.group(1))
         elif event.source == participant.response_choice.select:
             results.append(
                 (
@@ -413,18 +417,18 @@ def run_participant_session(
                 )
             )
             last_end_construction_time = None
-            viz.choose_response(
-                "yes"
-                if (
-                    participant.response_choice.poll()[
-                        ~participant.response_space.io.output
-                        * ~participant.response_space.response
-                    ]
-                    == ~participant.response_space.io.output
-                    * ~participant.response_space.response.yes
-                )
-                else "no"
-            )
+            # viz.choose_response(
+            #     "yes"
+            #     if (
+            #         participant.response_choice.poll()[
+            #             ~participant.response_space.io.output
+            #             * ~participant.response_space.response
+            #         ]
+            #         == ~participant.response_space.io.output
+            #         * ~participant.response_space.response.yes
+            #     )
+            #     else "no"
+            # )
             all_rule_history.append(participant.all_rule_history)
             all_rule_lhs_history.append(participant.all_rule_lhs_history)
             all_constructions.append(participant.all_constructions)
@@ -442,6 +446,12 @@ def run_participant_session(
                 "trial #",
                 "construction correctness",
                 "data/figures/construction_correctness.png"
+            )
+            simple_plotting(
+                construction_accuracy,
+                "trial #",
+                "construction accuracy",
+                "data/figures/construction_accuracy.png"
             )
             simple_plotting(
                 [r[1] for r in results],
@@ -463,10 +473,6 @@ def run_participant_session(
             )
 
             if session_type == "test":
-                n_sequences = simple_sequenceness(
-                            all_rule_history, all_rule_lhs_history, all_grids
-                )
-                plot_sequences(n_sequences)
                 goal_sequences = simple_goal_sequencessness(
                     all_goal_choices,
                     all_grids
@@ -477,21 +483,27 @@ def run_participant_session(
             done_count += 1
             pbar.update(1)
 
-            viz.update_progress(
-                done_count, datetime.now() - real_start_time)
+            # viz.update_progress(
+            #     done_count, datetime.now() - real_start_time)
         elif event.source == participant.replay_optimize_qnet:
             simple_plotting(
                 participant.construction_net_training_results,
                 "Steps",
                 "Loss",
                 "data/figures/construction_net_training.png",
-                viz.fig.number,
+                # viz.fig.number,
             )
             simple_plotting(
                 construction_correctness,
                 "trial #",
                 "construction correctness",
                 "data/figures/construction_correctness.png"
+            )
+            simple_plotting(
+                construction_accuracy,
+                "trial #",
+                "construction accuracy",
+                "data/figures/construction_accuracy.png"
             )
             simple_plotting(
                 [r[1] for r in results],
@@ -521,7 +533,7 @@ def run_participant_session(
             participant.start_construct_trial(timedelta())
             done_count += 1
             pbar.update(1)
-            viz.update_progress(done_count, datetime.now() - real_start_time)
+            # viz.update_progress(done_count, datetime.now() - real_start_time)
         if (event.time - start_time) > timedelta(
             seconds=per_trial_time
         ) and not participant.trigger_response:  # trial expired?
@@ -534,6 +546,7 @@ def run_participant_session(
     return (
         results,
         construction_correctness,
+        construction_accuracy,
         all_rule_history,
         all_rule_lhs_history,
         all_constructions,
@@ -544,27 +557,33 @@ def run_participant_session(
 def run_experiment(
         num_train_sessions=100,
         num_test_sessions=20,
-        run_train_only=False):
+        test_model_path=None):
     grid_names = os.listdir("data/processed/train_data/train_stims/")
     test_trials = pd.read_csv("data/processed/test_data/all_test_data.csv")
     participant = AbstractParticipant("p1")
 
     if num_train_sessions:
+        name_dir = len(os.listdir("data/run_data/"))//2 + 1
+        os.makedirs(f"data/run_data/run_{name_dir}/figures", exist_ok=True)
         train_grids = random.choices(grid_names, k=num_train_sessions * 50)
         train_grids = [grid_name.split(".")[0] for grid_name in train_grids]
 
         train_trials = pd.DataFrame(train_grids, columns=["Grid_Name"])
-        train_results, train_construction_correctness, _, _, _, train_goal_choices = (
+        train_results, train_construction_correctness, train_construction_accuracy, _, _, _, train_goal_choices = (
             run_participant_session(participant, train_trials))
 
-        with open("data/processed/train_data/train_results.pkl", "wb") as f:
+        with open(f"data/run_data/run_{name_dir}/train_grids.pkl", "wb") as f:
+            p.dump(train_grids, f)
+        with open(f"data/run_data/run_{name_dir}/train_results.pkl", "wb") as f:
             p.dump(train_results, f)
-        with open("data/processed/train_data/train_construction_correctness.pkl", "wb") as f:
+        with open(f"data/run_data/run_{name_dir}/train_construction_correctness.pkl", "wb") as f:
             p.dump(train_construction_correctness, f)
-        with open("data/processed/train_data/train_goal_choices.pkl", "wb") as f:
+        with open(f"data/run_data/run_{name_dir}/train_construction_accuracy.pkl", "wb") as f:
+            p.dump(train_construction_accuracy, f)
+        with open(f"data/run_data/run_{name_dir}/train_goal_choices.pkl", "wb") as f:
             p.dump(train_goal_choices, f)
         torch.save(participant.goal_net.state_dict(),
-                   "data/processed/train_data/goal_net.pt")
+                   f"data/run_data/run_{name_dir}/goal_net.pt")
 
         train_results_df = pd.DataFrame(
             train_results, columns=["rt", "response_correctness"]
@@ -578,32 +597,34 @@ def run_experiment(
             train_results_df,
             "trial #",
             "construction_correctness",
-            "data/figures/train_construction_correctness.png",
+            f"data/run_data/run_{name_dir}/figures/train_construction_correctness.png",
         )
         simple_snsplot(
             train_results_df,
             "trial #",
             "rt",
-            "data/figures/train_rt.png",
+            f"data/run_data/run_{name_dir}/figures/train_rt.png",
             line=True)
         simple_snsplot(
             train_results_df,
             "trial #",
             "goal_choices",
-            "data/figures/train_goal_choices.png",
+            f"data/run_data/run_{name_dir}/figures/train_goal_choices.png",
         )
         simple_snsplot(
             train_results_df,
             "trial #",
             "response_correctness",
-            "data/figures/train_response_correctness.png",
+            f"data/run_data/run_{name_dir}/figures/train_response_correctness.png",
         )
     else:
         # load the model
         participant.goal_net.load_state_dict(
-            torch.load("data/goal_net_trained.pt"))
-    if run_train_only:
+            torch.load(test_model_path))
+    if not num_test_sessions:
         return
+    name_dir = name_dir+1 if num_train_sessions else (len(os.listdir("data/run_data/"))//2 + 1)
+    os.makedirs(f"data/run_data/run_{name_dir}/figures", exist_ok=True)
     test_trial_indices = random.sample(
         test_trials["PID"].unique().tolist(), num_test_sessions
     )
@@ -617,6 +638,7 @@ def run_experiment(
 
     (test_results,
      test_construction_correctness,
+     test_construction_accuracy,
      test_rule_choices,
      test_rule_lhs_information,
      _,
@@ -628,13 +650,17 @@ def run_experiment(
                                  init_rules=not num_train_sessions)
 
     # pickle it all
-    with open("data/processed/test_data/test_results.pkl", "wb") as f:
+    with open(f"data/run_data/run_{name_dir}/test_grids.pkl", "wb") as f:
+        p.dump(test_grid_names, f)
+    with open(f"data/run_data/run_{name_dir}/test_results.pkl", "wb") as f:
         p.dump(test_results, f)
-    with open("data/processed/test_data/test_construction_correctness.pkl", "wb") as f:
+    with open(f"data/run_data/run_{name_dir}/test_construction_correctness.pkl", "wb") as f:
         p.dump(test_construction_correctness, f)
-    with open("data/processed/test_data/test_rule_choices.pkl", "wb") as f:
+    with open(f"data/run_data/run_{name_dir}/test_construction_accuracy.pkl", "wb") as f:
+        p.dump(test_construction_accuracy, f)
+    with open(f"data/run_data/run_{name_dir}/test_rule_choices.pkl", "wb") as f:
         p.dump(test_rule_choices, f)
-    with open("data/processed/test_data/test_goal_choices.pkl", "wb") as f:
+    with open(f"data/run_data/run_{name_dir}/test_goal_choices.pkl", "wb") as f:
         p.dump(test_goal_choices, f)
 
     test_results_df = pd.DataFrame(
@@ -650,32 +676,31 @@ def run_experiment(
         test_results_df,
         "trial #",
         "construction_correctness",
-        "data/figures/test_construction_correctness.png",
+        f"data/run_data/run_{name_dir}/figures/test_construction_correctness.png",
     )
     simple_snsplot(
         test_results_df,
         "trial #",
         "rt",
-        "data/figures/test_rt.png",
+        f"data/run_data/run_{name_dir}/figures/test_rt.png",
         line=True)
     simple_snsplot(
         test_results_df,
         "trial #",
         "goal_choices",
-        "data/figures/test_goal_choices.png")
+        f"data/run_data/run_{name_dir}/figures/test_goal_choices.png")
     simple_snsplot(
         test_results_df,
         "trial #",
         "response_correctness",
-        "data/figures/test_response_correctness.png",
+        f"data/run_data/run_{name_dir}/figures/test_response_correctness.png",
     )
 
-    n_sequences = simple_sequenceness(
-        test_rule_choices, test_rule_lhs_information, test_grids
+    goal_sequences = simple_goal_sequencessness_elaborate(test_goal_choices, test_grids)
+    plot_sequences(
+        goal_sequences, 
+        path=f"data/run_data/run_{name_dir}/figures/test_goal_sequences.png"
     )
-    plot_sequences(n_sequences)
-    goal_sequences = simple_goal_sequencessness(test_goal_choices, test_grids)
-    plot_sequences(goal_sequences)
 
 
 if __name__ == "__main__":
@@ -686,6 +711,23 @@ if __name__ == "__main__":
         "--debug",
         action="store_true",
         help="Run in debug mode")
+    parser.add_argument(
+        "--train_sessions",
+        type=int,
+        default=3,
+    )
+    parser.add_argument(
+        "--test_sessions",
+        type=int,
+        default=2,
+    )
+    parser.add_argument(
+        "--test_path",
+        type=str,
+        default=None,
+        help="Path to nn weights for testing"
+    )
+
     args = parser.parse_args()
     if args.debug:
         formatter = logging.Formatter(
@@ -695,4 +737,7 @@ if __name__ == "__main__":
         logger.setLevel(logging.DEBUG)
         handler = logging.StreamHandler(sys.stdout)
         logger.addHandler(handler)
-    run_experiment(num_train_sessions=0, num_test_sessions=2)
+    run_experiment(
+        num_train_sessions=0 if args.test_path else args.train_sessions, num_test_sessions=args.test_sessions,
+        test_model_path=args.test_path
+    )

@@ -397,6 +397,110 @@ def simple_goal_sequencessness(goals, grids):
 
     return sequences
 
+def simple_goal_sequencessness_elaborate(goals, grids):
+    # filter goals
+    good_indices = [i for i in range(len(goals)) if goals[i]]
+    goals = [goals[i] for i in good_indices]
+    grids = [grids[i] for i in good_indices]
+
+    max_len = max([len(g) for g in goals]) - 1
+    stable_to_present = np.zeros((len(goals), max_len))
+    stable_to_distant_present = np.zeros((len(goals), max_len))  # backtracking
+    stable_to_absent = np.zeros((len(goals), max_len))
+    present_to_stable = np.zeros((len(goals), max_len))  # backtracking
+    present_to_distant_present = np.zeros((len(goals), max_len))
+    present_to_present = np.zeros((len(goals), max_len))
+    present_to_absent = np.zeros((len(goals), max_len))
+    absent_to_present = np.zeros((len(goals), max_len))
+    absent_to_stable = np.zeros((len(goals), max_len))
+    absent_to_distant_present = np.zeros((len(goals), max_len))
+    distant_present_to_stable = np.zeros((len(goals), max_len))
+    distant_present_to_present = np.zeros((len(goals), max_len))
+    distant_present_to_absent = np.zeros((len(goals), max_len))
+
+    sequences = {
+        "Stable to present": stable_to_present,
+        "Present to stable": present_to_stable,
+        "Present to distant present": present_to_distant_present,
+        "Present to present": present_to_present,
+        "Stable to absent": stable_to_absent,
+        "Present to absent": present_to_absent,
+        "Absent to present": absent_to_present,
+        "Absent to stable": absent_to_stable,
+        "Absent to distant present": absent_to_distant_present,
+        "Distant present to stable": distant_present_to_stable,
+        "Distant present to present": distant_present_to_present,
+        "Distant present to absent": distant_present_to_absent,
+        "Stable to distant present": stable_to_distant_present,
+    }
+
+    for i, choices_in_trial in enumerate(goals):
+        stable_block = choices_in_trial[0][0]
+
+        # now is it a present, present typa situation or a present, distant
+        # present typa situation.
+        _, brick_rel = brick_connectedness(grids[i])
+        t = brick_rel.index(SHAPE_MAP[stable_block])
+        present = brick_rel[t - 2 if t >= 2 else t + 2]
+        present2 = np.unique(grids[i])[
+            (np.unique(grids[i]) != present)
+            & (np.unique(grids[i]) != SHAPE_MAP[stable_block])
+            & (np.unique(grids[i]) != 0)
+        ].item()
+        present_block = REVERSE_SHAPE_MAP[present]
+        present2_block = REVERSE_SHAPE_MAP[present2]
+
+        block2_isdistant = brick_rel.count(SHAPE_MAP[stable_block]) != 2
+
+        for j, other_blocks in enumerate(choices_in_trial[1:]):
+            if len(other_blocks) == 2:
+                block1, block2 = other_blocks
+            else:
+                continue
+            if block1 == stable_block and block2 == present_block:
+                stable_to_present[i, j] = 1
+            elif (block1 == stable_block and block2 == present2_block
+                and not block2_isdistant):
+                stable_to_present[i, j] = 1
+            elif block1 == stable_block and block2 == present2_block:
+                stable_to_distant_present[i, j] = 1
+            elif block1 == present_block and block2 == stable_block:
+                present_to_stable[i, j] = 1
+            elif (block1 == present2_block and block2 == stable_block
+                  and not block2_isdistant):
+                  present_to_stable[i, j] = 1
+            elif block1 == present2_block and block2 == stable_block:
+                distant_present_to_stable[i, j] = 1
+            elif (block1 == present_block 
+                and block2 == present2_block 
+                and block2_isdistant):
+                present_to_distant_present[i, j] = 1
+            elif block1 == present_block and block2 == present2_block:
+                present_to_present[i, j] = 1
+            elif (block1 == present2_block 
+                  and block2 == present_block 
+                  and not block2_isdistant):
+                present_to_present[i, j] = 1
+            elif block1 == present2_block and block2 == present_block:
+                distant_present_to_present[i, j] = 1
+            elif block1 == stable_block:  # and block2 is anything else
+                stable_to_absent[i, j] = 1
+            elif block2 == stable_block:  # and block1 is anything else
+                absent_to_stable[i, j] = 1
+            elif block1 == present_block:  # and block2 is anything else
+                present_to_absent[i, j] = 1
+            elif block2 == present_block:  # and block1 is anything else
+                absent_to_present[i, j] = 1
+            elif block1 == present2_block and not block2_isdistant:
+                present_to_absent[i, j] = 1
+            elif block1 == present2_block:  # and block2 is anything else
+                distant_present_to_absent[i, j] = 1
+            elif block2 == present2_block and not block2_isdistant:
+                absent_to_present[i, j] = 1
+            elif block2 == present2_block:  # and block1 is anything else
+                absent_to_distant_present[i, j] = 1
+
+    return sequences
 
 if __name__ == "__main__":
     sample_array = [
