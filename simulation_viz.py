@@ -1,4 +1,5 @@
 from datetime import timedelta
+import os
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -106,6 +107,12 @@ class SimulationVisualizer:
         # store total when init_progress() is called
         self._total_trials = None
 
+        self.debug_show = os.environ["VIZ_SHOW"] != "false"
+
+    def toggle_debug_show(self):
+        self.debug_show = not self.debug_show
+        return self.debug_show
+
     def update_time(self, elapsed: timedelta):
         """
         elapsed: total simulation time so far
@@ -118,7 +125,8 @@ class SimulationVisualizer:
             text = f"{secs * 1000:.0f} ms"
 
         self.time_text.set_text(text)
-        self.fig.canvas.draw()
+        if self.debug_show:
+            self.fig.canvas.draw() 
         # no auto-pause; time updates are instantaneous
 
     def start_trial(self, lag=0.5):
@@ -136,20 +144,24 @@ class SimulationVisualizer:
         self.question_text.set_visible(False)
         self.yes_text.set_visible(False)
         self.no_text.set_visible(False)
-        self.fig.canvas.draw()
-        plt.pause(lag)
+        
+        if self.debug_show:
+            self.fig.canvas.draw() 
+            plt.pause(lag)
 
     def update_input(self, grid6x6, lag=0.5):
         """Update the left-hand input grid (6×6 int array)."""
         self.inmesh.set_array(grid6x6.ravel())
-        self.fig.canvas.draw()
-        plt.pause(lag)
+        if self.debug_show:
+            self.fig.canvas.draw() 
+            plt.pause(lag)
 
     def update_work(self, grid6x6, lag=0.5):
         """Update the right-hand working grid."""
         self.workmesh.set_array(grid6x6.ravel())
-        self.fig.canvas.draw()
-        plt.pause(lag)
+        if self.debug_show:
+            self.fig.canvas.draw() 
+            plt.pause(lag)
 
     def update_status(self, relation, reference, target, reward, lag=0.5):
         # """Update top text and reward text below."""
@@ -174,8 +186,9 @@ class SimulationVisualizer:
         reward_str = f"$\\mathbf{{Reward:}}\\,\\text{{{reward}}}$"
         self.reward_text.set_text(reward_str)
 
-        self.fig.canvas.draw()
-        plt.pause(lag)
+        if self.debug_show:
+            self.fig.canvas.draw() 
+            plt.pause(lag)
 
     def _draw_brick(self, ax, shape_id, scale=0.8):
         ax.clear()
@@ -224,8 +237,9 @@ class SimulationVisualizer:
         self.yes_text.set_fontweight("normal")
         self.no_text.set_visible(True)
         self.no_text.set_fontweight("normal")
-        self.fig.canvas.draw()
-        plt.pause(display_lag)
+        if self.debug_show:
+            self.fig.canvas.draw() 
+            plt.pause(display_lag)
 
     def choose_response(self, choice, choice_lag=0.5):
         """
@@ -235,8 +249,9 @@ class SimulationVisualizer:
             self.yes_text.set_fontweight("bold")
         else:
             self.no_text.set_fontweight("bold")
-        self.fig.canvas.draw()
-        plt.pause(choice_lag)
+        if self.debug_show:
+            self.fig.canvas.draw() 
+            plt.pause(choice_lag)
 
     def init_progress(self, total_trials):
         """
@@ -247,7 +262,8 @@ class SimulationVisualizer:
         self.progress_bar.set_width(0)
         self.progress_pct_text.set_text("0%")
         self.time_left_text.set_text("")
-        self.fig.canvas.draw()
+        if self.debug_show:
+            self.fig.canvas.draw() 
 
     def update_progress(self, completed_trials, elapsed):
         """
@@ -282,7 +298,8 @@ class SimulationVisualizer:
         self.time_left_text.set_text(tl)
 
         # redraw
-        self.fig.canvas.draw()
+        if self.debug_show:
+            self.fig.canvas.draw() 
 
 
 if __name__ == "__main__":

@@ -342,6 +342,20 @@ def acc(pred_grid, true_grid):
     return (pred_grid == true_grid).sum() / \
         (pred_grid.shape[0] * pred_grid.shape[1])
 
+
+def check_construction_input_match(mlp_input):
+    for shape in mlp_input:
+        if "input" in str(shape):
+            shape = str(shape)
+            if Key(shape.replace("input", "target")) not in mlp_input:
+                return False
+            if (mlp_input[Key(shape.replace("input", "target"))] 
+                != 
+                mlp_input[Key(shape)]):
+                return False
+    return True
+            
+
 # useful patterns and dicts
 SHAPE_SHAPE_REL = r"(half_T|mirror_L|vertical|horizontal)_(half_T|mirror_L|vertical|horizontal)_(left|right|above|below)"
 SHAPE_START = r"(half_T|mirror_L|vertical|horizontal)_start"

@@ -250,6 +250,7 @@ def load_trial(
             choice_is_yes = False
     else:
         chunk_test = ()
+        choice_is_yes = None
     # if q_type == "query" and t_type == "test":
     #     print("Query brick 1: ", trial["Q_Brick_Left"])
     #     print("Query brick 2: ", trial["Q_Brick_Middle"])
@@ -292,8 +293,8 @@ def run_participant_session(
         trials.append(trial)
     original_length = len(trials)
     done_count = 0
-    # viz = SimulationVisualizer()
-    # viz.init_progress(original_length)
+    viz = SimulationVisualizer()
+    viz.init_progress(original_length)
     participant.start_construct_trial(timedelta())
     last_end_construction_time = None
     start_time = timedelta(0)
@@ -302,7 +303,7 @@ def run_participant_session(
     while participant.system.queue:
         event = participant.system.advance()
         pbar.set_description(f"Backtracks: {participant.backtracks}")
-        # viz.update_time(event.time)
+        viz.update_time(event.time)
         if event.source == participant.start_construct_trial:
             if not trials:
                 break
@@ -327,46 +328,46 @@ def run_participant_session(
                 grid_stimulus_mlp, flip=True)
             participant.construction_input.send(grid_stimulus, flip=True)
             all_grids.append(grid_stimulus_np)
-            # viz.start_trial()
-            # viz.update_input(grid_stimulus_np)
+            viz.start_trial()
+            viz.update_input(grid_stimulus_np)
             start_time = event.time
         elif event.source == participant.construction_input.send:
-            # viz.update_work(
-            #     numpify_grid(
-            #         participant.construction_input.main[0]))
+            viz.update_work(
+                numpify_grid(
+                    participant.construction_input.main[0]))
             if participant.past_chosen_goals:
                 chosen_goal = participant.past_chosen_goals[-1]
                 chosen_goal = str(chosen_goal).split(":")[-1].split(",")[-1]
                 if re.match(SHAPE_SHAPE_REL, chosen_goal):
                     chosen_goal = re.match(SHAPE_SHAPE_REL, chosen_goal)
-                    # viz.update_status(
-                    #     chosen_goal.group(3),
-                    #     chosen_goal.group(1),
-                    #     chosen_goal.group(2),
-                    #     (
-                    #         "TBD"
-                    #         if (
-                    #             not participant.transition_store
-                    #             or not isinstance(participant.transition_store[-1], float)
-                    #         )
-                    #         else participant.transition_store[-1]
-                    #     ),
-                    # )
+                    viz.update_status(
+                        chosen_goal.group(3),
+                        chosen_goal.group(1),
+                        chosen_goal.group(2),
+                        (
+                            "TBD"
+                            if (
+                                not participant.transition_store
+                                or not isinstance(participant.transition_store[-1], float)
+                            )
+                            else participant.transition_store[-1]
+                        ),
+                    )
                 else:
                     chosen_goal = re.match(SHAPE_START, chosen_goal)
-                    # viz.update_status(
-                    #     "start",
-                    #     "",
-                    #     chosen_goal.group(1),
-                    #     (
-                    #         "TBD"
-                    #         if (
-                    #             not participant.transition_store
-                    #             or not isinstance(participant.transition_store[-1], float)
-                    #         )
-                    #         else list(participant.transition_store[-1])
-                    #     ),
-                    # )
+                    viz.update_status(
+                        "start",
+                        "",
+                        chosen_goal.group(1),
+                        (
+                            "TBD"
+                            if (
+                                not participant.transition_store
+                                or not isinstance(participant.transition_store[-1], float)
+                            )
+                            else (participant.transition_store[-1])
+                        ),
+                    )
         elif event.source == participant.end_construction:
             accuracy = acc(
                 grid_stimulus_np, numpify_grid(
@@ -378,7 +379,7 @@ def run_participant_session(
                 # print(
                 #     "Construction was ",
                 #     "correct" if correctness == 1 else "incorrect")
-                participant.propagate_feedback(correct=float(correctness))
+                # participant.propagate_feedback(correct=float(correctness)) #TODO: GET THIS BACK IF U NEED IT
                 participant.end_construction_feedback()
             else:
                 participant.start_response_trial(timedelta())
@@ -389,10 +390,16 @@ def run_participant_session(
                 "Steps",
                 "Loss",
                 "data/figures/construction_net_training.png",
-                # viz.fig.number,
+                viz.fig.number,
             )
         elif event.source == participant.end_construction_feedback:
-            participant.start_response_trial(timedelta())
+            if q_type == "query": participant.start_response_trial(timedelta())
+            else: 
+                all_rule_history.append(participant.all_rule_history)
+                all_rule_lhs_history.append(participant.all_rule_lhs_history)
+                all_constructions.append(participant.all_constructions)
+                all_goal_choices.append(participant.all_goal_history[:-1])
+                participant.finish_response_trial(timedelta())
         elif event.source == participant.start_response_trial:
             participant.response_input.send(
                 test_query, flip=True
@@ -417,18 +424,18 @@ def run_participant_session(
                 )
             )
             last_end_construction_time = None
-            # viz.choose_response(
-            #     "yes"
-            #     if (
-            #         participant.response_choice.poll()[
-            #             ~participant.response_space.io.output
-            #             * ~participant.response_space.response
-            #         ]
-            #         == ~participant.response_space.io.output
-            #         * ~participant.response_space.response.yes
-            #     )
-            #     else "no"
-            # )
+            viz.choose_response(
+                "yes"
+                if (
+                    participant.response_choice.poll()[
+                        ~participant.response_space.io.output
+                        * ~participant.response_space.response
+                    ]
+                    == ~participant.response_space.io.output
+                    * ~participant.response_space.response.yes
+                )
+                else "no"
+            )
             all_rule_history.append(participant.all_rule_history)
             all_rule_lhs_history.append(participant.all_rule_lhs_history)
             all_constructions.append(participant.all_constructions)
@@ -483,15 +490,15 @@ def run_participant_session(
             done_count += 1
             pbar.update(1)
 
-            # viz.update_progress(
-            #     done_count, datetime.now() - real_start_time)
+            viz.update_progress(
+                done_count, datetime.now() - real_start_time)
         elif event.source == participant.replay_optimize_qnet:
             simple_plotting(
                 participant.construction_net_training_results,
                 "Steps",
                 "Loss",
                 "data/figures/construction_net_training.png",
-                # viz.fig.number,
+                viz.fig.number,
             )
             simple_plotting(
                 construction_correctness,
@@ -533,7 +540,7 @@ def run_participant_session(
             participant.start_construct_trial(timedelta())
             done_count += 1
             pbar.update(1)
-            # viz.update_progress(done_count, datetime.now() - real_start_time)
+            viz.update_progress(done_count, datetime.now() - real_start_time)
         if (event.time - start_time) > timedelta(
             seconds=per_trial_time
         ) and not participant.trigger_response:  # trial expired?
@@ -727,6 +734,11 @@ if __name__ == "__main__":
         default=None,
         help="Path to nn weights for testing"
     )
+    parser.add_argument(
+        "--no_show_viz",
+        action="store_true",
+        help="do not show the visualization while running the program"
+    )
 
     args = parser.parse_args()
     if args.debug:
@@ -737,7 +749,13 @@ if __name__ == "__main__":
         logger.setLevel(logging.DEBUG)
         handler = logging.StreamHandler(sys.stdout)
         logger.addHandler(handler)
+    
+    os.environ["VIZ_SHOW"] = "false" if args.no_show_viz else "true"
     run_experiment(
         num_train_sessions=0 if args.test_path else args.train_sessions, num_test_sessions=args.test_sessions,
         test_model_path=args.test_path
     )
+
+"""
+python scaffolded_training.py --start_from 2 --model "/Users/mishaal/personalproj/clarion_replay/data/run_data/run_6/goal_net.pt"
+"""

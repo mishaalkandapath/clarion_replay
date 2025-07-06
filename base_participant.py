@@ -4,6 +4,7 @@ import math
 import random
 
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 from pyClarion import (
     Input,
     Choice,
@@ -26,6 +27,7 @@ from utils import (
     make_goal_outputs_construction_input,
     goal_shape_extractor,
     make_response_input,
+    check_construction_input_match
 )
 from pyc_utils import RuleWBLA, FlippableInput
 from knowledge_init import (
@@ -37,12 +39,13 @@ from knowledge_init import (
     JustYes,
     MLPConstructionIO,
 )
-from q_learning import external_mlp_handle
+from q_learning import external_mlp_handle, BATCH_SIZE
 
 EPS_START = 0.9
 EPS_END = 0.05
 EPS_DECAY = 1000
 
+GREEDY_MOVES = []
 
 class BaseParticipant(Agent):
     construction_space: BrickConstructionTask
@@ -474,7 +477,7 @@ class AbstractParticipant(BaseParticipant):
                 "abstract_goal_choice",
                 self.p,
                 (mlp_output_space_2, mlp_output_space_1),
-                sd=1e-2,
+                sd=1e-10,
             )
 
         # MLP SETUP:
@@ -518,6 +521,8 @@ class AbstractParticipant(BaseParticipant):
             self.transition_store.insert(
                 2, self.mlp_construction_input.main[0].d.copy()
             )
+            if check_construction_input_match(self.mlp_construction_input.main.data[0].d):
+                self.transition_store[-1] = 1.0 #construction is correct and its over
             self.backward_qnet()
         elif event.source == self.shift_goal:
             self.forward_qnet()
@@ -526,16 +531,22 @@ class AbstractParticipant(BaseParticipant):
         elif event.source == self.backward_qnet and not any(
             e.source == self.end_construction_feedback for e in self.system.queue
         ):
-            # run the q_net on the new stuff
-            self.forward_qnet()
-            self.transition_store = [
-                self.mlp_construction_input.main[0].d.copy()]
+            if check_construction_input_match(self.mlp_construction_input.main.data[0].d):
+                self.end_construction()
+            else:
+                # run the q_net on the new stuff
+                self.forward_qnet()
+                self.transition_store = [
+                    self.mlp_construction_input.main[0].d.copy()]
         elif event.source == self.forward_qnet:
             # at this point olayer.forward has been applied
             self.abstract_goal_choice.trigger()
         elif event.source == self.abstract_goal_choice.select:
             cur_choice = self.abstract_goal_choice.poll()
             greedy_move = self.select_action()
+            GREEDY_MOVES.append(int(greedy_move))
+            plt.plot(GREEDY_MOVES)
+            plt.savefig("data/figures/random.png")
             if not greedy_move:
                 if len(self.past_constructions) == 1:
                     # first move 80% starts 20 % random
@@ -547,7 +558,7 @@ class AbstractParticipant(BaseParticipant):
                         for c in cur_choice
                     }
                 else:
-                    # opposite 80% others 20% start
+                    # opposite
                     cur_choice = {
                         c: random.choices(
                             [k for k in self.abstract_goal_choice.main[0]],
@@ -555,6 +566,12 @@ class AbstractParticipant(BaseParticipant):
                         )[0]
                         for c in cur_choice
                     }
+                # cur_choice = {
+                #         c: random.choice(
+                #             [k for k in self.abstract_goal_choice.main[0]]
+                #         )
+                #         for c in cur_choice
+                #     }
 
             self.past_chosen_goals.append(
                 str(list(cur_choice.values())[0][-1][0]))
@@ -577,7 +594,9 @@ class AbstractParticipant(BaseParticipant):
 
         cur_choice = self.search_space_choice.poll()
 
-        if self.backtracks > 10:
+        if (
+            self.backtracks > 10
+        ):
             self.end_construction()
         elif (
             cur_choice[
@@ -592,7 +611,7 @@ class AbstractParticipant(BaseParticipant):
             ):  # this rule is not to blame, but the previous is
                 past_rule_choice = self.past_chosen_rule_choices.pop()
 
-                self.modify_matchstats(past_rule_choice, pm=False)
+                # self.modify_matchstats(past_rule_choice, pm=False)
 
                 self.past_chosen_rule_lhs_history.pop()
                 self.past_chosen_rules.pop()
@@ -678,7 +697,6 @@ class AbstractParticipant(BaseParticipant):
             self.construction_input.send(
                 cur_additions
             )  # loop it back in --for more selections
-
             self.transition_store.append(-0.1)  # tiny punishment for timestep
 
     def modify_matchstats(self, past_rule_choice, pm=False):
@@ -687,7 +705,7 @@ class AbstractParticipant(BaseParticipant):
 
     @override
     def propagate_feedback(self, correct=0):
-        self.feedback(correct == 1)
+        # self.feedback(correct == 1)
         # feedback for the MLP
         self.transition_store.append(None)
         self.transition_store.append(-1.0 if not correct else correct)
@@ -740,7 +758,7 @@ class AbstractParticipant(BaseParticipant):
         dt: timedelta = timedelta(seconds=0),
         priority: Priority = Priority.PROPAGATION,
     ) -> None:
-        for _ in tqdm(range(50)):
+        for _ in tqdm(range(max(50, (20*len(self.goal_net_memory))//(BATCH_SIZE)))):
             loss = self.goal_net_optimize(use_memory=True)
             self.construction_net_training_results.append(loss)
             self.goal_net_update()
