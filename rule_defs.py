@@ -2956,13 +2956,11 @@ def init_participant_construction_rule_w_abstract(participant):
     """
     half_t_first_placement_rule = [
         (
-            +7.0 * (io.start**response.yes)
+            + 7.0 * (io.start**response.yes)
             - 7.0 * (io.start**response.no)
-            + io.left**response.no
-            + io.right**response.no
-            + io.above**response.no
-            + io.below**response.no
-            + io.input_half_T**response.yes
+            - 1.0 * (io.target_mirror_L ** response.yes)
+            - 1.0 * (io.target_horizontal ** response.yes)
+            - 1.0 * (io.target_vertical ** response.yes)
             + io.input_half_T_row1 ** numbers[f"n{row}"]
             + io.input_half_T_row2 ** numbers[f"n{row}"]
             + io.input_half_T_row3 ** numbers[f"n{row + 1}"]
@@ -2990,11 +2988,9 @@ def init_participant_construction_rule_w_abstract(participant):
         (
             +7.0 * (io.start**response.yes)
             - 7.0 * (io.start**response.no)
-            + io.left**response.no
-            + io.right**response.no
-            + io.above**response.no
-            + io.below**response.no
-            + io.input_mirror_L**response.yes
+            - 1.0 * (io.target_half_T ** response.yes)
+            - 1.0 * (io.target_horizontal ** response.yes)
+            - 1.0 * (io.target_vertical ** response.yes)
             + io.input_mirror_L_row1 ** numbers[f"n{row}"]
             + io.input_mirror_L_row2 ** numbers[f"n{row + 1}"]
             + io.input_mirror_L_row3 ** numbers[f"n{row + 1}"]
@@ -3026,11 +3022,9 @@ def init_participant_construction_rule_w_abstract(participant):
         (
             +7.0 * (io.start**response.yes)
             - 7.0 * (io.start**response.no)
-            + io.left**response.no
-            + io.right**response.no
-            + io.above**response.no
-            + io.below**response.no
-            + io.input_horizontal**response.yes
+            - 1.0 * (io.target_mirror_L ** response.yes)
+            - 1.0 * (io.target_half_T ** response.yes)
+            - 1.0 * (io.target_vertical ** response.yes)
             + io.input_horizontal_row1 ** numbers[f"n{row}"]
             + io.input_horizontal_row2 ** numbers[f"n{row}"]
             + io.input_horizontal_row3 ** numbers[f"n{row}"]
@@ -3058,11 +3052,9 @@ def init_participant_construction_rule_w_abstract(participant):
         (
             +7.0 * (io.start**response.yes)
             - 7.0 * (io.start**response.no)
-            + io.left**response.no
-            + io.right**response.no
-            + io.above**response.no
-            + io.below**response.no
-            + io.input_vertical**response.yes
+            - 1.0 * (io.target_mirror_L ** response.yes)
+            - 1.0 * (io.target_horizontal ** response.yes)
+            - 1.0 * (io.target_half_T ** response.yes)
             + io.input_vertical_row1 ** numbers[f"n{row}"]
             + io.input_vertical_row2 ** numbers[f"n{row + 1}"]
             + io.input_vertical_row3 ** numbers[f"n{row + 2}"]
@@ -3090,18 +3082,15 @@ def init_participant_construction_rule_w_abstract(participant):
     half_t_left_of_horizontal_placement_rule = [
         (
             +(io.input_half_T**response.yes)
+            - 4.0 * (io.input_half_T ** response.no)
             + io.input_horizontal**response.yes
-            + io.start**response.no
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.left ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.left ** (response.no if r_switcharoo else response.yes))
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.right ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.right ** (response.yes if r_switcharoo else response.no))
-            + io.above**response.no
-            + io.below**response.no
+            - 4.0 * (io.input_horizontal ** response.no)
+
+            + 7.0 
+            * ((io.left if r_switcharoo else io.right) ** response.yes)
+            - 7.0
+            * ((io.left if r_switcharoo else io.right) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
             ** numbers[f"n{row}"]
@@ -3196,18 +3185,15 @@ def init_participant_construction_rule_w_abstract(participant):
     half_t_right_of_horizontal_placement_rule = [
         (
             +(io.input_half_T**response.yes)
+            - 4.0 * (io.input_half_T ** response.no)
             + io.input_horizontal**response.yes
-            + io.start**response.no
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.left ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.left ** (response.yes if r_switcharoo else response.no))
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.right ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.right ** (response.no if r_switcharoo else response.yes))
-            + io.above**response.no
-            + io.below**response.no
+            - 4.0 * (io.input_horizontal ** response.no)
+
+            + 7.0 
+            * ((io.right if r_switcharoo else io.left) ** response.yes)
+            - 7.0
+            * ((io.right if r_switcharoo else io.left) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
             ** numbers[f"n{row}"]
@@ -3300,18 +3286,15 @@ def init_participant_construction_rule_w_abstract(participant):
     half_t_below_horizontal_placement_rule = [
         (
             +(io.input_half_T**response.yes)
+            - 4.0 * (io.input_half_T ** response.no)
             + io.input_horizontal**response.yes
-            + io.start**response.no
-            + io.left**response.no
-            + io.right**response.no
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.above ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.above ** (response.yes if r_switcharoo else response.no))
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.below ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.below ** (response.no if r_switcharoo else response.yes))
+            - 4.0 * (io.input_horizontal ** response.no)
+
+            + 7.0 
+            * ((io.below if r_switcharoo else io.above) ** response.yes)
+            - 7.0
+            * ((io.below if r_switcharoo else io.above) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
             ** numbers[f"n{row}"]
@@ -3406,18 +3389,15 @@ def init_participant_construction_rule_w_abstract(participant):
     half_t_above_horizontal_placement_rule = [
         (
             +(io.input_half_T**response.yes)
+            - 4.0 * (io.input_half_T ** response.no)
             + io.input_horizontal**response.yes
-            + io.start**response.no
-            + io.left**response.no
-            + io.right**response.no
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.above ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.above ** (response.no if r_switcharoo else response.yes))
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.below ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.below ** (response.yes if r_switcharoo else response.no))
+            - 4.0 * (io.input_horizontal ** response.no)
+
+            + 7.0 
+            * ((io.above if r_switcharoo else io.below) ** response.yes)
+            - 7.0
+            * ((io.above if r_switcharoo else io.below) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
             ** numbers[f"n{row}"]
@@ -3512,18 +3492,15 @@ def init_participant_construction_rule_w_abstract(participant):
     half_t_left_vertical_placement_rule = [
         (
             +(io.input_half_T**response.yes)
+            - 4.0 * (io.input_half_T ** response.no)
             + io.input_vertical**response.yes
-            + io.start**response.no
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.left ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.left ** (response.no if r_switcharoo else response.yes))
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.right ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.right ** (response.yes if r_switcharoo else response.no))
-            + io.above**response.no
-            + io.below**response.no
+            - 4.0 * (io.input_vertical ** response.no)
+
+            + 7.0 
+            * ((io.left if r_switcharoo else io.right) ** response.yes)
+            - 7.0
+            * ((io.left if r_switcharoo else io.right) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
             ** numbers[f"n{row}"]
@@ -3628,18 +3605,15 @@ def init_participant_construction_rule_w_abstract(participant):
     half_t_right_vertical_placement_rule = [
         (
             +(io.input_half_T**response.yes)
+            - 4.0 * (io.input_half_T ** response.no)
             + io.input_vertical**response.yes
-            + io.start**response.no
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.left ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.left ** (response.yes if r_switcharoo else response.no))
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.right ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.right ** (response.no if r_switcharoo else response.yes))
-            + io.above**response.no
-            + io.below**response.no
+            - 4.0 * (io.input_vertical ** response.no)
+
+            + 7.0 
+            * ((io.right if r_switcharoo else io.left) ** response.yes)
+            - 7.0
+            * ((io.right if r_switcharoo else io.left) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
             ** numbers[f"n{row}"]
@@ -3730,18 +3704,15 @@ def init_participant_construction_rule_w_abstract(participant):
     half_t_below_vertical_placement_rule = [
         (
             +(io.input_half_T**response.yes)
+            - 4.0 * (io.input_half_T ** response.no)
             + io.input_vertical**response.yes
-            + io.start**response.no
-            + io.left**response.no
-            + io.right**response.no
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.above ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.above ** (response.yes if r_switcharoo else response.no))
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.below ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.below ** (response.no if r_switcharoo else response.yes))
+            - 4.0 * (io.input_vertical ** response.no)
+
+            + 7.0 
+            * ((io.below if r_switcharoo else io.above) ** response.yes)
+            - 7.0
+            * ((io.below if r_switcharoo else io.above) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
             ** numbers[f"n{row}"]
@@ -3832,18 +3803,15 @@ def init_participant_construction_rule_w_abstract(participant):
     half_t_above_vertical_placement_rule = [
         (
             +(io.input_half_T**response.yes)
+            - 4.0 * (io.input_half_T ** response.no)
             + io.input_vertical**response.yes
-            + io.start**response.no
-            + io.left**response.no
-            + io.right**response.no
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.above ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.above ** (response.no if r_switcharoo else response.yes))
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.below ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.below ** (response.yes if r_switcharoo else response.no))
+            - 4.0 * (io.input_vertical ** response.no)
+
+            + 7.0 
+            * ((io.above if r_switcharoo else io.below) ** response.yes)
+            - 7.0
+            * ((io.above if r_switcharoo else io.below) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
             ** numbers[f"n{row}"]
@@ -3933,18 +3901,15 @@ def init_participant_construction_rule_w_abstract(participant):
     half_t_left_mirror_l_placement_rule = [
         (
             +(io.input_half_T**response.yes)
+            - 4.0 * (io.input_half_T ** response.no)
             + io.input_mirror_L**response.yes
-            + io.start**response.no
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.left ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.left ** (response.no if r_switcharoo else response.yes))
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.right ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.right ** (response.yes if r_switcharoo else response.no))
-            + io.above**response.no
-            + io.below**response.no
+            - 4.0 * (io.input_mirror_L ** response.no)
+
+            + 7.0 
+            * ((io.left if r_switcharoo else io.right) ** response.yes)
+            - 7.0
+            * ((io.left if r_switcharoo else io.right) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
             ** numbers[f"n{row}"]
@@ -4039,18 +4004,15 @@ def init_participant_construction_rule_w_abstract(participant):
     half_t_right_mirror_l_placement_rule = [
         (
             +(io.input_half_T**response.yes)
+            - 4.0 * (io.input_half_T ** response.no)
             + io.input_mirror_L**response.yes
-            + io.start**response.no
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.left ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.left ** (response.yes if r_switcharoo else response.no))
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.right ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.right ** (response.no if r_switcharoo else response.yes))
-            + io.above**response.no
-            + io.below**response.no
+            - 4.0 * (io.input_mirror_L ** response.no)
+
+            + 7.0 
+            * ((io.right if r_switcharoo else io.left) ** response.yes)
+            - 7.0
+            * ((io.right if r_switcharoo else io.left) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
             ** numbers[f"n{row}"]
@@ -4147,18 +4109,15 @@ def init_participant_construction_rule_w_abstract(participant):
     half_t_below_mirror_l_placement_rule = [
         (
             +(io.input_half_T**response.yes)
+            - 4.0 * (io.input_half_T ** response.no)
             + io.input_mirror_L**response.yes
-            + io.start**response.no
-            + io.left**response.no
-            + io.right**response.no
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.above ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.above ** (response.yes if r_switcharoo else response.no))
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.below ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.below ** (response.no if r_switcharoo else response.yes))
+            - 4.0 * (io.input_mirror_L ** response.no)
+ 
+            + 7.0 
+            * ((io.below if r_switcharoo else io.above) ** response.yes)
+            - 7.0
+            * ((io.below if r_switcharoo else io.above) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
             ** numbers[f"n{row}"]
@@ -4251,18 +4210,15 @@ def init_participant_construction_rule_w_abstract(participant):
     half_t_above_mirror_l_placement_rule = [
         (
             +(io.input_half_T**response.yes)
+            - 4.0 * (io.input_half_T ** response.no)
             + io.input_mirror_L**response.yes
-            + io.start**response.no
-            + io.left**response.no
-            + io.right**response.no
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.above ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.above ** (response.no if r_switcharoo else response.yes))
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.below ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.below ** (response.yes if r_switcharoo else response.no))
+            - 4.0 * (io.input_mirror_L ** response.no)
+
+            + 7.0 
+            * ((io.above if r_switcharoo else io.below) ** response.yes)
+            - 7.0
+            * ((io.above if r_switcharoo else io.below) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
             ** numbers[f"n{row}"]
@@ -4351,19 +4307,16 @@ def init_participant_construction_rule_w_abstract(participant):
 
     mirror_l_left_horizontal_placement_rule = [
         (
-            +(io.input_mirror_L**response.yes)
-            + io.input_horizontal**response.yes
-            + io.start**response.no
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.left ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.left ** (response.no if r_switcharoo else response.yes))
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.right ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.right ** (response.yes if r_switcharoo else response.no))
-            + io.above**response.no
-            + io.below**response.no
+            +(io.input_horizontal**response.yes)
+            - 4.0 * (io.input_horizontal ** response.no)
+            + io.input_mirror_L**response.yes
+            - 4.0 * (io.input_mirror_L ** response.no)
+
+            + 7.0 
+            * ((io.left if r_switcharoo else io.right) ** response.yes)
+            - 7.0
+            * ((io.left if r_switcharoo else io.right) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_mirror_L_row1"]
             ** numbers[f"n{row}"]
@@ -4468,19 +4421,16 @@ def init_participant_construction_rule_w_abstract(participant):
 
     mirror_l_right_horizontal_placement_rule = [
         (
-            +(io.input_mirror_L**response.yes)
-            + io.input_horizontal**response.yes
-            + io.start**response.no
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.left ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.left ** (response.yes if r_switcharoo else response.no))
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.right ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.right ** (response.no if r_switcharoo else response.yes))
-            + io.above**response.no
-            + io.below**response.no
+            +(io.input_horizontal**response.yes)
+            - 4.0 * (io.input_horizontal ** response.no)
+            + io.input_mirror_L**response.yes
+            - 4.0 * (io.input_mirror_L ** response.no)
+
+            + 7.0 
+            * ((io.right if r_switcharoo else io.left) ** response.yes)
+            - 7.0
+            * ((io.right if r_switcharoo else io.left) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_mirror_L_row1"]
             ** numbers[f"n{row}"]
@@ -4587,19 +4537,16 @@ def init_participant_construction_rule_w_abstract(participant):
 
     mirror_l_above_horizontal_placement_rule = [
         (
-            +(io.input_mirror_L**response.yes)
-            + io.input_horizontal**response.yes
-            + io.start**response.no
-            + io.left**response.no
-            + io.right**response.no
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.above ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.above ** (response.no if r_switcharoo else response.yes))
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.below ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.below ** (response.yes if r_switcharoo else response.no))
+            +(io.input_horizontal**response.yes)
+            - 4.0 * (io.input_horizontal ** response.no)
+            + io.input_mirror_L**response.yes
+            - 4.0 * (io.input_mirror_L ** response.no)
+
+            + 7.0 
+            * ((io.above if r_switcharoo else io.below) ** response.yes)
+            - 7.0
+            * ((io.above if r_switcharoo else io.below) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_mirror_L_row1"]
             ** numbers[f"n{row}"]
@@ -4706,19 +4653,16 @@ def init_participant_construction_rule_w_abstract(participant):
 
     mirror_l_below_horizontal_placement_rule = [
         (
-            +(io.input_mirror_L**response.yes)
-            + io.input_horizontal**response.yes
-            + io.start**response.no
-            + io.left**response.no
-            + io.right**response.no
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.above ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.above ** (response.yes if r_switcharoo else response.no))
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.below ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.below ** (response.no if r_switcharoo else response.yes))
+            +(io.input_horizontal**response.yes)
+            - 4.0 * (io.input_horizontal ** response.no)
+            + io.input_mirror_L**response.yes
+            - 4.0 * (io.input_mirror_L ** response.no)
+
+            + 7.0 
+            * ((io.below if r_switcharoo else io.above) ** response.yes)
+            - 7.0
+            * ((io.below if r_switcharoo else io.above) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_mirror_L_row1"]
             ** numbers[f"n{row}"]
@@ -4825,19 +4769,16 @@ def init_participant_construction_rule_w_abstract(participant):
 
     mirror_l_left_vertical_placement_rule = [
         (
-            +(io.input_mirror_L**response.yes)
-            + io.input_vertical**response.yes
-            + io.start**response.no
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.left ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.left ** (response.no if r_switcharoo else response.yes))
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.right ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.right ** (response.yes if r_switcharoo else response.no))
-            + io.above**response.no
-            + io.below**response.no
+            +(io.input_vertical**response.yes)
+            - 4.0 * (io.input_vertical ** response.no)
+            + io.input_mirror_L**response.yes
+            - 4.0 * (io.input_mirror_L ** response.no)
+
+            + 7.0 
+            * ((io.left if r_switcharoo else io.right) ** response.yes)
+            - 7.0
+            * ((io.left if r_switcharoo else io.right) ** response.no)
+            
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_mirror_L_row1"]
             ** numbers[f"n{row}"]
@@ -4931,19 +4872,16 @@ def init_participant_construction_rule_w_abstract(participant):
 
     mirror_l_right_vertical_placement_rule = [
         (
-            +(io.input_mirror_L**response.yes)
-            + io.input_vertical**response.yes
-            + io.start**response.no
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.left ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.left ** (response.yes if r_switcharoo else response.no))
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.right ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.right ** (response.no if r_switcharoo else response.yes))
-            + io.above**response.no
-            + io.below**response.no
+            +(io.input_vertical**response.yes)
+            - 4.0 * (io.input_vertical ** response.no)
+            + io.input_mirror_L**response.yes
+            - 4.0 * (io.input_mirror_L ** response.no)
+            
+            + 7.0 
+            * ((io.right if r_switcharoo else io.left) ** response.yes)
+            - 7.0
+            * ((io.right if r_switcharoo else io.left) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_mirror_L_row1"]
             ** numbers[f"n{row}"]
@@ -5051,19 +4989,16 @@ def init_participant_construction_rule_w_abstract(participant):
 
     mirror_l_above_vertical_placement_rule = [
         (
-            +(io.input_mirror_L**response.yes)
-            + io.input_vertical**response.yes
-            + io.start**response.no
-            + io.left**response.no
-            + io.right**response.no
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.above ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.above ** (response.no if r_switcharoo else response.yes))
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.below ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.below ** (response.yes if r_switcharoo else response.no))
+            +(io.input_vertical**response.yes)
+            - 4.0 * (io.input_vertical ** response.no)
+            + io.input_mirror_L**response.yes
+            - 4.0 * (io.input_mirror_L ** response.no)
+
+            + 7.0 
+            * ((io.above if r_switcharoo else io.below) ** response.yes)
+            - 7.0
+            * ((io.above if r_switcharoo else io.below) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_mirror_L_row1"]
             ** numbers[f"n{row}"]
@@ -5157,19 +5092,16 @@ def init_participant_construction_rule_w_abstract(participant):
 
     mirror_l_below_vertical_placement_rule = [
         (
-            +(io.input_mirror_L**response.yes)
-            + io.input_vertical**response.yes
-            + io.start**response.no
-            + io.left**response.no
-            + io.right**response.no
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.above ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.above ** (response.yes if r_switcharoo else response.no))
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.below ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.below ** (response.no if r_switcharoo else response.yes))
+            +(io.input_vertical**response.yes)
+            - 4.0 * (io.input_vertical ** response.no)
+            + io.input_mirror_L**response.yes
+            - 4.0 * (io.input_mirror_L ** response.no)
+           
+            + 7.0 
+            * ((io.below if r_switcharoo else io.above) ** response.yes)
+            - 7.0
+            * ((io.below if r_switcharoo else io.above) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_mirror_L_row1"]
             ** numbers[f"n{row}"]
@@ -5261,18 +5193,15 @@ def init_participant_construction_rule_w_abstract(participant):
     horizontal_left_vertical_placement_rule = [
         (
             +(io.input_vertical**response.yes)
+            - 4.0 * (io.input_vertical ** response.no)
             + io.input_horizontal**response.yes
-            + io.start**response.no
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.left ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.left ** (response.no if r_switcharoo else response.yes))
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.right ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.right ** (response.yes if r_switcharoo else response.no))
-            + io.above**response.no
-            + io.below**response.no
+            - 4.0 * (io.input_horizontal ** response.no)
+            
+            + 7.0 
+            * ((io.left if r_switcharoo else io.right) ** response.yes)
+            - 7.0
+            * ((io.left if r_switcharoo else io.right) ** response.no)
+            
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_horizontal_row1"]
             ** numbers[f"n{row}"]
@@ -5378,18 +5307,15 @@ def init_participant_construction_rule_w_abstract(participant):
     horizontal_right_vertical_placement_rule = [
         (
             +(io.input_vertical**response.yes)
+            - 4.0 * (io.input_vertical ** response.no)
             + io.input_horizontal**response.yes
-            + io.start**response.no
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.left ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.left ** (response.yes if r_switcharoo else response.no))
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.right ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.right ** (response.no if r_switcharoo else response.yes))
-            + io.above**response.no
-            + io.below**response.no
+            - 4.0 * (io.input_horizontal ** response.no)
+            
+            + 7.0 
+            * ((io.right if r_switcharoo else io.left) ** response.yes)
+            - 7.0
+            * ((io.right if r_switcharoo else io.left) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_horizontal_row1"]
             ** numbers[f"n{row}"]
@@ -5495,18 +5421,15 @@ def init_participant_construction_rule_w_abstract(participant):
     horizontal_above_vertical_placement_rule = [
         (
             +(io.input_vertical**response.yes)
+            - 4.0 * (io.input_vertical ** response.no)
             + io.input_horizontal**response.yes
-            + io.start**response.no
-            + io.left**response.no
-            + io.right**response.no
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.above ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.above ** (response.no if r_switcharoo else response.yes))
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.below ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.below ** (response.yes if r_switcharoo else response.no))
+            - 4.0 * (io.input_horizontal ** response.no)
+            
+            + 7.0 
+            * ((io.above if r_switcharoo else io.below) ** response.yes)
+            - 7.0
+            * ((io.above if r_switcharoo else io.below) ** response.no)
+
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_horizontal_row1"]
             ** numbers[f"n{row}"]
@@ -5612,18 +5535,15 @@ def init_participant_construction_rule_w_abstract(participant):
     horizontal_below_vertical_placement_rule = [
         (
             +(io.input_vertical**response.yes)
+            - 4.0 * (io.input_vertical ** response.no)
             + io.input_horizontal**response.yes
-            + io.start**response.no
-            + io.left**response.no
-            + io.right**response.no
-            + (1.0 if r_switcharoo else 7.0)
-            * (io.above ** (response.no if r_switcharoo else response.yes))
-            - (1.0 if r_switcharoo else 7.0)
-            * (io.above ** (response.yes if r_switcharoo else response.no))
-            + (7.0 if r_switcharoo else 1.0)
-            * (io.below ** (response.yes if r_switcharoo else response.no))
-            - (7.0 if r_switcharoo else 1.0)
-            * (io.below ** (response.no if r_switcharoo else response.yes))
+            - 4.0 * (io.input_horizontal ** response.no)
+            
+            + 7.0 
+            * ((io.below if r_switcharoo else io.above) ** response.yes)
+            - 7.0
+            * ((io.below if r_switcharoo else io.above) ** response.no)
+            
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_horizontal_row1"]
             ** numbers[f"n{row}"]

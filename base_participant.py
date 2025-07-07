@@ -595,7 +595,7 @@ class AbstractParticipant(BaseParticipant):
         cur_choice = self.search_space_choice.poll()
 
         if (
-            self.backtracks > 10
+            self.backtracks > 25
         ):
             self.end_construction()
         elif (
