@@ -42,8 +42,8 @@ from knowledge_init import (
 from q_learning import external_mlp_handle, BATCH_SIZE
 
 EPS_START = 0.9
-EPS_END = 0.05
-EPS_DECAY = 1000
+EPS_END = 0.01
+EPS_DECAY = 120
 
 GREEDY_MOVES = []
 
@@ -208,6 +208,8 @@ class BaseParticipant(Agent):
 
         self.trigger_response = False
 
+        self.training= True
+
     def resolve(self, event: Event) -> None:
         # -- RESPONSE PROCESSING --
         if (
@@ -262,6 +264,10 @@ class BaseParticipant(Agent):
             # at this point, you should have a clear target_grid representation
             # built -- correct or incorrect
             self.system.queue.clear()
+
+    def toggle_training(self):
+        self.training = not self.training
+        return self.training
 
     def modify_matchstats(self, past_rule_choice, pm=False) -> None:
         new_rule_mask = self.search_space_matchstats.cond.new(
@@ -523,6 +529,7 @@ class AbstractParticipant(BaseParticipant):
             )
             if check_construction_input_match(self.mlp_construction_input.main.data[0].d):
                 self.transition_store[-1] = 1.0 #construction is correct and its over
+                self.construction_reward_vals[-1] = 1.0
             self.backward_qnet()
         elif event.source == self.shift_goal:
             self.forward_qnet()
@@ -698,6 +705,9 @@ class AbstractParticipant(BaseParticipant):
                 cur_additions
             )  # loop it back in --for more selections
             self.transition_store.append(-0.1)  # tiny punishment for timestep
+            self.construction_reward_vals.append(-0.1)
+            self.construction_qvals.append(
+                self.abstract_goal_choice.input[0].max().c)
 
     def modify_matchstats(self, past_rule_choice, pm=False):
         if self.select_action():
@@ -740,17 +750,19 @@ class AbstractParticipant(BaseParticipant):
         dt: timedelta = timedelta(seconds=0),
         priority: Priority = Priority.LEARNING,
     ) -> None:
-        loss = self.goal_net_optimize(use_memory=False,
-                                      **{["state",
-                                          "action",
-                                          "next_state",
-                                          "reward"][i]: self.transition_store[i] for i in range(4)},
-                                      )
 
-        self.construction_net_training_results.append(loss)
-        # push into memory buffer
-        self.goal_net_memory.push(*self.transition_store)
-        self.goal_net_update()
+        if self.training:
+            loss = self.goal_net_optimize(use_memory=False,
+                                        **{["state",
+                                            "action",
+                                            "next_state",
+                                            "reward"][i]: self.transition_store[i] for i in range(4)},
+                                        )
+
+            self.construction_net_training_results.append(loss)
+            # push into memory buffer
+            self.goal_net_memory.push(*self.transition_store)
+            self.goal_net_update()
         self.system.schedule(self.backward_qnet, dt=dt, priority=priority)
 
     def replay_optimize_qnet(
@@ -758,17 +770,21 @@ class AbstractParticipant(BaseParticipant):
         dt: timedelta = timedelta(seconds=0),
         priority: Priority = Priority.PROPAGATION,
     ) -> None:
-        for _ in tqdm(range(max(50, (20*len(self.goal_net_memory))//(BATCH_SIZE)))):
-            loss = self.goal_net_optimize(use_memory=True)
-            self.construction_net_training_results.append(loss)
-            self.goal_net_update()
+        if self.training:
+            for _ in tqdm(range(max(50, (20*len(self.goal_net_memory))//(BATCH_SIZE)))):
+                loss = self.goal_net_optimize(use_memory=True)
+                self.construction_net_training_results.append(loss)
+                self.goal_net_update()
         self.system.schedule(
             self.replay_optimize_qnet,
             dt=dt,
             priority=priority)
 
     def select_action(self):
-        steps_done = len(self.construction_net_training_results)
+        steps_done = len(self.construction_net_training_results) + 2500 + 1400 + 500
+        # if steps_done > EPS_DECAY:
+        #     r_window = sum(self.construction_reward_vals[-10:])/10
+        #     EPS_DECAY *= (0.88 + 1/(1+math.exp(2*(r_window - 1.0))))
         sample = random.random()
         eps_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(
             -1.0 * steps_done / EPS_DECAY

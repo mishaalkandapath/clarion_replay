@@ -80,12 +80,15 @@ def plot_sequences(
     plt.close()
 
 
-def simple_snsplot(df, x_label, y_label, filename, line=False, color="red"):
+def simple_snsplot(df, x_label, y_label, filename, line=False, color="red", figno=None):
+    plt.figure()
     sns.scatterplot(df, x=x_label, y=y_label)
     if line:
         sns.lineplot(df, x=x_label, y=y_label, color=color)
     plt.savefig(filename)
     plt.close()
+    if figno:
+        plt.figure(figno)
 
 
 def simple_plotting(data, x_label, y_label, filename, figno=None):
@@ -94,6 +97,17 @@ def simple_plotting(data, x_label, y_label, filename, figno=None):
     plt.plot(data)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
+    plt.savefig(filename)
+    plt.close()
+    if figno:
+        plt.figure(figno)
+
+def plot_rl_stats(window, vals, filename, figno=None):
+    cumul_vals = []
+    for i in range(0, len(vals)-window):
+        cumul_vals.append(sum(vals[i:i + window])/window)
+    plt.figure()
+    plt.plot(cumul_vals)
     plt.savefig(filename)
     plt.close()
     if figno:

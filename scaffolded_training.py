@@ -33,6 +33,8 @@ from evaluation import (
 from plotting import simple_plotting, simple_snsplot, plot_sequences
 from simulation import run_participant_session
 
+TEST_GRID_ONES = ['GRID_489', 'GRID_565', 'GRID_504', 'GRID_507', 'GRID_524', 'GRID_500', 'GRID_535', 'GRID_555', 'GRID_528', 'GRID_542', 'GRID_518', 'GRID_525', 'GRID_503', 'GRID_483', 'GRID_549', 'GRID_547', 'GRID_551']
+
 def make_special_one_grid():
     running_count = 472
     for shape in SHAPE_DICT:
@@ -152,6 +154,25 @@ def run_experiment(
         )
 
         first = False
+        break
+
+def run_tests(test_grids, model_path):
+    participant = AbstractParticipant("p1")
+    # load the model
+    participant.goal_net.load_state_dict(
+        torch.load(model_path))
+    participant.toggle_training()
+
+    name_dir = len(os.listdir("data/run_data/"))
+    os.makedirs(f"data/run_data/run_{name_dir}/figures", exist_ok=True)
+    test_grids = [grid_name.split(".")[0] for grid_name in test_grids]
+    test_trials = pd.DataFrame(test_grids, columns=["Grid_Name"])
+    test_results, test_construction_correctness, test_construction_accuracy, _, _, _, test_goal_choices = (
+        run_participant_session(participant, test_trials,
+                                q_type="booom"))
+    participant.toggle_training()
+
+
 
 if __name__ == "__main__":
     import argparse
@@ -161,6 +182,10 @@ if __name__ == "__main__":
         "--train_sessions",
         type=int,
         default=3,
+    )
+    parser.add_argument(
+        "--test",
+        action="store_true"
     )
     parser.add_argument(
         "--start_from",
@@ -181,6 +206,14 @@ if __name__ == "__main__":
 
     random.seed(0)
     os.environ["VIZ_SHOW"] = "false" if args.no_show_viz else "true"
-    run_experiment(num_train_sessions=args.train_sessions,
-                    start_from=args.start_from,
-                    model_path=args.model)
+
+    if not args.test:
+        print(f"Num Train Sesh: {args.train_sessions}\nStart From: {args.start_from}\nModel Path: {args.model}\nNo Show Viz: {args.no_show_viz}\n")
+        run_experiment(num_train_sessions=args.train_sessions,
+                        start_from=args.start_from,
+                        model_path=args.model)
+    else:
+        assert args.model
+        run_tests(TEST_GRID_ONES, args.model)
+
+# natural test for grid ones: ['GRID_489', 'GRID_565', 'GRID_504', 'GRID_507', 'GRID_524', 'GRID_500', 'GRID_535', 'GRID_555', 'GRID_528', 'GRID_542', 'GRID_518', 'GRID_525', 'GRID_503', 'GRID_483', 'GRID_549', 'GRID_547', 'GRID_551']

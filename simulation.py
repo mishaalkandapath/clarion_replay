@@ -43,7 +43,8 @@ from evaluation import (
     brick_connectedness,
 )
 from simulation_viz import SimulationVisualizer
-from plotting import simple_plotting, simple_snsplot, plot_sequences
+from plotting import (simple_plotting, simple_snsplot, 
+                      plot_sequences, plot_rl_stats)
 
 
 def present_stimulus(
@@ -278,7 +279,7 @@ def run_participant_session(
         all_constructions,
         all_rule_history,
         all_rule_lhs_history,
-        all_goal_choices,
+        all_goal_choices
     ) = [], [], [], [], [], [], []
     all_grids = []
     # Knowledge initialization
@@ -478,6 +479,17 @@ def run_participant_session(
                 "goal choices",
                 "data/figures/goal_choices.png",
             )
+            if len(participant.construction_reward_vals) >= 10:
+                plot_rl_stats(
+                            10,
+                            participant.construction_qvals,
+                            "data/figures/qvals.png"
+                )
+                plot_rl_stats(
+                            10,
+                            participant.construction_reward_vals,
+                            "data/figures/rewards.png"
+                )
 
             if session_type == "test":
                 goal_sequences = simple_goal_sequencessness(
