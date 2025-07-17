@@ -290,7 +290,7 @@ class HighLevelConstructionSignals(Atoms):
     vertical_start: Atom
     horizontal_start: Atom
 
-    half_T_horizontal_left: Atom  # reference, new block, relation
+    half_T_horizontal_left: Atom  # reference, new block, relation -- reference is in relation to new block. e.g horizontal below vertical
     half_T_horizontal_right: Atom
     half_T_horizontal_above: Atom
     half_T_horizontal_below: Atom

@@ -34,6 +34,9 @@ from plotting import simple_plotting, simple_snsplot, plot_sequences
 from simulation import run_participant_session
 
 TEST_GRID_ONES = ['GRID_489', 'GRID_565', 'GRID_504', 'GRID_507', 'GRID_524', 'GRID_500', 'GRID_535', 'GRID_555', 'GRID_528', 'GRID_542', 'GRID_518', 'GRID_525', 'GRID_503', 'GRID_483', 'GRID_549', 'GRID_547', 'GRID_551']
+TEST_GRID_TWOS = ['GRID19', 'GRID108', 'GRID53', 'GRID98', 'GRID122']
+
+TEST_GRIDS = {1: TEST_GRID_ONES, 2: TEST_GRID_TWOS}
 
 def make_special_one_grid():
     running_count = 472
@@ -72,12 +75,12 @@ def make_special_one_grid():
                     running_count += 1
 
 
-def get_grids_by_number(grid_names, num_train_sessions, start_from=1):
+def get_grids_by_number(grid_names, start_from=1, end_at=5):
     g_n = {1:[], 2:[], 3:[], 4:[]}
     for grid_name in grid_names:
-        stim_grid = np.load(f"data/processed/train_data/train_stims/{grid_name}")
+        stim_grid = np.load(f"/Users/mishaal/personalproj/clarion_replay/data/processed/train_data/train_stims/{grid_name}")
         g_n[len(np.unique(stim_grid))-1].append(grid_name)
-    for k in range(start_from, 5):
+    for k in range(start_from, end_at):
         yield g_n[k]
 
 def run_experiment(
@@ -93,20 +96,24 @@ def run_experiment(
             torch.load(model_path))
     
     g_n = get_grids_by_number(grid_names, 
-                              num_train_sessions, 
                               start_from=start_from)
     first = True
     for grid_names in g_n:
         name_dir = len(os.listdir("data/run_data/"))
         os.makedirs(f"data/run_data/run_{name_dir}/figures", exist_ok=True)
-        train_grids = random.choices(grid_names, k=num_train_sessions * 50)
-        train_grids = [grid_name.split(".")[0] for grid_name in train_grids]
+        train_grids = [grid_name.split(".")[0] for grid_name in grid_names if grid_name.split(".")[0] not in TEST_GRIDS[start_from]]
+        train_grids = random.choices(train_grids, k=num_train_sessions * 50)
         print(train_grids)
         train_trials = pd.DataFrame(train_grids, columns=["Grid_Name"])
         train_results, train_construction_correctness, train_construction_accuracy, _, _, _, train_goal_choices = (
             run_participant_session(participant, train_trials,
                                     q_type="booom", init_rules = first))
 
+        with open(f"data/run_data/run_{name_dir}/positive_buf.pkl", "wb") as f:
+            p.dump(participant.goal_net_memory.positive_memory, f)
+        with open(f"data/run_data/run_{name_dir}/negative_buf.pkl", "wb") as f:
+            p.dump(participant.goal_net_memory.negative_memory, f)
+        
         with open(f"data/run_data/run_{name_dir}/train_grids.pkl", "wb") as f:
             p.dump(train_grids, f)
         with open(f"data/run_data/run_{name_dir}/train_results.pkl", "wb") as f:

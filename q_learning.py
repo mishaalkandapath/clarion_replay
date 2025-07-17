@@ -1,6 +1,6 @@
 import random
 from collections import namedtuple, deque
-from typing import List
+from typing import List, Union
 import torch
 from torch import nn
 from torch import optim
@@ -18,7 +18,7 @@ Transition = namedtuple(
      "reward"))
 
 
-def pyc_to_torch(d: dict[Key, float], indices=List[Key]):
+def pyc_to_torch(d: dict[Union[Key, str], float], indices=List[Union[Key, str]]):
     data_array = torch.zeros(len(indices))
     for k in d:
         i = indices.index(k)
@@ -34,30 +34,37 @@ def torch_to_pyc(t: torch.Tensor, indices=List[Key]):
 
 
 class ReplayMemory:
-    def __init__(self, capacity, state_keys, action_keys):
-        self.memory = deque([], maxlen=capacity)
+    def __init__(self, capacity, state_keys, action_keys, pos_mem=False):
+        self.positive_memory = deque([], maxlen=2*capacity)
+        self.negative_memory = deque([], maxlen=capacity)
         self.state_keys = state_keys
         self.action_keys = action_keys
+        self.pos_mem = pos_mem
 
-    def push(self, *args):
+    def push(self, push_mem, *args):
         # convert state action and next state to tensors
+        assert push_mem == self.negative_memory or self.pos_mem
         state = pyc_to_torch(args[0], self.state_keys)
         action = torch.tensor([self.action_keys.index(args[1])])
         next_state = (
             pyc_to_torch(
                 args[2],
                 self.state_keys) if args[2] is not None else None)
-        self.memory.append(
+        push_mem.append(
             Transition(
                 state, action, next_state, torch.tensor([args[3]], dtype=torch.float32)
             )
         )
 
     def sample(self, batch_size):
-        return random.sample(self.memory, batch_size)
+        if not self.pos_mem: mem = self.negative_memory
+        else:
+            mem = self.positive_memory * 2 * max(len(self.negative_memory)//(1 + len(self.positive_memory)) ,1)
+            mem += self.negative_memory
+        return random.sample(mem, batch_size)
 
     def __len__(self):
-        return len(self.memory)
+        return len(self.positive_memory + self.negative_memory)
 
 
 class DQN(nn.Module):

@@ -8,3 +8,5 @@ paired_associates.ipynb
 rl_demo.ipynb
 .vscode/
 __pycache__/
+data/processed/
+data/run_data/

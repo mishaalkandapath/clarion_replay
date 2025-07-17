@@ -42,8 +42,8 @@ from knowledge_init import (
 from q_learning import external_mlp_handle, BATCH_SIZE
 
 EPS_START = 0.9
-EPS_END = 0.01
-EPS_DECAY = 120
+EPS_END = 0.05
+EPS_DECAY = 15000 #120 b1
 
 GREEDY_MOVES = []
 
@@ -573,12 +573,6 @@ class AbstractParticipant(BaseParticipant):
                         )[0]
                         for c in cur_choice
                     }
-                # cur_choice = {
-                #         c: random.choice(
-                #             [k for k in self.abstract_goal_choice.main[0]]
-                #         )
-                #         for c in cur_choice
-                #     }
 
             self.past_chosen_goals.append(
                 str(list(cur_choice.values())[0][-1][0]))
@@ -602,7 +596,7 @@ class AbstractParticipant(BaseParticipant):
         cur_choice = self.search_space_choice.poll()
 
         if (
-            self.backtracks > 25
+            self.backtracks > 75
         ):
             self.end_construction()
         elif (
@@ -630,13 +624,13 @@ class AbstractParticipant(BaseParticipant):
 
             # -- MLP ACTIONS --
             # one bad reward for the last choice
-            self.construction_reward_vals.append(-1.0)
+            self.construction_reward_vals.append(-0.1)
             self.construction_qvals.append(
                 self.abstract_goal_choice.input[0].max().c)
 
             last_construction = self.past_constructions.pop()
 
-            self.transition_store.append(-1.0)
+            self.transition_store.append(-0.1)
 
             self.mlp_construction_input.send(
                 mlpify(last_construction), flip=True)
@@ -674,8 +668,8 @@ class AbstractParticipant(BaseParticipant):
                 flip=True,
             )  # pop the last construction, also make sure to reset: flip is false as initialized with reset = false
 
-            self.transition_store.append(-1.0)
-            self.construction_reward_vals.append(-1.0)
+            self.transition_store.append(-0.1)
+            self.construction_reward_vals.append(-0.1)
             self.construction_qvals.append(
                 self.abstract_goal_choice.input[0].max().c)
             self.backtracks += 1
@@ -704,8 +698,8 @@ class AbstractParticipant(BaseParticipant):
             self.construction_input.send(
                 cur_additions
             )  # loop it back in --for more selections
-            self.transition_store.append(-0.1)  # tiny punishment for timestep
-            self.construction_reward_vals.append(-0.1)
+            self.transition_store.append(-0.01)  # tiny punishment for timestep
+            self.construction_reward_vals.append(-0.01) 
             self.construction_qvals.append(
                 self.abstract_goal_choice.input[0].max().c)
 
@@ -761,7 +755,7 @@ class AbstractParticipant(BaseParticipant):
 
             self.construction_net_training_results.append(loss)
             # push into memory buffer
-            self.goal_net_memory.push(*self.transition_store)
+            self.goal_net_memory.push(self.goal_net_memory.positive_memory if self.transition_store[-1] == 1.0 else self.goal_net_memory.negative_memory, *self.transition_store)
             self.goal_net_update()
         self.system.schedule(self.backward_qnet, dt=dt, priority=priority)
 
@@ -781,7 +775,7 @@ class AbstractParticipant(BaseParticipant):
             priority=priority)
 
     def select_action(self):
-        steps_done = len(self.construction_net_training_results) + 2500 + 1400 + 500
+        steps_done = len(self.construction_net_training_results)+ 9000
         # if steps_done > EPS_DECAY:
         #     r_window = sum(self.construction_reward_vals[-10:])/10
         #     EPS_DECAY *= (0.88 + 1/(1+math.exp(2*(r_window - 1.0))))
@@ -800,3 +794,5 @@ class AbstractParticipant(BaseParticipant):
         self.past_chosen_rule_choices = []
         self.transition_store = []
         self.backtracks = 0
+
+#total steps before convergence for block1: + 2500 + 1400 + 500
