@@ -106,8 +106,8 @@ LR = 1e-3
 ACTIONS = list(range(52))
 
 
-def external_mlp_handle(state_keys, action_keys):
-    device = torch.device("cpu")
+def external_mlp_handle(state_keys, action_keys, device="cpu"):
+    device = torch.device(device)
 
     policy_net = DQN(state_keys, action_keys)
     target_net = DQN(state_keys, action_keys)
