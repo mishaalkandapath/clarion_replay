@@ -3087,9 +3087,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_horizontal ** response.no)
 
             + 7.0 
-            * ((io.left if r_switcharoo else io.right) ** response.yes)
+            * ((io.left if switcharoo else io.right) ** response.yes)
             - 7.0
-            * ((io.left if r_switcharoo else io.right) ** response.no)
+            * ((io.left if switcharoo else io.right) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
@@ -3175,7 +3175,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col + 4 - i}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(2)
         for row in range(1, 6)
@@ -3190,9 +3190,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_horizontal ** response.no)
 
             + 7.0 
-            * ((io.right if r_switcharoo else io.left) ** response.yes)
+            * ((io.right if switcharoo else io.left) ** response.yes)
             - 7.0
-            * ((io.right if r_switcharoo else io.left) ** response.no)
+            * ((io.right if switcharoo else io.left) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
@@ -3276,7 +3276,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col - 1}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(2)
         for row in range(1, 6)
@@ -3291,9 +3291,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_horizontal ** response.no)
 
             + 7.0 
-            * ((io.below if r_switcharoo else io.above) ** response.yes)
+            * ((io.below if switcharoo else io.above) ** response.yes)
             - 7.0
-            * ((io.below if r_switcharoo else io.above) ** response.no)
+            * ((io.below if switcharoo else io.above) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
@@ -3379,7 +3379,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col + i}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(4)
         for row in range(2, 6)
@@ -3394,9 +3394,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_horizontal ** response.no)
 
             + 7.0 
-            * ((io.above if r_switcharoo else io.below) ** response.yes)
+            * ((io.above if switcharoo else io.below) ** response.yes)
             - 7.0
-            * ((io.above if r_switcharoo else io.below) ** response.no)
+            * ((io.above if switcharoo else io.below) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
@@ -3482,7 +3482,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col + i}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(3)
         for row in range(1, 5)
@@ -3497,9 +3497,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_vertical ** response.no)
 
             + 7.0 
-            * ((io.left if r_switcharoo else io.right) ** response.yes)
+            * ((io.left if switcharoo else io.right) ** response.yes)
             - 7.0
-            * ((io.left if r_switcharoo else io.right) ** response.no)
+            * ((io.left if switcharoo else io.right) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
@@ -3595,7 +3595,7 @@ def init_participant_construction_rule_w_abstract(participant):
             )
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(4)
         for row in range(1 + (i - 1 if i > 1 else 0), 4 + (math.ceil(i / 2)))
@@ -3610,9 +3610,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_vertical ** response.no)
 
             + 7.0 
-            * ((io.right if r_switcharoo else io.left) ** response.yes)
+            * ((io.right if switcharoo else io.left) ** response.yes)
             - 7.0
-            * ((io.right if r_switcharoo else io.left) ** response.no)
+            * ((io.right if switcharoo else io.left) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
@@ -3694,7 +3694,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col - 1}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(4)
         for row in range(max(1, 3 - i), 6 - max(0, i - 1))
@@ -3709,9 +3709,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_vertical ** response.no)
 
             + 7.0 
-            * ((io.below if r_switcharoo else io.above) ** response.yes)
+            * ((io.below if switcharoo else io.above) ** response.yes)
             - 7.0
-            * ((io.below if r_switcharoo else io.above) ** response.no)
+            * ((io.below if switcharoo else io.above) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
@@ -3793,7 +3793,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col + i}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(2)
         for row in range(4, 6)
@@ -3808,9 +3808,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_vertical ** response.no)
 
             + 7.0 
-            * ((io.above if r_switcharoo else io.below) ** response.yes)
+            * ((io.above if switcharoo else io.below) ** response.yes)
             - 7.0
-            * ((io.above if r_switcharoo else io.below) ** response.no)
+            * ((io.above if switcharoo else io.below) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
@@ -3892,7 +3892,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for row in range(1, 3)
         for col in range(1, 6)
@@ -3906,9 +3906,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_mirror_L ** response.no)
 
             + 7.0 
-            * ((io.left if r_switcharoo else io.right) ** response.yes)
+            * ((io.left if switcharoo else io.right) ** response.yes)
             - 7.0
-            * ((io.left if r_switcharoo else io.right) ** response.no)
+            * ((io.left if switcharoo else io.right) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
@@ -3994,7 +3994,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col + 2 + i}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(2)
         for row in range(1 + i, 6)
@@ -4009,9 +4009,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_mirror_L ** response.no)
 
             + 7.0 
-            * ((io.right if r_switcharoo else io.left) ** response.yes)
+            * ((io.right if switcharoo else io.left) ** response.yes)
             - 7.0
-            * ((io.right if r_switcharoo else io.left) ** response.no)
+            * ((io.right if switcharoo else io.left) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
@@ -4099,7 +4099,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col - 1}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(3)
         for row in range(1 + (i == 0), 6 - (i == 2))
@@ -4114,9 +4114,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_mirror_L ** response.no)
  
             + 7.0 
-            * ((io.below if r_switcharoo else io.above) ** response.yes)
+            * ((io.below if switcharoo else io.above) ** response.yes)
             - 7.0
-            * ((io.below if r_switcharoo else io.above) ** response.no)
+            * ((io.below if switcharoo else io.above) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
@@ -4200,7 +4200,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col + i}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(3)
         for row in range(3, 6)
@@ -4215,9 +4215,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_mirror_L ** response.no)
 
             + 7.0 
-            * ((io.above if r_switcharoo else io.below) ** response.yes)
+            * ((io.above if switcharoo else io.below) ** response.yes)
             - 7.0
-            * ((io.above if r_switcharoo else io.below) ** response.no)
+            * ((io.above if switcharoo else io.below) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_half_T_row1"]
@@ -4299,7 +4299,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for row in range(1, 4)
         for col in range(2, 6)
@@ -4313,9 +4313,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_mirror_L ** response.no)
 
             + 7.0 
-            * ((io.left if r_switcharoo else io.right) ** response.yes)
+            * ((io.left if switcharoo else io.right) ** response.yes)
             - 7.0
-            * ((io.left if r_switcharoo else io.right) ** response.no)
+            * ((io.left if switcharoo else io.right) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_mirror_L_row1"]
@@ -4412,7 +4412,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col + 3}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(2)
         for row in range(1, 6)
@@ -4427,9 +4427,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_mirror_L ** response.no)
 
             + 7.0 
-            * ((io.right if r_switcharoo else io.left) ** response.yes)
+            * ((io.right if switcharoo else io.left) ** response.yes)
             - 7.0
-            * ((io.right if r_switcharoo else io.left) ** response.no)
+            * ((io.right if switcharoo else io.left) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_mirror_L_row1"]
@@ -4528,7 +4528,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col - 1 - i}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(2)
         for row in range(1, 6)
@@ -4543,9 +4543,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_mirror_L ** response.no)
 
             + 7.0 
-            * ((io.above if r_switcharoo else io.below) ** response.yes)
+            * ((io.above if switcharoo else io.below) ** response.yes)
             - 7.0
-            * ((io.above if r_switcharoo else io.below) ** response.no)
+            * ((io.above if switcharoo else io.below) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_mirror_L_row1"]
@@ -4644,7 +4644,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col - 1 + i}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(4)
         for row in range(1, 5)
@@ -4659,9 +4659,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_mirror_L ** response.no)
 
             + 7.0 
-            * ((io.below if r_switcharoo else io.above) ** response.yes)
+            * ((io.below if switcharoo else io.above) ** response.yes)
             - 7.0
-            * ((io.below if r_switcharoo else io.above) ** response.no)
+            * ((io.below if switcharoo else io.above) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_mirror_L_row1"]
@@ -4760,7 +4760,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col + i}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(3)
         for row in range(2, 6)
@@ -4775,9 +4775,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_mirror_L ** response.no)
 
             + 7.0 
-            * ((io.left if r_switcharoo else io.right) ** response.yes)
+            * ((io.left if switcharoo else io.right) ** response.yes)
             - 7.0
-            * ((io.left if r_switcharoo else io.right) ** response.no)
+            * ((io.left if switcharoo else io.right) ** response.no)
             
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_mirror_L_row1"]
@@ -4863,7 +4863,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col + 1}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(4)
         for row in range(max(3 - i, 1), 6 - (0 if i < 2 else i - 1))
@@ -4878,9 +4878,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_mirror_L ** response.no)
             
             + 7.0 
-            * ((io.right if r_switcharoo else io.left) ** response.yes)
+            * ((io.right if switcharoo else io.left) ** response.yes)
             - 7.0
-            * ((io.right if r_switcharoo else io.left) ** response.no)
+            * ((io.right if switcharoo else io.left) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_mirror_L_row1"]
@@ -4980,7 +4980,7 @@ def init_participant_construction_rule_w_abstract(participant):
             )
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(4)
         for row in range(1 + max(0, i - 1), min(4 + i, 6))
@@ -4995,9 +4995,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_mirror_L ** response.no)
 
             + 7.0 
-            * ((io.above if r_switcharoo else io.below) ** response.yes)
+            * ((io.above if switcharoo else io.below) ** response.yes)
             - 7.0
-            * ((io.above if r_switcharoo else io.below) ** response.no)
+            * ((io.above if switcharoo else io.below) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_mirror_L_row1"]
@@ -5083,7 +5083,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col - 1 + i}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(2)
         for row in range(1, 3)
@@ -5098,9 +5098,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_mirror_L ** response.no)
            
             + 7.0 
-            * ((io.below if r_switcharoo else io.above) ** response.yes)
+            * ((io.below if switcharoo else io.above) ** response.yes)
             - 7.0
-            * ((io.below if r_switcharoo else io.above) ** response.no)
+            * ((io.below if switcharoo else io.above) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_mirror_L_row1"]
@@ -5184,7 +5184,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for row in range(4, 6)
         for col in range(2, 7)
@@ -5198,9 +5198,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_horizontal ** response.no)
             
             + 7.0 
-            * ((io.left if r_switcharoo else io.right) ** response.yes)
+            * ((io.left if switcharoo else io.right) ** response.yes)
             - 7.0
-            * ((io.left if r_switcharoo else io.right) ** response.no)
+            * ((io.left if switcharoo else io.right) ** response.no)
             
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_horizontal_row1"]
@@ -5297,7 +5297,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col + 2}"] if not switcharoo else numbers[f"n{col + 3}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(3)
         for row in range(3 - i, 7 - i)
@@ -5312,9 +5312,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_horizontal ** response.no)
             
             + 7.0 
-            * ((io.right if r_switcharoo else io.left) ** response.yes)
+            * ((io.right if switcharoo else io.left) ** response.yes)
             - 7.0
-            * ((io.right if r_switcharoo else io.left) ** response.no)
+            * ((io.right if switcharoo else io.left) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_horizontal_row1"]
@@ -5411,7 +5411,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col + 2}"] if not switcharoo else numbers[f"n{col - 1}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(3)
         for row in range(3 - i, 7 - i)
@@ -5426,9 +5426,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_horizontal ** response.no)
             
             + 7.0 
-            * ((io.above if r_switcharoo else io.below) ** response.yes)
+            * ((io.above if switcharoo else io.below) ** response.yes)
             - 7.0
-            * ((io.above if r_switcharoo else io.below) ** response.no)
+            * ((io.above if switcharoo else io.below) ** response.no)
 
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_horizontal_row1"]
@@ -5525,7 +5525,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col + 2}"] if not switcharoo else numbers[f"n{col + i}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(3)
         for row in range(1, 4)
@@ -5540,9 +5540,9 @@ def init_participant_construction_rule_w_abstract(participant):
             - 4.0 * (io.input_horizontal ** response.no)
             
             + 7.0 
-            * ((io.below if r_switcharoo else io.above) ** response.yes)
+            * ((io.below if switcharoo else io.above) ** response.yes)
             - 7.0
-            * ((io.below if r_switcharoo else io.above) ** response.no)
+            * ((io.below if switcharoo else io.above) ** response.no)
             
             + (2.0 if switcharoo else 1.0)
             * io[f"{'target' if switcharoo else 'input'}_horizontal_row1"]
@@ -5639,7 +5639,7 @@ def init_participant_construction_rule_w_abstract(participant):
             ** (numbers[f"n{col + 2}"] if not switcharoo else numbers[f"n{col + i}"])
             + io.construction_signal**con_signal.continue_construction
         )
-        for r_switcharoo in (True, False)
+        
         for switcharoo in (True, False)
         for i in range(3)
         for row in range(4, 7)

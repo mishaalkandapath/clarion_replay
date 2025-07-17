@@ -11,7 +11,7 @@ from tqdm import tqdm
 from q_learning import pyc_to_torch, torch_to_pyc
 from utils import SHAPE_DICT, SHAPES, SHAPE_SHAPE_REL, SHAPE_START
 from evaluation import mk_besideness, mk_ontopness
-from scaffolded_training import get_grids_by_number
+from scaffolded_training import get_grids_by_number, TEST_GRIDS
 
 STATE_KEYS = ['input_half_T_row1', 'input_half_T_row2', 'input_half_T_row3',
  'input_half_T_col1', 'input_half_T_col2', 'input_half_T_col3', 'input_mirror_L_row1', 'input_mirror_L_row2', 'input_mirror_L_row3', 'input_mirror_L_col1', 'input_mirror_L_col2', 'input_mirror_L_col3', 'input_vertical_row1', 'input_vertical_row2', 'input_vertical_row3', 'input_vertical_col1', 'input_vertical_col2', 'input_vertical_col3', 'input_horizontal_row1', 'input_horizontal_row2', 'input_horizontal_row3', 'input_horizontal_col1', 'input_horizontal_col2', 'input_horizontal_col3', 'target_half_T_row1', 'target_half_T_row2', 'target_half_T_row3', 'target_half_T_col1', 'target_half_T_col2', 'target_half_T_col3', 'target_mirror_L_row1', 'target_mirror_L_row2', 'target_mirror_L_row3', 'target_mirror_L_col1', 'target_mirror_L_col2', 'target_mirror_L_col3', 'target_vertical_row1', 'target_vertical_row2', 'target_vertical_row3', 'target_vertical_col1', 'target_vertical_col2', 'target_vertical_col3', 'target_horizontal_row1', 'target_horizontal_row2', 'target_horizontal_row3', 'target_horizontal_col1', 'target_horizontal_col2', 'target_horizontal_col3']
@@ -107,6 +107,8 @@ if __name__ == "__main__":
     i = 0
     for files in gn:
         print(files)
+        test_files = TEST_GRIDS[i+1]
+        files = list(set(files).difference(test_files))
         dataset = []
         for filename in tqdm(files):
             grid, grid_tensor = make_mlp_input(f"data/processed/train_data/train_stims/{filename}")
@@ -115,4 +117,13 @@ if __name__ == "__main__":
         f = open(f"train_dataset_b{i+1}.pkl", "wb")
         pickle.dump(dataset, f)
         f.close()
+        dataset = []
+        for filename in tqdm(test_files):
+            grid, grid_tensor = make_mlp_input(f"data/processed/train_data/train_stims/{filename}")
+            dataset += make_transitions_for_grid(grid, np.zeros_like(grid), grid_tensor)
+        print(len(dataset))
+        f = open(f"test_dataset_b{i+1}.pkl", "wb")
+        pickle.dump(dataset, f)
+        f.close()
+
         i+=1

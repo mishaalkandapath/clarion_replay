@@ -33,10 +33,13 @@ from evaluation import (
 from plotting import simple_plotting, simple_snsplot, plot_sequences
 from simulation import run_participant_session
 
-TEST_GRID_ONES = ['GRID_489', 'GRID_565', 'GRID_504', 'GRID_507', 'GRID_524', 'GRID_500', 'GRID_535', 'GRID_555', 'GRID_528', 'GRID_542', 'GRID_518', 'GRID_525', 'GRID_503', 'GRID_483', 'GRID_549', 'GRID_547', 'GRID_551']
-TEST_GRID_TWOS = ['GRID19', 'GRID108', 'GRID53', 'GRID98', 'GRID122']
+TEST_GRID_ONES = ['GRID_489.npy', 'GRID_565.npy', 'GRID_504.npy', 'GRID_507.npy', 'GRID_524.npy', 'GRID_500.npy', 'GRID_535.npy', 'GRID_555.npy', 'GRID_528.npy', 'GRID_542.npy', 'GRID_518.npy', 'GRID_525.npy', 'GRID_503.npy', 'GRID_483.npy', 'GRID_549.npy', 'GRID_547.npy', 'GRID_551.npy']
+TEST_GRID_TWOS = ['GRID19.npy', 'GRID108.npy', 'GRID53.npy', 'GRID98.npy', 'GRID122.npy']
+TEST_GRID_THREES = ['GRID446.npy', 'GRID290.npy', 'GRID330.npy', 'GRID1.npy', 'GRID129.npy', 'GRID14.npy', 'GRID99.npy', 'GRID210.npy', 'GRID329.npy', 'GRID134.npy', 'GRID379.npy', 'GRID46.npy', 'GRID44.npy', 'GRID274.npy', 'GRID286.npy', 'GRID241.npy', 'GRID146.npy']
+TEST_GRID_FOURS = ['GRID331_.npy', 'GRID451_.npy', 'GRID406_.npy', 'GRID405_.npy', 'GRID357_.npy', 'GRID382_.npy', 'GRID467_.npy', 'GRID61_.npy', 'GRID149_.npy', 'GRID367_.npy', 'GRID432_.npy', 'GRID171_.npy', 'GRID302_.npy', 'GRID120_.npy', 'GRID389_.npy', 'GRID392_.npy', 'GRID435_.npy', 'GRID111_.npy', 'GRID60_.npy', 'GRID48_.npy', 'GRID442_.npy', 'GRID293_.npy', 'GRID362_.npy', 'GRID461_.npy', 'GRID422_.npy']
 
-TEST_GRIDS = {1: TEST_GRID_ONES, 2: TEST_GRID_TWOS}
+TEST_GRIDS = {1: TEST_GRID_ONES, 2: TEST_GRID_TWOS, 
+              3: TEST_GRID_THREES, 4: TEST_GRID_FOURS}
 
 def make_special_one_grid():
     running_count = 472
