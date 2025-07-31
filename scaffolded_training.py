@@ -170,7 +170,7 @@ def run_tests(test_grids, model_path):
     participant = AbstractParticipant("p1")
     # load the model
     participant.goal_net.load_state_dict(
-        torch.load(model_path))
+        torch.load(model_path, weights_only=True, map_location=torch.device("cpu")))
     participant.toggle_training()
 
     name_dir = len(os.listdir("data/run_data/"))
@@ -198,6 +198,10 @@ if __name__ == "__main__":
         action="store_true"
     )
     parser.add_argument(
+        "--test_train",
+        action="store_true",
+        help="test on the train grids -- just to see whats up")
+    parser.add_argument(
         "--start_from",
         type=int,
         default=1
@@ -224,6 +228,14 @@ if __name__ == "__main__":
                         model_path=args.model)
     else:
         assert args.model
-        run_tests(TEST_GRID_ONES, args.model)
+        if not args.test_train:
+            test_grids = TEST_GRIDS[args.start_from]
+        else:
+            test_grids = []
+            gn = get_grids_by_number(os.listdir("data/processed/train_data/train_stims/"), start_from=args.start_from, end_at=args.start_from+1)
+            for grid_names in gn:
+                grid_names = [g for g in grid_names if g not in TEST_GRIDS[args.start_from]]
+                test_grids.extend(grid_names)
+        run_tests(test_grids, args.model)
 
 # natural test for grid ones: ['GRID_489', 'GRID_565', 'GRID_504', 'GRID_507', 'GRID_524', 'GRID_500', 'GRID_535', 'GRID_555', 'GRID_528', 'GRID_542', 'GRID_518', 'GRID_525', 'GRID_503', 'GRID_483', 'GRID_549', 'GRID_547', 'GRID_551']
