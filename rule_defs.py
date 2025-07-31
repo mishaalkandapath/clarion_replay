@@ -308,25 +308,25 @@ def init_participant_response_rules(participant) -> None:
 
     half_t_below_vertical = [
         (
-            +(io.query_block ** (bricks.half_T if not switcharoo else bricks.vertical))
+            +(io.query_block ** (bricks.half_T if switcharoo else bricks.vertical))
             - io.query_block**bricks.horizontal
             - io.query_block**bricks.mirror_L
-            - io.query_block ** (bricks.vertical if not switcharoo else bricks.half_T)
+            - io.query_block ** (bricks.vertical if switcharoo else bricks.half_T)
             + io.query_block_reference
-            ** (bricks.vertical if not switcharoo else bricks.half_T)
+            ** (bricks.vertical if switcharoo else bricks.half_T)
             - io.query_block_reference**bricks.horizontal
             - io.query_block_reference**bricks.mirror_L
             - io.query_block_reference
-            ** (bricks.half_T if not switcharoo else bricks.vertical)
+            ** (bricks.half_T if switcharoo else bricks.vertical)
             + 2.0
             * (
                 io.query_relation
-                ** (query_rel.below if not switcharoo else query_rel.above)
+                ** (query_rel.below if switcharoo else query_rel.above)
             )
             - 2.0
             * (
                 io.query_relation
-                ** (query_rel.above if not switcharoo else query_rel.below)
+                ** (query_rel.above if switcharoo else query_rel.below)
             )
             - 2.0 * (io.query_relation**query_rel.left)
             - 2.0 * (io.query_relation**query_rel.right)
@@ -340,7 +340,7 @@ def init_participant_response_rules(participant) -> None:
             + io.target_half_T_col3 ** numbers[f"n{col}"]
             + io.target_vertical_row1 ** numbers[f"n{row - 3}"]
             + io.target_vertical_row2 ** numbers[f"n{row - 2}"]
-            + io.target_vertical_row3 ** numbers[f"n{row - 3}"]
+            + io.target_vertical_row3 ** numbers[f"n{row - 1}"]
             + io.target_vertical_col1 ** numbers[f"n{col + i}"]
             + io.target_vertical_col2 ** numbers[f"n{col + i}"]
             + io.target_vertical_col3 ** numbers[f"n{col + i}"]
@@ -354,20 +354,20 @@ def init_participant_response_rules(participant) -> None:
 
     half_t_above_vertical = [
         (
-            +(io.query_block ** (bricks.half_T if not switcharoo else bricks.vertical))
+            +(io.query_block ** (bricks.half_T if switcharoo else bricks.vertical))
             - io.query_block**bricks.horizontal
             - io.query_block**bricks.mirror_L
-            - io.query_block ** (bricks.vertical if not switcharoo else bricks.half_T)
+            - io.query_block ** (bricks.vertical if switcharoo else bricks.half_T)
             + io.query_block_reference
-            ** (bricks.vertical if not switcharoo else bricks.half_T)
+            ** (bricks.vertical if switcharoo else bricks.half_T)
             - io.query_block_reference**bricks.horizontal
             - io.query_block_reference**bricks.mirror_L
             - io.query_block_reference
-            ** (bricks.half_T if not switcharoo else bricks.vertical)
+            ** (bricks.half_T if switcharoo else bricks.vertical)
             + 2.0
             * (
                 io.query_relation
-                ** (query_rel.above if not switcharoo else query_rel.below)
+                ** (query_rel.above if switcharoo else query_rel.below)
             )
             - 2.0
             * (
@@ -3832,13 +3832,13 @@ def init_participant_construction_rule_w_abstract(participant):
             ** numbers[f"n{col}"]
             + (1.0 if switcharoo else 2.0)
             * io[f"{'input' if switcharoo else 'target'}_vertical_row1"]
-            ** numbers[f"n{row + 1}"]
-            + (1.0 if switcharoo else 2.0)
-            * io[f"{'input' if switcharoo else 'target'}_vertical_row2"]
             ** numbers[f"n{row + 2}"]
             + (1.0 if switcharoo else 2.0)
-            * io[f"{'input' if switcharoo else 'target'}_vertical_row3"]
+            * io[f"{'input' if switcharoo else 'target'}_vertical_row2"]
             ** numbers[f"n{row + 3}"]
+            + (1.0 if switcharoo else 2.0)
+            * io[f"{'input' if switcharoo else 'target'}_vertical_row3"]
+            ** numbers[f"n{row + 4}"]
             + (1.0 if switcharoo else 2.0)
             * io[f"{'input' if switcharoo else 'target'}_vertical_col1"]
             ** numbers[f"n{col}"]
@@ -3879,11 +3879,11 @@ def init_participant_construction_rule_w_abstract(participant):
             >> +(io[f"target_{'vertical' if switcharoo else 'half_T'}"] ** response.yes)
             + io[f"target_{'half_T' if switcharoo else 'vertical'}"] ** response.yes
             + io[f"target_{'vertical' if switcharoo else 'half_T'}_row1"]
-            ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row + 1}"])
-            + io[f"target_{'vertical' if switcharoo else 'half_T'}_row2"]
             ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row + 2}"])
+            + io[f"target_{'vertical' if switcharoo else 'half_T'}_row2"]
+            ** (numbers[f"n{row}"] if not switcharoo else numbers[f"n{row + 3}"])
             + io[f"target_{'vertical' if switcharoo else 'half_T'}_row3"]
-            ** (numbers[f"n{row + 1}"] if not switcharoo else numbers[f"n{row + 3}"])
+            ** (numbers[f"n{row + 1}"] if not switcharoo else numbers[f"n{row + 4}"])
             + io[f"target_{'vertical' if switcharoo else 'half_T'}_col1"]
             ** (numbers[f"n{col}"] if not switcharoo else numbers[f"n{col}"])
             + io[f"target_{'vertical' if switcharoo else 'half_T'}_col2"]

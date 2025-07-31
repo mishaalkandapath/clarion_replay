@@ -596,7 +596,7 @@ class AbstractParticipant(BaseParticipant):
         cur_choice = self.search_space_choice.poll()
 
         if (
-            self.backtracks > 75
+            self.backtracks > 15
         ):
             self.end_construction()
         elif (
@@ -775,6 +775,7 @@ class AbstractParticipant(BaseParticipant):
             priority=priority)
 
     def select_action(self):
+        if not self.training: return True
         steps_done = len(self.construction_net_training_results)+ 9000
         # if steps_done > EPS_DECAY:
         #     r_window = sum(self.construction_reward_vals[-10:])/10
