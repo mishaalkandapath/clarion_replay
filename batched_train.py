@@ -1,4 +1,7 @@
 import pickle
+import signal
+import sys
+import os
 from itertools import product
 from typing import List, Tuple
 
@@ -8,7 +11,7 @@ from tqdm import tqdm
 
 import waitGPU
 waitGPU.wait(memory_ratio=0.001,
-             gpu_ids=[1,2], interval=10, nproc=1, ngpu=1)
+             gpu_ids=[0,1], interval=10, nproc=1, ngpu=1)
 
 import torch 
 import torch.nn.functional as F
@@ -20,6 +23,26 @@ from batched_data_prep import STATE_KEYS, ACTION_KEYS
 
 STATE_KEYS = list(product(STATE_KEYS, 
                       ["1", "2", "3", "4", "5", "6"]))
+interrupted = False
+train_obj_global = None
+run_name_global = None
+
+def signal_handler(signum, frame):
+    global interrupted, train_obj_global, run_name_global
+    print("\n\nReceived interrupt signal (Ctrl+C). Saving model and exiting gracefully...")
+    interrupted = True
+    
+    if train_obj_global is not None and run_name_global is not None:
+        try:
+            os.makedirs(f"data/run_data/{run_name_global}", exist_ok=True)
+            save_path = f"data/run_data/{run_name_global}/interrupted_model.pt"
+            torch.save(train_obj_global.policy_net.state_dict(), save_path)
+            print(f"Model saved to: {save_path}")
+        except Exception as e:
+            print(f"Error saving model: {e}")
+    
+    print("Exiting...")
+    sys.exit(0)
 
 class QValPlotter:
     def __init__(self, output_dir='plots', figsize=(10, 6)):
@@ -152,20 +175,15 @@ class EpisodeDataset(Dataset):
         )
 
 class TrainBatched:
-    def __init__(self, model_path: str= None, target_path: str=None,
+    def __init__(self, model_path: str= None,
                  gamma: float = 0.9, tau: float=0.005, lr :float=1e-3,
                  device="cpu"):
         
         policy_net = DQN(STATE_KEYS, ACTION_KEYS)
-        target_net = DQN(STATE_KEYS, ACTION_KEYS)
         if model_path:
             policy_net.load_state_dict(torch.load(model_path, weights_only=True))
-            target_net.load_state_dict(torch.load(target_path, weights_only=True))
-        else:
-            target_net.load_state_dict(policy_net.state_dict())
         
         self.policy_net = policy_net.to(device)
-        self.target_net = target_net.to(device)
         self.optimizer = optim.Adam(policy_net.parameters(), lr=lr)
 
         #h-parameters
@@ -189,9 +207,6 @@ class TrainBatched:
         next_state_values = torch.zeros(state_batch.size(0), device=self.device)
         with torch.no_grad():
             if torch.any(non_final_mask):
-                # next_state_values[non_final_mask] = (
-                #     self.target_net(non_final_next_states).max(1).values
-                # )
                 next_state_values[non_final_mask] = (
                     self.policy_net(non_final_next_states).max(1).values
                 )
@@ -210,19 +225,8 @@ class TrainBatched:
         # In-place gradient clipping
         torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
         self.optimizer.step()
-        # self.soft_update()
 
         return loss.item(), state_action_values
-
-    def soft_update(self):
-        target_net_state_dict = self.target_net.state_dict()
-        policy_net_state_dict = self.policy_net.state_dict()
-
-        for key in policy_net_state_dict:
-            target_net_state_dict[key] = policy_net_state_dict[
-                key
-            ] * self.tau + target_net_state_dict[key] * (1.0 - self.tau)
-        self.target_net.load_state_dict(target_net_state_dict)
 
 def transitions_collate(batch: List[Transition]) -> Tuple[torch.tensor]:
     batch = Transition(*zip(*batch))
@@ -239,7 +243,9 @@ def transitions_collate(batch: List[Transition]) -> Tuple[torch.tensor]:
     return (state_batch, action_batch, 
             reward_batch, non_final_next_states, non_final_mask)
 
-def check_accuracy(policy_net: DQN, dataset: EpisodeDataset, device) -> float:
+def check_accuracy(policy_net: DQN, 
+                   dataset: EpisodeDataset,
+                   device: str) -> float:
     batch_size = min(8192, len(dataset.states_ref))
     with torch.no_grad():
         states = dataset.states_ref.copy()
@@ -266,20 +272,37 @@ def training(train_obj: TrainBatched, dataset_files: List[str],
              epochs=100, batch_size=128,
              device="cpu",
              run_until_accurate=False):
+    global interrupted
     dataset = EpisodeDataset(dataset_files)
     dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=5, collate_fn=transitions_collate)
     losses = []
     accuracies = [0]
     epochs_left = epochs
     running_count = 0
-    while (accuracies[-1] < 0.9 and run_until_accurate) or epochs_left:
+    action_buffer = []
+
+    while (accuracies[-1] < 0.999 and run_until_accurate) or epochs_left:
+        if interrupted:
+            print("Training interrupted by user. Exiting...")
+            break
         qval_plotter = QValPlotter(f"data/run_data/{run_name}/figures/")
         pbar = tqdm(range(epochs))
         epochs_left = epochs
+
         for _ in pbar:
+            if interrupted:
+                print("\nTraining interrupted by user. Exiting...")
+                qval_plotter.close()
+                return
+            
             qvals = []
             rewards = []
             for batch in dataloader:
+                if interrupted:
+                    print("\nTraining interrupted by user. Exiting...")
+                    qval_plotter.close()
+                    return
+        
                 batch = [t.to(device=device) for t in batch]
                 _, _, reward, _, _ = batch
                 loss, qval = train_obj.optimize_model(batch)
@@ -291,26 +314,49 @@ def training(train_obj: TrainBatched, dataset_files: List[str],
                 qvals.extend(qval.squeeze(1).detach().tolist())
                 rewards.extend((reward > 0).squeeze(1).detach().tolist())
                 pbar.set_description(f"Loss: {loss}")
+
             qval_plotter.update_and_save(qvals, rewards, filename=f"qvals_train_{running_count}.png")
-            accuracy, action_vals = check_accuracy(train_obj.policy_net, dataset, device)
-            accuracies.append(accuracy)
-            fig = plt.figure()
-            plt.plot(accuracies)
-            plt.savefig(f"data/run_data/{run_name}/figures/accuracies.png")
-            plt.close(fig)
-            fig = plt.figure()
-            plt.plot(action_vals)
-            plt.savefig(f"data/run_data/{run_name}/figures/actions.png")
-            plt.close(fig)
             epochs_left -= 1 
+
+        accuracy, action_vals = check_accuracy(train_obj.policy_net, dataset, device)
+        action_buffer.extend(action_vals)
+        accuracies.append(accuracy)
+        fig = plt.figure()
+        plt.plot(accuracies)
+        plt.savefig(f"data/run_data/{run_name}/figures/accuracies.png")
+        plt.close(fig)
+        fig = plt.figure()
+        plt.plot(action_buffer)
+        plt.savefig(f"data/run_data/{run_name}/figures/actions.png")
+        plt.close(fig)
         qval_plotter.close()
         running_count +=1
 
+def testing(model_path: str, dataset_files: List[str], test_name:str,
+            device="cpu"):
+    policy_net = DQN(STATE_KEYS, ACTION_KEYS)
+    policy_net.load_state_dict(torch.load(model_path, weights_only=True))
+    policy_net = policy_net.to(device)
+    dataset = EpisodeDataset(dataset_files)
+
+    action_buffer = []
+    accuracy, action_vals = check_accuracy(policy_net, dataset, device)
+    action_buffer.extend(action_vals)
+    fig = plt.figure()
+    plt.plot(action_buffer)
+    plt.savefig(f"data/run_data/{test_name}/figures/actions.png")
+    plt.close(fig)
+
+    print(f"--- Test ended with accuracy {accuracy}----")
 
 if __name__ == "__main__":
     import argparse
-    import os
+    
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
     parser = argparse.ArgumentParser()
+    parser.add_argument("--test", action="store_true")
     parser.add_argument("--epochs", type=int, default = 10)
     parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--gamma", type=float, default=0.9)
@@ -320,28 +366,30 @@ if __name__ == "__main__":
     parser.add_argument("--run_name", required=True)
     parser.add_argument("--cpu", action="store_true")
     parser.add_argument("--model", default=None)
-    parser.add_argument("--target_model", default=None)
     parser.add_argument("--run_until_accurate", action="store_true")
 
     args = parser.parse_args()
-    assert not (args.model or args.target_model) or (args.model and args.target_model)
     torch.manual_seed(0)
 
     os.makedirs(f"data/run_data/{args.run_name}/figures", exist_ok=True)
 
-    train_obj = TrainBatched(args.model, args.target_model,
-                             args.gamma, args.tau, args.lr,
-                             device=torch.device("cuda" if not args.cpu or not torch.cuda.is_available() else "cpu"))
-    training(train_obj, args.dataset_files, 
-             args.run_name,
-             args.epochs, args.batch_size,
-             device=torch.device("cuda" if not args.cpu or not torch.cuda.is_available() else "cpu"),
-             run_until_accurate=args.run_until_accurate)
     
-    torch.save(train_obj.policy_net.state_dict(), f"data/run_data/{args.run_name}/goal_net.pt")
-    torch.save(train_obj.target_net.state_dict(), f"data/run_data/{args.run_name}/goal_net_target.pt")
+    if not args.test:
+        train_obj = TrainBatched(args.model,
+                                args.gamma, args.tau, args.lr,
+                                device=torch.device("cuda" if not args.cpu or not torch.cuda.is_available() else "cpu"))
+        training(train_obj, args.dataset_files, 
+                args.run_name,
+                args.epochs, args.batch_size,
+                device=torch.device("cuda" if not args.cpu or not torch.cuda.is_available() else "cpu"),
+                run_until_accurate=args.run_until_accurate)
+        
+        torch.save(train_obj.policy_net.state_dict(), f"data/run_data/{args.run_name}/goal_net.pt")
 
-    #dump hyperparameters
-    f = open(f"data/run_data/{args.run_name}/hyperparams.pkl", "wb")
-    pickle.dump([args.epochs, args.batch_size, args.gamma, args.tau, args.lr], f)
-    f.close()
+        #dump hyperparameters
+        f = open(f"data/run_data/{args.run_name}/hyperparams.pkl", "wb")
+        pickle.dump([args.epochs, args.batch_size, args.gamma, args.tau, args.lr], f)
+        f.close()
+    else:
+        testing(args.model, args.dataset_files, args.run_name, 
+                device=torch.device("cuda" if not args.cpu or not torch.cuda.is_available() else "cpu"))
