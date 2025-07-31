@@ -175,11 +175,11 @@ class EpisodeDataset(Dataset):
         )
 
 class TrainBatched:
-    def __init__(self, model_path: str= None,
+    def __init__(self, model_path: str= None, num_layers: int=8,
                  gamma: float = 0.9, tau: float=0.005, lr :float=1e-3,
                  device="cpu"):
         
-        policy_net = DQN(STATE_KEYS, ACTION_KEYS)
+        policy_net = DQN(STATE_KEYS, ACTION_KEYS, n_layers=num_layers)
         if model_path:
             policy_net.load_state_dict(torch.load(model_path, weights_only=True))
         
@@ -281,7 +281,7 @@ def training(train_obj: TrainBatched, dataset_files: List[str],
     running_count = 0
     action_buffer = []
 
-    while (accuracies[-1] < 0.999 and run_until_accurate) or epochs_left:
+    while (accuracies[-1] < 0.9 and run_until_accurate) or epochs_left:
         if interrupted:
             print("Training interrupted by user. Exiting...")
             break
@@ -367,6 +367,7 @@ if __name__ == "__main__":
     parser.add_argument("--cpu", action="store_true")
     parser.add_argument("--model", default=None)
     parser.add_argument("--run_until_accurate", action="store_true")
+    parser.add_argument("--num_layers", type=int, required=True)
 
     args = parser.parse_args()
     torch.manual_seed(0)
@@ -375,7 +376,7 @@ if __name__ == "__main__":
 
     
     if not args.test:
-        train_obj = TrainBatched(args.model,
+        train_obj = TrainBatched(args.model, args.num_layers,
                                 args.gamma, args.tau, args.lr,
                                 device=torch.device("cuda" if not args.cpu or not torch.cuda.is_available() else "cpu"))
         training(train_obj, args.dataset_files, 
