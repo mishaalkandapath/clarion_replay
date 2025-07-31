@@ -50,7 +50,7 @@ def make_special_one_grid():
                     grid = np.zeros((6, 6))
                     
                     grid[[row, row+1, row+1], [col, col, col-1]] = SHAPE_DICT[shape]
-                    np.save(f"/Users/mishaal/personalproj/clarion_replay/data/processed/train_data/train_stims/GRID_{running_count}.npy", grid)
+                    np.save(f"data/processed/train_data/train_stims/GRID_{running_count}.npy", grid)
                     running_count += 1
         elif shape == "half_T":
             for row in range(0, 5):
@@ -58,7 +58,7 @@ def make_special_one_grid():
                     grid = np.zeros((6, 6))
                     
                     grid[[row, row+1, row], [col, col, col+1]] = SHAPE_DICT[shape]
-                    np.save(f"/Users/mishaal/personalproj/clarion_replay/data/processed/train_data/train_stims/GRID_{running_count}.npy", grid)
+                    np.save(f"data/processed/train_data/train_stims/GRID_{running_count}.npy", grid)
                     running_count += 1
         elif shape == "horizontal":
             for row in range(0, 6):
@@ -66,7 +66,7 @@ def make_special_one_grid():
                     grid = np.zeros((6, 6))
                     
                     grid[[row, row, row], [col, col+1, col+2]] = SHAPE_DICT[shape]
-                    np.save(f"/Users/mishaal/personalproj/clarion_replay/data/processed/train_data/train_stims/GRID_{running_count}.npy", grid)
+                    np.save(f"data/processed/train_data/train_stims/GRID_{running_count}.npy", grid)
                     running_count += 1
         else:
             for row in range(0, 4):
@@ -74,14 +74,15 @@ def make_special_one_grid():
                     grid = np.zeros((6, 6))
                     
                     grid[[row, row+1, row+2], [col, col, col]] = SHAPE_DICT[shape]
-                    np.save(f"/Users/mishaal/personalproj/clarion_replay/data/processed/train_data/train_stims/GRID_{running_count}.npy", grid)
+                    np.save(f"data/processed/train_data/train_stims/GRID_{running_count}.npy", grid)
                     running_count += 1
 
 
 def get_grids_by_number(grid_names, start_from=1, end_at=5):
     g_n = {1:[], 2:[], 3:[], 4:[]}
     for grid_name in grid_names:
-        stim_grid = np.load(f"/Users/mishaal/personalproj/clarion_replay/data/processed/train_data/train_stims/{grid_name}")
+        if grid_name[:2] == "._": continue
+        stim_grid = np.load(f"data/processed/train_data/train_stims/{grid_name}")
         g_n[len(np.unique(stim_grid))-1].append(grid_name)
     for k in range(start_from, end_at):
         yield g_n[k]
