@@ -17,6 +17,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn, optim
 from torch.utils.data import Dataset, DataLoader
+import wandb
 
 from q_learning import pyc_to_torch, torch_to_pyc, DQN, ReplayMemory, Transition
 from batched_data_prep import STATE_KEYS, ACTION_KEYS  
@@ -270,6 +271,7 @@ def check_accuracy(policy_net: DQN,
 def training(train_obj: TrainBatched, dataset_files: List[str], 
              run_name: str,
              epochs=100, batch_size=128,
+             run=None,
              device="cpu",
              run_until_accurate=False):
     global interrupted
@@ -281,7 +283,9 @@ def training(train_obj: TrainBatched, dataset_files: List[str],
     running_count = 0
     action_buffer = []
 
-    while (accuracies[-1] < 0.9 and run_until_accurate) or epochs_left:
+    batch_steps = 0
+
+    while (accuracies[-1] < 0.99 and run_until_accurate) or epochs_left:
         if interrupted:
             print("Training interrupted by user. Exiting...")
             break
@@ -307,34 +311,42 @@ def training(train_obj: TrainBatched, dataset_files: List[str],
                 _, _, reward, _, _ = batch
                 loss, qval = train_obj.optimize_model(batch)
                 losses += [loss]
-                fig = plt.figure()
-                plt.plot(losses)
-                plt.savefig(f"data/run_data/{run_name}/figures/losses.png")
-                plt.close(fig)
+                if run is not None:
+                    run.log({"loss": loss}, step=batch_steps)
+                    batch_steps += 1
+                else:
+                    fig = plt.figure()
+                    plt.plot(losses)
+                    plt.savefig(f"data/run_data/{run_name}/figures/losses.png")
+                    plt.close(fig)
                 qvals.extend(qval.squeeze(1).detach().tolist())
                 rewards.extend((reward > 0).squeeze(1).detach().tolist())
                 pbar.set_description(f"Loss: {loss}")
-
-            qval_plotter.update_and_save(qvals, rewards, filename=f"qvals_train_{running_count}.png")
+            if not run:
+                qval_plotter.update_and_save(qvals, rewards, filename=f"qvals_train_{running_count}.png")
             epochs_left -= 1 
 
         accuracy, action_vals = check_accuracy(train_obj.policy_net, dataset, device)
         action_buffer.extend(action_vals)
         accuracies.append(accuracy)
-        fig = plt.figure()
-        plt.plot(accuracies)
-        plt.savefig(f"data/run_data/{run_name}/figures/accuracies.png")
-        plt.close(fig)
-        fig = plt.figure()
-        plt.plot(action_buffer)
-        plt.savefig(f"data/run_data/{run_name}/figures/actions.png")
-        plt.close(fig)
-        qval_plotter.close()
+        if run is not None:
+            run.log({"acc": accuracy}, step=batch_steps)
+        else:
+            fig = plt.figure()
+            plt.plot(accuracies)
+            plt.savefig(f"data/run_data/{run_name}/figures/accuracies.png")
+            plt.close(fig)
+            fig = plt.figure()
+            plt.plot(action_buffer)
+            plt.savefig(f"data/run_data/{run_name}/figures/actions.png")
+            plt.close(fig)
+            qval_plotter.close()
         running_count +=1
 
-def testing(model_path: str, dataset_files: List[str], test_name:str,
+def testing(model_path: str, dataset_files: List[str], 
+            test_name:str, num_layers=int,
             device="cpu"):
-    policy_net = DQN(STATE_KEYS, ACTION_KEYS)
+    policy_net = DQN(STATE_KEYS, ACTION_KEYS, n_layers=num_layers)
     policy_net.load_state_dict(torch.load(model_path, weights_only=True))
     policy_net = policy_net.to(device)
     dataset = EpisodeDataset(dataset_files)
@@ -372,9 +384,20 @@ if __name__ == "__main__":
     args = parser.parse_args()
     torch.manual_seed(0)
 
+    if not args.test:
+        run = wandb.init(
+            entity="mishaalkandapath",
+            project="brickworld",
+            config={
+                "learning_rate": args.lr,
+                "batch_size": args.batch_size,
+                "gamma": args.gamma,
+                "tau": args.tau,
+                "num_layers": args.num_layers
+            },
+        )
+    # run=None
     os.makedirs(f"data/run_data/{args.run_name}/figures", exist_ok=True)
-
-    
     if not args.test:
         train_obj = TrainBatched(args.model, args.num_layers,
                                 args.gamma, args.tau, args.lr,
@@ -382,6 +405,7 @@ if __name__ == "__main__":
         training(train_obj, args.dataset_files, 
                 args.run_name,
                 args.epochs, args.batch_size,
+                run,
                 device=torch.device("cuda" if not args.cpu or not torch.cuda.is_available() else "cpu"),
                 run_until_accurate=args.run_until_accurate)
         
@@ -392,5 +416,5 @@ if __name__ == "__main__":
         pickle.dump([args.epochs, args.batch_size, args.gamma, args.tau, args.lr], f)
         f.close()
     else:
-        testing(args.model, args.dataset_files, args.run_name, 
+        testing(args.model, args.dataset_files, args.run_name, args.num_layers,
                 device=torch.device("cuda" if not args.cpu or not torch.cuda.is_available() else "cpu"))
