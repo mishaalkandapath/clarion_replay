@@ -1,5 +1,6 @@
 from datetime import timedelta
 from typing import override
+from pprint import pprint
 import math
 import random
 
@@ -447,7 +448,7 @@ class AbstractParticipant(BaseParticipant):
     5. Which prgoresses by way of rule activations, blas, and math statistics
     """
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, layers: int) -> None:
         r_abstract = Family()  # rule family for abstract rules
         c_abstract = Family()  # abstract family for abstract chunks
 
@@ -495,6 +496,7 @@ class AbstractParticipant(BaseParticipant):
         ) = external_mlp_handle(
             state_keys=[k for k in self.mlp_construction_input.main[0]],
             action_keys=[k for k in self.abstract_goal_choice.main[0]],
+            layers=layers
         )
 
         # extra backtracking queues:
@@ -732,6 +734,12 @@ class AbstractParticipant(BaseParticipant):
     ) -> None:
         out_actions = self.goal_net.forward(
             self.mlp_construction_input.main[0].d)
+
+        # outs = sorted(out_actions.items(), key=lambda x: x[1], reverse=True)
+        # p = lambda x: math.exp(x)/sum(math.exp(s) for _, s in outs)
+        # pprint([(str(k).split(":")[-1], p(v)) for k,v in outs][:5])
+        # print("Entropy Baseline: ", -sum(math.log(1/len(outs))/len(outs) for _, x in outs))
+        # print("Entropy: ", -sum(p(x)*math.log(p(x)) for _, x in outs))
         self.system.schedule(
             self.forward_qnet,
             self.abstract_goal_choice.input.update(out_actions),

@@ -104,7 +104,7 @@ if __name__ == "__main__":
     
     grid_names = os.listdir("data/processed/train_data/train_stims/")
     grid_names = [g for g in grid_names if g[:2] != "._"]
-    gn = get_grids_by_number(grid_names)
+    gn = get_grids_by_number(grid_names, start_from=3)
     i = 0
     for files in gn:
         print(files)
@@ -112,7 +112,6 @@ if __name__ == "__main__":
         files = list(set(files).difference(test_files))
         dataset = []
         for filename in tqdm(files):
-            filename='GRID19.npy'
             grid, grid_tensor = make_mlp_input(f"data/processed/train_data/train_stims/{filename}")
             dataset += make_transitions_for_grid(grid, np.zeros_like(grid), grid_tensor)
         print(len(dataset))
