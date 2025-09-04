@@ -57,11 +57,11 @@ LR = 1e-3
 ACTIONS = list(range(52))
 
 
-def external_mlp_handle(state_keys, action_keys, device="cpu"):
+def external_mlp_handle(state_keys, action_keys, layers=4, device="cpu"):
     device = torch.device(device)
 
-    policy_net = DQN(state_keys, action_keys)
-    target_net = DQN(state_keys, action_keys)
+    policy_net = DQN(state_keys, action_keys, n_layers=layers)
+    target_net = DQN(state_keys, action_keys, n_layers=layers)
     target_net.load_state_dict(policy_net.state_dict())
 
     optimizer = optim.Adam(policy_net.parameters(), lr=LR)
