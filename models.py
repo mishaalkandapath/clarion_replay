@@ -1,4 +1,5 @@
-from collections import OrderedDict, Union, List
+from collections import OrderedDict
+from typing import Union, List
 
 import torch
 from torch import nn

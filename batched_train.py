@@ -9,9 +9,9 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from tqdm import tqdm 
 
-import waitGPU
-waitGPU.wait(memory_ratio=0.001,
-             gpu_ids=[0,1], interval=10, nproc=1, ngpu=1)
+# import waitGPU
+# waitGPU.wait(memory_ratio=0.001,
+#              gpu_ids=[0,1], interval=10, nproc=1, ngpu=1)
 
 import torch 
 import torch.nn.functional as F
@@ -218,7 +218,7 @@ class TrainBatched:
 
         # Compute Huber loss
         criterion = nn.SmoothL1Loss()
-        loss = criterion(state_action_values, expected_state_action_values)
+        loss = criterion(expected_state_action_values, state_action_values)
 
         # Optimize the model
         self.optimizer.zero_grad()
@@ -273,10 +273,12 @@ def training(train_obj: TrainBatched, dataset_files: List[str],
              epochs=100, batch_size=128,
              run=None,
              device="cpu",
-             run_until_accurate=False):
+             run_until_accurate=False,
+             test=False):
     global interrupted
     dataset = EpisodeDataset(dataset_files)
-    dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=5, collate_fn=transitions_collate)
+    test_dataset = None if not test else EpisodeDataset([f.replace("train_dataset", "test_dataset") for f in dataset_files])
+    dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=len(os.sched_getaffinity(0)), collate_fn=transitions_collate)
     losses = []
     accuracies = [0]
     epochs_left = epochs
@@ -285,6 +287,7 @@ def training(train_obj: TrainBatched, dataset_files: List[str],
 
     batch_steps = 0
 
+    best_test_acc, best_train_acc = float("-inf"), float("-inf") 
     while (accuracies[-1] < 0.99 and run_until_accurate) or epochs_left:
         if interrupted:
             print("Training interrupted by user. Exiting...")
@@ -327,10 +330,12 @@ def training(train_obj: TrainBatched, dataset_files: List[str],
             epochs_left -= 1 
 
         accuracy, action_vals = check_accuracy(train_obj.policy_net, dataset, device)
+        test_accuracy, _ = check_accuracy(train_obj.policy_net, test_dataset, device)
         action_buffer.extend(action_vals)
         accuracies.append(accuracy)
         if run is not None:
             run.log({"acc": accuracy}, step=batch_steps)
+            run.log({"val_acc": test_accuracy}, step=batch_steps)
         else:
             fig = plt.figure()
             plt.plot(accuracies)
@@ -341,6 +346,13 @@ def training(train_obj: TrainBatched, dataset_files: List[str],
             plt.savefig(f"data/run_data/{run_name}/figures/actions.png")
             plt.close(fig)
             qval_plotter.close()
+
+        if accuracy > best_train_acc:
+            torch.save(train_obj.policy_net.state_dict(), f"data/run_data/{run_name}/best_train_goal_net.pt")
+            best_train_acc = accuracy
+        if test_accuracy > best_test_acc:
+            torch.save(train_obj.policy_net.state_dict(), f"data/run_data/{run_name}/best_test_goal_net.pt")
+            best_test_acc = test_accuracy
         running_count +=1
 
 def testing(model_path: str, dataset_files: List[str], 
@@ -384,37 +396,38 @@ if __name__ == "__main__":
     args = parser.parse_args()
     torch.manual_seed(0)
 
-    if not args.test:
-        run = wandb.init(
-            entity="mishaalkandapath",
-            project="brickworld",
-            config={
-                "learning_rate": args.lr,
-                "batch_size": args.batch_size,
-                "gamma": args.gamma,
-                "tau": args.tau,
-                "num_layers": args.num_layers
-            },
-        )
+    # if not args.test:
+    run = wandb.init(
+        entity="mishaalkandapath",
+        project="brickworld",
+        config={
+            "learning_rate": args.lr,
+            "batch_size": args.batch_size,
+            "gamma": args.gamma,
+            "tau": args.tau,
+            "num_layers": args.num_layers
+        },
+    )
     # run=None
     os.makedirs(f"data/run_data/{args.run_name}/figures", exist_ok=True)
-    if not args.test:
-        train_obj = TrainBatched(args.model, args.num_layers,
-                                args.gamma, args.tau, args.lr,
-                                device=torch.device("cuda" if not args.cpu or not torch.cuda.is_available() else "cpu"))
-        training(train_obj, args.dataset_files, 
-                args.run_name,
-                args.epochs, args.batch_size,
-                run,
-                device=torch.device("cuda" if not args.cpu or not torch.cuda.is_available() else "cpu"),
-                run_until_accurate=args.run_until_accurate)
-        
-        torch.save(train_obj.policy_net.state_dict(), f"data/run_data/{args.run_name}/goal_net.pt")
+    # if not args.test:
+    train_obj = TrainBatched(args.model, args.num_layers,
+                            args.gamma, args.tau, args.lr,
+                            device=torch.device("cuda" if not args.cpu and torch.cuda.is_available() else "cpu"))
+    training(train_obj, args.dataset_files, 
+            args.run_name,
+            args.epochs, args.batch_size,
+            run,
+            device=torch.device("cuda" if not args.cpu and torch.cuda.is_available() else "cpu"),
+            run_until_accurate=args.run_until_accurate,
+            test=args.test)
+    
+    torch.save(train_obj.policy_net.state_dict(), f"data/run_data/{args.run_name}/goal_net.pt")
 
-        #dump hyperparameters
-        f = open(f"data/run_data/{args.run_name}/hyperparams.pkl", "wb")
-        pickle.dump([args.epochs, args.batch_size, args.gamma, args.tau, args.lr], f)
-        f.close()
-    else:
-        testing(args.model, args.dataset_files, args.run_name, args.num_layers,
-                device=torch.device("cuda" if not args.cpu or not torch.cuda.is_available() else "cpu"))
+    #dump hyperparameters
+    f = open(f"data/run_data/{args.run_name}/hyperparams.pkl", "wb")
+    pickle.dump([args.epochs, args.batch_size, args.gamma, args.tau, args.lr], f)
+    f.close()
+    # else:
+    #     testing(args.model, args.dataset_files, args.run_name, args.num_layers,
+    #             device=torch.device("cuda" if not args.cpu or not torch.cuda.is_available() else "cpu"))

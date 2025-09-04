@@ -640,6 +640,7 @@ def run_experiment(
         # load the model
         participant.goal_net.load_state_dict(
             torch.load(test_model_path))
+        participant.training = False
     if not num_test_sessions:
         return
     name_dir = name_dir+1 if num_train_sessions else (len(os.listdir("data/run_data/"))//2 + 1)
