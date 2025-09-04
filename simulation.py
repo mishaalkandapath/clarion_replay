@@ -491,7 +491,7 @@ def run_participant_session(
                             "data/figures/rewards.png"
                 )
 
-            if session_type == "test":
+            if session_type == "test" and len(all_goal_choices):
                 goal_sequences = simple_goal_sequencessness(
                     all_goal_choices,
                     all_grids
@@ -576,10 +576,11 @@ def run_participant_session(
 def run_experiment(
         num_train_sessions=100,
         num_test_sessions=20,
-        test_model_path=None):
+        test_model_path=None,
+        layers=8):
     grid_names = os.listdir("data/processed/train_data/train_stims/")
     test_trials = pd.read_csv("data/processed/test_data/all_test_data.csv")
-    participant = AbstractParticipant("p1")
+    participant = AbstractParticipant("p1", layers=layers)
 
     if num_train_sessions:
         name_dir = len(os.listdir("data/run_data/"))//2 + 1
@@ -752,6 +753,11 @@ if __name__ == "__main__":
         action="store_true",
         help="do not show the visualization while running the program"
     )
+    parser.add_argument(
+        "--layers",
+        type=int,
+        required=True,
+    )
 
     args = parser.parse_args()
     if args.debug:
@@ -766,7 +772,8 @@ if __name__ == "__main__":
     os.environ["VIZ_SHOW"] = "false" if args.no_show_viz else "true"
     run_experiment(
         num_train_sessions=0 if args.test_path else args.train_sessions, num_test_sessions=args.test_sessions,
-        test_model_path=args.test_path
+        test_model_path=args.test_path,
+        layers=args.layers,
     )
 
 """
