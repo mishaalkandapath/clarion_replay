@@ -15,6 +15,9 @@ from scaffolded_training import get_grids_by_number, TEST_GRIDS
 
 STATE_KEYS = ['input_half_T_row1', 'input_half_T_row2', 'input_half_T_row3',
  'input_half_T_col1', 'input_half_T_col2', 'input_half_T_col3', 'input_mirror_L_row1', 'input_mirror_L_row2', 'input_mirror_L_row3', 'input_mirror_L_col1', 'input_mirror_L_col2', 'input_mirror_L_col3', 'input_vertical_row1', 'input_vertical_row2', 'input_vertical_row3', 'input_vertical_col1', 'input_vertical_col2', 'input_vertical_col3', 'input_horizontal_row1', 'input_horizontal_row2', 'input_horizontal_row3', 'input_horizontal_col1', 'input_horizontal_col2', 'input_horizontal_col3', 'target_half_T_row1', 'target_half_T_row2', 'target_half_T_row3', 'target_half_T_col1', 'target_half_T_col2', 'target_half_T_col3', 'target_mirror_L_row1', 'target_mirror_L_row2', 'target_mirror_L_row3', 'target_mirror_L_col1', 'target_mirror_L_col2', 'target_mirror_L_col3', 'target_vertical_row1', 'target_vertical_row2', 'target_vertical_row3', 'target_vertical_col1', 'target_vertical_col2', 'target_vertical_col3', 'target_horizontal_row1', 'target_horizontal_row2', 'target_horizontal_row3', 'target_horizontal_col1', 'target_horizontal_col2', 'target_horizontal_col3']
+STATE_KEYS = list(product(STATE_KEYS, 
+                      ["1", "2", "3", "4", "5", "6"]))
+
 ACTION_KEYS = ['half_T_start', 'mirror_L_start', 'vertical_start',
  'horizontal_start', 'half_T_horizontal_left', 'half_T_horizontal_right', 'half_T_horizontal_above', 'half_T_horizontal_below', 'horizontal_half_T_left', 'horizontal_half_T_right', 'horizontal_half_T_above', 'horizontal_half_T_below', 'half_T_vertical_left', 'half_T_vertical_right', 'half_T_vertical_above', 'half_T_vertical_below', 'vertical_half_T_left', 'vertical_half_T_right', 'vertical_half_T_above', 'vertical_half_T_below', 'half_T_mirror_L_left', 'half_T_mirror_L_right', 'half_T_mirror_L_above', 'half_T_mirror_L_below', 'mirror_L_half_T_left', 'mirror_L_half_T_right', 'mirror_L_half_T_above', 'mirror_L_half_T_below', 'mirror_L_horizontal_left', 'mirror_L_horizontal_right', 'mirror_L_horizontal_above', 'mirror_L_horizontal_below', 'horizontal_mirror_L_left', 'horizontal_mirror_L_right', 'horizontal_mirror_L_above', 'horizontal_mirror_L_below', 'mirror_L_vertical_left', 'mirror_L_vertical_right', 'mirror_L_vertical_above', 'mirror_L_vertical_below', 'vertical_mirror_L_left', 'vertical_mirror_L_right', 'vertical_mirror_L_above', 'vertical_mirror_L_below', 'vertical_horizontal_left', 'vertical_horizontal_right', 'vertical_horizontal_above', 'vertical_horizontal_below', 'horizontal_vertical_left', 'horizontal_vertical_right', 'horizontal_vertical_above', 'horizontal_vertical_below']
 
@@ -30,6 +33,13 @@ def make_mlp_dict(grid: dict[str, int], target=False) -> torch.tensor:
             mlp_input[(f"{name}_{shape_name}_col{i+1}", f"{int(cols[i]) + 1}")] = 1
     return pyc_to_torch(mlp_input, indices=STATE_KEYS)
 
+def convert_tensor_to_dict(grid_tensor: torch.tensor):
+    global STATE_KEYS
+    ret_dict = {}
+    for idx in grid_tensor.nonzero().squeeze(-1):
+        ret_dict[STATE_KEYS[idx]]=1
+    return ret_dict
+
 def make_mlp_input(gridname: str) -> Tuple[dict[str, int], torch.tensor]:
     mlp_input = {}
     grid = np.load(gridname)
@@ -42,8 +52,8 @@ def make_grid_after_action(grid: np.array, target_grid: np.array, action: str) -
     else:
         shape = re.match(SHAPE_SHAPE_REL, action).group(2)
     new_grid = np.zeros_like(grid)
-    new_grid += target_grid
-    new_grid += grid * (grid == SHAPE_DICT[shape])
+    new_grid += target_grid # put in everything built so far
+    new_grid += grid * (grid == SHAPE_DICT[shape]) # add in that extra shape
         
     return new_grid
 
@@ -98,33 +108,34 @@ def make_transitions_for_grid(grid: np.array,
         dataset.append([grid_tensor, a, reward, new_state])
     return dataset
 
-if __name__ == "__main__":
-    STATE_KEYS = list(product(STATE_KEYS, 
-                      ["1", "2", "3", "4", "5", "6"]))
-    
-    grid_names = os.listdir("data/processed/train_data/train_stims/")
+def get_dataset_from_files(files):
+    dataset = []
+    for filename in tqdm(files):
+        grid, grid_tensor = make_mlp_input(f"data/processed/train_data/train_stims/{filename}")
+        dataset += make_transitions_for_grid(grid, np.zeros_like(grid), grid_tensor)
+    print(len(dataset))
+    return dataset
+
+def idid_dataset(stim_dir="data/processed/train_data/train_stims/"):
+    grid_names = os.listdir(stim_dir)
     grid_names = [g for g in grid_names if g[:2] != "._"]
-    gn = get_grids_by_number(grid_names, start_from=3)
+    gn = get_grids_by_number(grid_names, start_from=1)
     i = 0
     for files in gn:
-        print(files)
+        print(i, files)
         test_files = TEST_GRIDS[i+1]
         files = list(set(files).difference(test_files))
-        dataset = []
-        for filename in tqdm(files):
-            grid, grid_tensor = make_mlp_input(f"data/processed/train_data/train_stims/{filename}")
-            dataset += make_transitions_for_grid(grid, np.zeros_like(grid), grid_tensor)
-        print(len(dataset))
-        f = open(f"train_dataset_b{i+1}.pkl", "wb")
-        pickle.dump(dataset, f)
-        f.close()
-        dataset = []
-        for filename in tqdm(test_files):
-            grid, grid_tensor = make_mlp_input(f"data/processed/train_data/train_stims/{filename}")
-            dataset += make_transitions_for_grid(grid, np.zeros_like(grid), grid_tensor)
-        print(len(dataset))
-        f = open(f"test_dataset_b{i+1}.pkl", "wb")
-        pickle.dump(dataset, f)
-        f.close()
+        dataset = get_dataset_from_files(files)
+        with open(f"/w/nobackup/436/lambda/data/clarion_sequential/train_dataset_b{i+1}.pkl", "wb") as f:
+            pickle.dump(dataset, f)
 
+        dataset = get_dataset_from_files(test_files)
+        with open(f"/w/nobackup/436/lambda/data/clarion_sequential/test_dataset_b{i+1}.pkl", "wb") as f:
+            pickle.dump(dataset, f)
         i+=1
+
+
+if __name__ == "__main__":
+    idid_dataset()
+
+# target grid is what you are now building, and input grid is what is to be built

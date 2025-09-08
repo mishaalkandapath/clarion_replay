@@ -1,4 +1,5 @@
 import re
+import random
 
 import numpy as np
 from pyClarion import NumDict, numdict, Index, Chunk, Site, Key
@@ -354,6 +355,14 @@ def check_construction_input_match(mlp_input):
                 mlp_input[Key(shape)]):
                 return False
     return True
+
+def weighted_sample_without_replacement(population, weights=None, k=1, rng=random):
+    if not weights:
+        weights = [1/len(population)]*len(population)
+    v = [rng.random() ** (1 / w) for w in weights]
+    order = sorted(range(len(population)), key=lambda i: v[i])
+    return [population[i] for i in order[-k:]]
+
             
 
 # useful patterns and dicts

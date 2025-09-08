@@ -202,7 +202,7 @@ def load_trial(
     }
     choice_is_yes = None
     # print("Stimulus grid: \n", stim_grid)
-    if t_type == "test":
+    if t_type == "test" and q_type == "query":
         chunk_test = (
             +(response_space.io.query_relation ** query_map[trial["Q_Relation"]])
             + response_space.io.query_block_reference
@@ -376,7 +376,7 @@ def run_participant_session(
             construction_accuracy.append(accuracy)
             correctness = 1 if accuracy == 1 else 0
             construction_correctness.append(correctness)
-            if session_type == "train":
+            if session_type == "train" or q_type !="query":
                 # print(
                 #     "Construction was ",
                 #     "correct" if correctness == 1 else "incorrect")
@@ -542,13 +542,13 @@ def run_participant_session(
                 "goal choices",
                 "data/figures/goal_choices.png",
             )
-            if session_type == "test":
-                n_sequences = simple_sequenceness(
-                    all_rule_history, all_rule_lhs_history, all_grids
-                )
-                plot_sequences(n_sequences)
-                goal_sequences = simple_goal_sequencessness(all_goal_choices, all_grids)
-                plot_sequences(goal_sequences)
+            # if session_type == "test":
+            #     n_sequences = simple_sequenceness(
+            #         all_rule_history, all_rule_lhs_history, all_grids
+            #     )
+            #     plot_sequences(n_sequences)
+            #     goal_sequences = simple_goal_sequencessness(all_goal_choices, all_grids)
+            #     plot_sequences(goal_sequences)
             participant.start_construct_trial(timedelta())
             done_count += 1
             pbar.update(1)

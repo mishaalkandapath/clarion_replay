@@ -181,6 +181,7 @@ def run_tests(test_grids, model_path, layers):
     test_trials = pd.DataFrame(test_grids, columns=["Grid_Name"])
     test_results, test_construction_correctness, test_construction_accuracy, _, _, _, test_goal_choices = (
         run_participant_session(participant, test_trials,
+                                session_type="train",
                                 q_type="booom"))
     participant.toggle_training()
 
@@ -246,3 +247,5 @@ if __name__ == "__main__":
         run_tests(test_grids, args.model, args.layers)
 
 # natural test for grid ones: ['GRID_489', 'GRID_565', 'GRID_504', 'GRID_507', 'GRID_524', 'GRID_500', 'GRID_535', 'GRID_555', 'GRID_528', 'GRID_542', 'GRID_518', 'GRID_525', 'GRID_503', 'GRID_483', 'GRID_549', 'GRID_547', 'GRID_551']
+
+#python scaffolded_training.py --test --start_from 3 --model data/run_data/best_test_goal_net_b234wtest.pt --layers 8
