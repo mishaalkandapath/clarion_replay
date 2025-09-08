@@ -185,6 +185,7 @@ class ActorCriticTrainer:
         
         # Track which episodes are still running
         max_possible_steps = max(self.env.max_lens)
+        best_lens = np.array(self.env.max_lens)//4
         active_episodes = torch.ones(batch_size, dtype=torch.bool, device=self.device)
         mask = torch.ones(batch_size, max_possible_steps, 
                           dtype=torch.bool, device=self.device)
@@ -237,8 +238,8 @@ class ActorCriticTrainer:
             'values_tensor': values_tensor,
             'returns': returns,
             'mask': mask,
-            'episode_lengths': mask.sum(dim=1),
-            'best_lengths': np.array(self.env.max_lens)//4,
+            'episode_lengths': mask.sum(dim=1)/torch.from_numpy(best_lens).to(mask.device),
+            'best_lengths': best_lens,
             'total_rewards': (rewards_tensor * mask).sum(dim=1)
         }
     
@@ -280,9 +281,11 @@ class ActorCriticTrainer:
         """
         best_train_loss = float("inf")
         best_test_acc = -float("inf")
+        best_test_grid_correctness =  -float("inf")
+        best_mean_length = float("inf")
         step = 0
         pbar = tqdm(total=500)
-        while best_test_acc < 0.91:
+        while (best_test_acc < 0.99 and best_test_acc < 0.99) or best_mean_length > 1.02:
             stats = self.train_step()
             if stats['actor_loss'] + stats['critic_loss'] < best_train_loss:
                 best_train_loss = stats['actor_loss'] + stats['critic_loss']
@@ -290,10 +293,14 @@ class ActorCriticTrainer:
 
             if step % 500 == 0:
                 eval_stats = self.evaluate()
-                acc = eval_stats["accuracy"]
-                if acc > best_test_acc:
+                acc = eval_stats["accuracy"] 
+                correctness = eval_stats["grid_correctness"]
+                mean_length = eval_stats["mean_length"]
+                if correctness > best_test_grid_correctness:
                     torch.save(self.model.state_dict(), f"data/run_data/{run_name}/best_test_goal_net.pt")
                     best_test_acc = acc
+                    best_test_grid_correctness = correctness
+                    best_mean_length = mean_length
                 stats = eval_stats | stats
                 self.logger.log(stats)
                 pbar = tqdm(total=500)
@@ -311,15 +318,19 @@ class ActorCriticTrainer:
         episode_lengths = []
         correctness = 0
         correctness_denom = 0
+        grid_correctness = 0
         with torch.no_grad():
             for _ in range(num_episodes // self.env.batch_size):
                 episode_data = self.run_episode_batch(inference=True)
                 total_rewards.extend(episode_data['total_rewards'].cpu().numpy())
-                episode_lengths.extend(episode_data['episode_lengths'].cpu().numpy()/episode_data["best_lengths"])
+                episode_lengths.extend(episode_data['episode_lengths'].cpu().numpy())
                 rews = torch.stack(episode_data["rewards_seq"], dim=-1)
                 mask = episode_data["mask"]
-                correctness += torch.sum(rews != -1)
+                correctness += torch.sum((rews != -1) & (rews != 0))
                 correctness_denom += torch.sum(mask)
+
+                if (t := torch.count_nonzero(rews == 1)):
+                    grid_correctness += t
                 # Reinitialize for next evaluation batch
                 self.env._initialize_all_environments()
         
@@ -328,7 +339,7 @@ class ActorCriticTrainer:
             'mean_length': np.mean(episode_lengths),
             'std_length': np.std(episode_lengths),
             'accuracy': correctness/correctness_denom,
-            'avg_episode_prolong': np.mean(episode_lengths)
+            "grid_correctness": grid_correctness/128
         }
 
 if __name__ == "__main__":
