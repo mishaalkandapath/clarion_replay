@@ -26,11 +26,11 @@ class myModule(nn.Module):
         return next(self.parameters()).device
 
 class DQN(myModule):
-    def __init__(self, state_keys, action_keys, n_layers=8):
+    def __init__(self, state_keys, action_keys, n_layers=8, a2c=False):
         super().__init__()
 
-        n_observations = len(state_keys)
-        n_actions = len(action_keys)
+        n_observations = len(state_keys) + (2 if a2c else 0)
+        n_actions = len(action_keys) + int(a2c)
         network = [("fc0", nn.Linear(n_observations, 128)),
                    ("rfc0", nn.ReLU())]
         assert n_layers%2 == 0, "Must be even number"

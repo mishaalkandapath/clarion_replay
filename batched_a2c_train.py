@@ -2,6 +2,8 @@ from collections import defaultdict
 from typing import List, Tuple, Optional
 import json
 from itertools import product
+import sys
+import signal
 
 import torch
 import torch.nn as nn
@@ -10,10 +12,31 @@ import torch.optim as optim
 import numpy as np
 from tqdm import tqdm
 
-from models import RNN
+from models import RNN, DQN
 from batched_rl_env import BatchedBrickEnvironment
 from scaffolded_training import get_grids_by_number, TEST_GRIDS
 from batched_data_prep import STATE_KEYS, ACTION_KEYS
+
+interrupted = False
+train_obj_global = None
+run_name_global = None
+
+def signal_handler(signum, frame):
+    global interrupted, train_obj_global, run_name_global
+    print("\n\nReceived interrupt signal (Ctrl+C). Saving model and exiting gracefully...")
+    interrupted = True
+    
+    if train_obj_global is not None and run_name_global is not None:
+        try:
+            os.makedirs(f"data/run_data/{run_name_global}", exist_ok=True)
+            save_path = f"data/run_data/{run_name_global}/interrupted_model.pt"
+            torch.save(train_obj_global.model.state_dict(), save_path)
+            print(f"Model saved to: {save_path}")
+        except Exception as e:
+            print(f"Error saving model: {e}")
+    
+    print("Exiting...")
+    sys.exit(0)
 
 class ActorCriticTrainer:
     """
@@ -35,13 +58,14 @@ class ActorCriticTrainer:
             logger: Optional logger
             device: Device to run on
         """
+
         self.model = model
         self.env = env
         self.gamma = gamma
         self.beta_entropy = beta_entropy
         self.beta_critic = beta_critic
     
-        if model.learn_init:
+        if type(model) is not DQN and model.learn_init:
             self.optimizer = torch.optim.Adam([
                 {'params': [p for name, p in model.named_parameters() 
                             if 'initial_states' not in name], 
@@ -63,7 +87,11 @@ class ActorCriticTrainer:
         Get policy logits and value estimate from model for batched input.
         Assumes model outputs (batch, seq, features) where features == num_actions + 1.
         """
-        outputs, new_hidden = self.model(input_tensor, hidden_state)
+        if type(self.model) is DQN:
+            outputs = self.model(input_tensor)
+            new_hidden = None
+        else:
+            outputs, new_hidden = self.model(input_tensor, hidden_state)
         
         # Assuming single step output: (batch, 1, features)
         policy_logits = outputs[:, 0, :-1]  # (batch, num_actions)
@@ -285,7 +313,7 @@ class ActorCriticTrainer:
         best_mean_length = float("inf")
         step = 0
         pbar = tqdm(total=500)
-        while (best_test_acc < 0.99 and best_test_acc < 0.99) or best_mean_length > 1.02:
+        while (best_test_acc < 0.99 and best_test_grid_correctness < 0.99):
             stats = self.train_step()
             if stats['actor_loss'] + stats['critic_loss'] < best_train_loss:
                 best_train_loss = stats['actor_loss'] + stats['critic_loss']
@@ -348,6 +376,9 @@ if __name__ == "__main__":
     import wandb
     import pickle
 
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
     parser = argparse.ArgumentParser("A2C trainer")
 
     parser.add_argument("--mlp", action="store_true")
@@ -392,11 +423,14 @@ if __name__ == "__main__":
         grid_names = [g for g in grid_names if g not in TEST_GRIDS[start_from]]
         data.append(grid_names)
         start_from+=1
-    print([len(d) for d in data])
     env = BatchedBrickEnvironment(data, args.batch_size)
-    model = RNN(len(STATE_KEYS)+2, args.d_hidden, len(ACTION_KEYS)+1,
-                out_act=lambda x: x, num_layers=args.n_layers, use_gru=args.gru,
-                learn_init=args.learn_init)
+
+    if args.mlp:
+        model = DQN(STATE_KEYS, ACTION_KEYS, args.n_layers, a2c=True)
+    else:
+        model = RNN(len(STATE_KEYS)+2, args.d_hidden, len(ACTION_KEYS)+1,
+                    out_act=lambda x: x, num_layers=args.n_layers, use_gru=args.gru,
+                    learn_init=args.learn_init)
     train_obj = ActorCriticTrainer(model, env, lr=args.lr,
                                    lr_init=args.lr_init, gamma=args.gamma,
                                    beta_entropy=args.beta_entropy,
@@ -404,15 +438,18 @@ if __name__ == "__main__":
                                    logger=run,
                                    device=torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
     
+    train_obj_global = train_obj
+    run_name_global = args.run_name
+    
     train_obj.train(run_name=args.run_name)
     with open(f"data/run_data/{args.run_name}/hyperparams.json", "w") as f:
         json.dump({
-                "learning_rate": args.lr,
-                "learning_rate_init": args.lr_init,
-                "batch_size": args.batch_size,
-                "gamma": args.gamma,
-                "num_layers": args.n_layers,
-                "beta_entropy": args.beta_entropy,
-                "beta_critic": args.beta_critic,
-                "n_hidden": args.d_hidden if not args.mlp else 0
-            }, f)
+            "learning_rate": args.lr,
+            "learning_rate_init": args.lr_init,
+            "batch_size": args.batch_size,
+            "gamma": args.gamma,
+            "num_layers": args.n_layers,
+            "beta_entropy": args.beta_entropy,
+            "beta_critic": args.beta_critic,
+            "n_hidden": args.d_hidden if not args.mlp else 0
+        }, f)
